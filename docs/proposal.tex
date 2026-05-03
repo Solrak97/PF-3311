@@ -12,7 +12,7 @@
 
 \usepackage[
     backend=biber,
-    style=apa
+    style=ieee
 ]{biblatex}
 
 \addbibresource{references.bib}
@@ -68,69 +68,53 @@ costo, escalabilidad, falta de empatía, poca adaptabilidad, entre otros.
 
 
 
-\section{Revisión de Literatura (Draft)}
+\section{Revisión de Literatura}
 
-\subsection{Familiaridad como Señal Cognitiva}
+\subsection{Familiaridad como Mecanismo Cognitivo}
 
-La familiaridad ha sido ampliamente estudiada en psicología cognitiva como un componente fundamental del reconocimiento. En modelos de memoria de doble proceso, se distingue entre familiaridad y recuerdo, donde la familiaridad corresponde a un proceso rápido y automático que genera una sensación de conocimiento sin recuperar información contextual específica. A diferencia del recuerdo, que implica la recuperación explícita de detalles, la familiaridad opera como una señal subjetiva de reconocimiento.
+La literatura en psicología cognitiva ha abordado la familiaridad como un componente central del reconocimiento, diferenciándola del recuerdo en modelos de doble proceso \cite{dual_process_memory}. En este marco, la familiaridad se entiende como una señal rápida y automática que indica conocimiento sin recuperar información contextual específica. Investigaciones posteriores han demostrado que esta señal puede surgir a partir de la facilidad de procesamiento de un estímulo, fenómeno conocido como \textit{processing fluency} \cite{processing_fluency_reber, fluency_familiarity_whittlesea}.
 
-Investigaciones posteriores han demostrado que la familiaridad no depende exclusivamente de la memoria previa, sino que puede surgir a partir de la facilidad de procesamiento de un estímulo, fenómeno conocido como \textit{processing fluency}. Estímulos que son más fáciles de procesar tienden a ser percibidos como más familiares, incluso en ausencia de exposición previa. En este sentido, la familiaridad puede entenderse como una inferencia basada en señales cognitivas, más que como un reflejo directo del conocimiento almacenado.
+Estos trabajos permiten entender la familiaridad como una inferencia subjetiva basada en señales cognitivas, lo que explica su influencia en la evaluación de la información, incluyendo juicios de confianza, naturalidad y conocimiento. Sin embargo, esta línea de investigación se ha centrado principalmente en estímulos aislados o perceptuales, sin considerar cómo la familiaridad emerge en contextos de interacción social, particularmente en la comunicación con agentes virtuales.
 
-Este carácter inferencial implica que la familiaridad puede influir en la evaluación de la información, favoreciendo juicios heurísticos y reduciendo el procesamiento analítico. Como resultado, los individuos pueden atribuir conocimiento, confianza o naturalidad a estímulos familiares sin una base objetiva que lo respalde.
+\subsection{Familiaridad con Personas y Cognición Social}
 
-\subsection{Familiaridad y Representaciones de Personas Conocidas}
+Desde la perspectiva de la cognición social, la familiaridad con una persona implica la formación de representaciones internas que codifican expectativas sobre su comportamiento, estilo de comunicación y conocimiento. Estas representaciones permiten interpretar y predecir las acciones de otros durante la interacción \cite{person_perception_schemas}.
 
-Desde la perspectiva de la cognición social, la familiaridad con una persona no se limita al reconocimiento perceptual, sino que implica la formación de representaciones internas que codifican expectativas sobre su comportamiento, estilo de comunicación y conocimiento. Estas representaciones permiten interpretar y predecir las acciones de otros durante la interacción.
+Estudios sobre \textit{empathic accuracy} han mostrado que los individuos son más precisos al inferir los estados mentales de personas conocidas que de desconocidos \cite{ickes_empathic_accuracy}, lo que sugiere la existencia de modelos mentales más ricos y estructurados. Este fenómeno indica que la interacción con personas familiares reduce el esfuerzo inferencial, facilitando la comprensión del comportamiento observado.
 
-Estudios sobre \textit{empathic accuracy} han mostrado que los individuos son más precisos al inferir los estados mentales de personas conocidas que de desconocidos, lo que sugiere la existencia de modelos mentales más ricos y estructurados. En este contexto, la interacción con una persona familiar implica un menor esfuerzo inferencial, ya que las expectativas previas facilitan la interpretación del comportamiento observado.
+No obstante, aunque esta literatura explica cómo los individuos procesan la interacción con personas conocidas, no ha sido integrada de manera explícita en el diseño de agentes virtuales, ni se ha explorado cómo estos modelos mentales pueden ser activados mediante el comportamiento de un sistema artificial.
 
-Este marco permite entender la familiaridad no solo como una propiedad del estímulo, sino como el resultado de la activación de un modelo mental previamente construido a partir de la experiencia con un individuo específico.
+\subsection{Antropomorfismo como Estrategia en Agentes Virtuales}
 
-\subsection{Antropomorfismo y Generación de Respuestas Sociales}
+En el ámbito de la interacción humano-computadora, el antropomorfismo ha sido una estrategia ampliamente utilizada para inducir respuestas sociales en agentes virtuales \cite{epley_anthropomorphism, nass_media_equation}. Este enfoque se basa en la tendencia humana a atribuir características humanas a entidades no humanas, lo que puede incrementar la percepción de presencia social, credibilidad y engagement.
 
-En el ámbito de la interacción humano-computadora, una estrategia común para inducir respuestas sociales en agentes virtuales ha sido el uso de antropomorfismo, entendido como la atribución de características humanas a entidades no humanas. Este enfoque se basa en la tendencia humana a interpretar agentes utilizando modelos sociales previamente adquiridos, lo cual puede aumentar la percepción de presencia social, credibilidad y engagement.
+Sin embargo, la literatura también ha evidenciado limitaciones importantes. En particular, el aumento del realismo puede generar expectativas más altas, las cuales, si no son satisfechas, resultan en evaluaciones negativas \cite{nowak_biocca_2003}. Este fenómeno se relaciona con el \textit{uncanny valley}, donde representaciones altamente humanas pero imperfectas generan incomodidad.
 
-Sin embargo, la efectividad del antropomorfismo depende de la coherencia entre las señales presentadas por el agente. Incrementos en el nivel de humanización pueden generar expectativas más altas por parte del usuario, las cuales, si no son satisfechas, resultan en evaluaciones negativas. Este fenómeno se relaciona con el \textit{uncanny valley}, donde representaciones altamente realistas pero imperfectas generan incomodidad y rechazo.
+Estos resultados sugieren que los enfoques basados en antropomorfismo son sensibles a inconsistencias entre apariencia y comportamiento, y no ofrecen un mecanismo claro para aislar cómo se genera la percepción de familiaridad en los usuarios.
 
-Estos resultados evidencian que los enfoques basados en humanización son sensibles a inconsistencias entre apariencia y comportamiento, lo que limita su robustez como mecanismo para inducir familiaridad.
+\subsection{Evidencia Experimental en HCI sobre Comportamiento de Agentes}
 
-\subsection{Interacción Social en Agentes y Evidencia Experimental en HCI}
+La investigación en HCI ha demostrado que el comportamiento conversacional de los agentes influye significativamente en la percepción del usuario. Trabajos sobre agentes relacionales han mostrado que estrategias como el diálogo social, la cortesía y la auto-revelación pueden incrementar la confianza y mejorar la experiencia de interacción \cite{bickmore_cassell_2001}.
 
-La investigación en HCI ha demostrado que el comportamiento conversacional de los agentes puede influir significativamente en la percepción del usuario. Trabajos sobre agentes relacionales han mostrado que estrategias como el uso de diálogo social, cortesía y auto-revelación pueden incrementar la confianza y mejorar la experiencia de interacción.
+Asimismo, estudios sobre adaptación del lenguaje y estilo conversacional han evidenciado que los patrones de comunicación del agente afectan la naturalidad y la calidad percibida de la interacción \cite{thomas_style_agent_2020}. Estos resultados indican que el comportamiento del agente, más allá de su apariencia, juega un papel central en la construcción de la experiencia del usuario.
 
-Asimismo, estudios sobre adaptación del lenguaje y estilo conversacional han evidenciado que los patrones de comunicación del agente afectan la naturalidad y la calidad percibida de la interacción. Estas investigaciones sugieren que el comportamiento del agente, más allá de su apariencia, juega un papel central en la construcción de la experiencia del usuario.
-
-No obstante, estos enfoques se centran principalmente en agentes genéricos o adaptativos, sin considerar la imitación de individuos específicos conocidos por el usuario, ni el papel de la familiaridad como mecanismo cognitivo en la percepción.
+No obstante, estos enfoques se han centrado principalmente en agentes genéricos o adaptativos, sin considerar la imitación de individuos específicos conocidos por el usuario. Además, suelen combinar múltiples dimensiones de diseño, dificultando la identificación de los mecanismos responsables de los efectos observados.
 
 \subsection{Alineación Conductual en la Interacción Conversacional}
 
-Más allá del antropomorfismo, la literatura en psicología social y lingüística ha demostrado que los humanos tienden a alinear su comportamiento durante la interacción. Este fenómeno incluye la adaptación de vocabulario, estructuras sintácticas y patrones conversacionales, y ha sido asociado con un aumento en la fluidez de la comunicación y la percepción de calidad de la interacción.
+La literatura en psicología social y lingüística ha mostrado que los humanos tienden a alinear su comportamiento durante la interacción, adaptando elementos como el vocabulario, la estructura sintáctica y los patrones conversacionales \cite{communication_accommodation_theory}. Este fenómeno ha sido asociado con una mejora en la calidad de la interacción y una mayor fluidez comunicativa.
 
-Estudios en interacción humano-agente han mostrado que estos patrones de alineación pueden ser identificados y medidos mediante características estilísticas del lenguaje, como la repetición léxica y la similitud estructural. Además, se ha observado que los usuarios no solo responden a estos patrones, sino que adaptan activamente su comportamiento al interactuar con sistemas, con el objetivo de facilitar la comunicación.
+En el contexto de interacción humano-agente, se ha demostrado que estos patrones de alineación pueden ser identificados y medidos mediante características lingüísticas, como la repetición léxica y la similitud estructural \cite{duplessis_alignment_2021}. Además, se ha observado que los usuarios adaptan activamente su comportamiento al interactuar con sistemas, sugiriendo que la alineación es un proceso bidireccional \cite{pragmatics_alignment_2010}.
 
-Este carácter bidireccional sugiere que la alineación emerge como un proceso dinámico, donde tanto el agente como el usuario contribuyen a la convergencia de estilos comunicativos.
+A pesar de estos avances, la literatura no ha explorado cómo la alineación conductual puede relacionarse con la generación de familiaridad, ni cómo puede utilizarse para activar modelos mentales asociados a personas conocidas.
 
-\subsection{Imitación Conductual y Activación de Modelos Mentales}
+\subsection{Síntesis Conceptual y Propuesta}
 
-En este contexto, la imitación conductual puede entenderse como la alineación de los patrones de interacción del agente con el modelo mental que el usuario posee de una persona conocida. En lugar de replicar la identidad del individuo, esta aproximación busca aproximar características observables de su comportamiento.
+En conjunto, la literatura sugiere que la percepción del usuario en la interacción con agentes virtuales puede ser influenciada por múltiples mecanismos, incluyendo el antropomorfismo, el comportamiento conversacional y la alineación lingüística. Asimismo, la psicología cognitiva y la cognición social indican que la familiaridad puede surgir tanto de la fluidez del procesamiento como de la activación de modelos mentales de individuos conocidos.
 
-Cuando el comportamiento del agente se ajusta a dichas expectativas, se reduce el esfuerzo necesario para interpretar sus respuestas, facilitando el procesamiento del lenguaje. Este aumento en la fluidez del procesamiento puede activar la representación mental del individuo conocido, generando una sensación de familiaridad.
+Sin embargo, estos enfoques no han sido integrados bajo un marco unificado que explique cómo la familiaridad puede emerger en la interacción con agentes a partir de su comportamiento. En particular, no se ha explorado si la imitación conductual de una persona conocida puede activar los modelos mentales del usuario, facilitando la interpretación de la interacción y generando una percepción de familiaridad.
 
-En este trabajo, la imitación conductual se operacionaliza a través de tres dimensiones textuales: vocabulario, estructura y patrones de respuesta. Estas dimensiones permiten capturar aspectos clave del comportamiento de forma observable y reproducible, sin depender de señales perceptuales como la apariencia o la voz.
-
-\subsection{Evaluación de la Percepción y la Alineación}
-
-La evaluación de agentes virtuales en HCI se basa comúnmente en estudios centrados en el usuario, donde los participantes interactúan con diferentes condiciones experimentales y reportan sus percepciones mediante cuestionarios estructurados. Este enfoque es adecuado para medir constructos subjetivos como confianza, naturalidad o percepción de conocimiento.
-
-Adicionalmente, investigaciones recientes han propuesto métricas objetivas para cuantificar la alineación conductual en el lenguaje, basadas en la repetición léxica y la similitud estructural. La combinación de medidas subjetivas y objetivas permite evaluar tanto la experiencia del usuario como el grado de alineación en el comportamiento del agente.
-
-\subsection{Brecha de Investigación}
-
-En conjunto, la literatura muestra que la familiaridad influye en la percepción del usuario y que puede ser inducida mediante antropomorfismo o mediante estrategias de interacción social. Sin embargo, estos enfoques presentan limitaciones, incluyendo la dificultad de aislar variables y la dependencia de señales perceptuales o de agentes genéricos.
-
-Por otro lado, aunque existe evidencia de que la alineación conductual influye en la interacción, no se ha explorado si este mecanismo puede activar los modelos mentales asociados a personas conocidas, ni cómo esto afecta la percepción de conocimiento previo en interacciones conversacionales breves.
-
-Este trabajo aborda esta brecha al investigar si la imitación conductual de una persona conocida puede inducir percepciones de familiaridad y conocimiento en usuarios que ya poseen una representación previa de dicho individuo.
+Este trabajo propone que la imitación conductual, entendida como la alineación de los patrones de interacción del agente con el modelo mental que el usuario posee de una persona conocida, puede reducir el esfuerzo inferencial, aumentar la fluidez del procesamiento y, en consecuencia, inducir una sensación de familiaridad que influye en la percepción del agente.
 
 
 
@@ -139,7 +123,12 @@ Este trabajo aborda esta brecha al investigar si la imitación conductual de una
 
 
 
-\section{Revisión de literatura (Re revised)}
+\section{Revisión de literatura (Re revised) (Scratchpad) (Final, final final)}
+Literatura en psicología cognitiva ha abordado previamente el funcionamiento de la familiaridad, donde se realiza una diferenciacion entre \textit{familiaridad} y \textit{recuerdo}, ya que la familiaridad se puede ver como una senal rapida y automatica, pero que a diferencia del recuerdo no trae ninguna clase de informacion contextual (En mis propias palabras, se puede considerar mas instintivo) \cite{mickes_recollection_2009}.
+Eventualmente se demuestra que estas senales pueden ser causadas por la facilidad de procesamineto de un estimulo (Entre mas "fluent" te volves en algo, mas familiar es), este fenomeno se conoce como \textit{processing fluency} \cite{mecklinger_fluency_2020}.
+
+Estops trabajos nos han dado una definicion de familiaridad como una inferencia subjetiva basada en senales cognitivas, tambien explicando como la familiaridad es importante para la evaluacion de informacion, incluyendo juicios de confianza, naturalidad, conocimiento. Estas investigaciones se han centrado en estimulos aslados o perceptuales, sin embargo no se ha considerado la emergencia de familiaridad en contextos de interacciones sociales, especialmente de agentes virtuales.
+
 
 
 
