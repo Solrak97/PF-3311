@@ -36,10 +36,15 @@
 
 \maketitle
 
-\begin{abstract}
-Resumen breve de la propuesta. Debe explicar el problema, el agente propuesto,
-el contexto de uso y el aporte esperado de la investigación.
-\end{abstract}
+\textbf{Resumen}
+
+Los agentes virtuales inteligentes actuales presentan limitaciones en su capacidad para generar interacciones que sean percibidas como familiares por el usuario. Aunque estos sistemas pueden producir respuestas coherentes y contextuales, suelen carecer de una correspondencia profunda con las expectativas cognitivas derivadas de experiencias previas con otras personas.
+
+Este trabajo propone un enfoque basado en la generación de comportamiento alineado con representaciones mentales que el usuario posee sobre individuos conocidos, con el objetivo de inducir percepciones de familiaridad de manera controlada. A diferencia de enfoques tradicionales como el antropomorfismo, la alineación reactiva o el mimetismo, esta propuesta busca activar modelos mentales preexistentes en el usuario mediante patrones conductuales específicos.
+
+El agente propuesto se implementa como un sistema conversacional basado en modelos de lenguaje, diseñado para reproducir estilos comunicativos asociados a una persona conocida. El estudio evaluará el impacto de este enfoque en la percepción de naturalidad, cercanía, conocimiento previo y respuestas emocionales del usuario.
+
+Se espera que los resultados contribuyan al diseño de agentes virtuales más naturales y cognitivamente alineados con los procesos de interpretación social del usuario.
 
 
 \section{Definición del Problema}
@@ -215,35 +220,30 @@ Las preguntas de investigación deben estar centradas en el agente como objeto d
 
 \subsection{Rol del agente}
 
-Describa qué papel cumple el agente.
+El agente propuesto cumple el rol de asistente conversacional diseñado para interactuar con el usuario en un contexto cotidiano. Su función principal es generar respuestas coherentes con el contenido de la conversación, incorporando además patrones conductuales asociados a una persona conocida por el usuario.
 
-Por ejemplo:
+A diferencia de asistentes virtuales tradicionales, el agente no se limita a responder consultas, sino que busca inducir una percepción de familiaridad mediante la adaptación de su estilo comunicativo. Para ello, utiliza expresiones, estructuras lingüísticas y dinámicas conversacionales que reflejan la representación mental que el usuario posee de un individuo específico.
 
-\begin{itemize}
-    \item Asistente.
-    \item Tutor.
-    \item Guía.
-    \item Compañero virtual.
-    \item Entrenador.
-    \item Facilitador de información.
-\end{itemize}
+El comportamiento del agente está orientado a generar interacciones que se perciban como naturales, cercanas y consistentes con experiencias previas del usuario en contextos sociales. En este sentido, el agente actúa como un intermediario entre un modelo de lenguaje general y una representación particular, alineando su conducta con patrones previamente conocidos por el usuario.
 
-Explique también cómo se comporta: si responde preguntas, da recomendaciones,
-monitorea progreso, ofrece retroalimentación, guía actividades, etc.
+Este rol permite explorar cómo la incorporación de comportamiento basado en representaciones previas puede influir en la percepción del agente, constituyendo el eje central de la investigación propuesta.
 
 \subsection{Contexto de uso}
 
-Explique en qué situación interactúa el usuario con el agente.
+El agente interactúa con el usuario a través de una interfaz conversacional basada en texto, en un entorno digital controlado. La interacción se desarrolla en forma de conversaciones breves, orientadas a la resolución de consultas simples o al intercambio de información general.
 
-Incluya:
+El usuario objetivo corresponde a personas familiarizadas con el uso de asistentes virtuales o sistemas conversacionales, tales como estudiantes, usuarios de plataformas digitales o personas que utilizan herramientas de interacción basada en lenguaje natural en su vida cotidiana.
 
-\begin{itemize}
-    \item Usuario objetivo.
-    \item Lugar o entorno de uso.
-    \item Tipo de interacción.
-    \item Frecuencia esperada de uso.
-    \item Necesidades principales del usuario.
-\end{itemize}
+El contexto de interacción está diseñado para simular situaciones comunes de comunicación digital, donde el usuario espera respuestas rápidas y comprensibles. En este entorno, el agente no busca reemplazar completamente la interacción humana, sino generar una experiencia que se perciba como natural y cognitivamente familiar.
+
+Adicionalmente, el uso de una interfaz textual sin representación visual permite aislar el efecto del comportamiento del agente sobre la percepción del usuario, evitando que factores como la apariencia o el diseño visual influyan en la interpretación de la interacción.
+
+Este contexto facilita la evaluación de cómo la incorporación de patrones conductuales asociados a una persona conocida influye en la percepción del agente, manteniendo condiciones controladas para el análisis de los resultados.
+
+
+
+
+
 
 \section{Arquitectura Técnica Preliminar}
 
