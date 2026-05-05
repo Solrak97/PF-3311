@@ -199,22 +199,23 @@ Este enfoque abre la posibilidad de diseñar agentes virtuales capaces de genera
 
 \section{Preguntas de Investigación}
 
-Las preguntas de investigación deben estar centradas en el agente como objeto de estudio.
-\subsection{RQ1}
+Las preguntas de investigación se centran en cómo el comportamiento del agente influye en la percepción del usuario durante la interacción.
 
-\textbf{RQ1:} ¿En qué medida la incorporación de comportamientos de imitación de una persona conocida en un Agente inteligente virtual influye en la percepción de naturalidad, cercanía y conocimiento previo por parte del usuario durante una conversación breve?
 
-\subsection{RQ2}
+\begin{itemize}
 
-\textbf{RQ2:} ¿En qué medida un Agente inteligente virtual con comportamientos de imitación de una persona conocida influye en las respuestas emocionales reportadas por los usuarios, en comparación con un agente sin dichos comportamientos?
+  \item \textbf{RQ1:} ¿En qué medida la incorporación de comportamientos basados en familiaridad conductual en un Agente Virtual Inteligente influye en la percepción de comodidad y naturalidad por parte del usuario durante la interacción?
 
-\subsection{RQ3}
 
-\textbf{RQ3:} ¿En qué medida un Agente inteligente virtual con comportamientos de imitación de una persona conocida es percibido como poseedor de conocimiento previo sobre el usuario, en comparación con un agente sin dichos comportamientos?
+  \item \textbf{RQ2:} ¿En qué medida los usuarios son capaces de percibir señales de familiaridad en un Agente Virtual Inteligente en ausencia de indicaciones explícitas sobre la identidad representada?
 
-\subsection{RQ4 Opcional}
 
-\textbf{RQ4:} ¿En qué medida un Agente inteligente virtual con comportamientos de imitación es percibido como similar a la persona conocida que intenta representar por parte del usuario?
+  \item \textbf{RQ3:} ¿Qué tipo de respuesta emocional generan los agentes con comportamientos basados en familiaridad conductual, en términos de cercanía percibida o incomodidad, en comparación con agentes sin dichos comportamientos?
+
+
+  \item \textbf{RQ4:} ¿En qué medida un Agente Virtual Inteligente con comportamientos basados en familiaridad conductual es percibido como poseedor de conocimiento previo sobre el usuario?
+  
+\end{itemize}
 
 \section{Objetivos del Agente}
 
@@ -247,20 +248,90 @@ Este contexto facilita la evaluación de cómo la incorporación de patrones con
 
 \section{Arquitectura Técnica Preliminar}
 
-Esta sección debe describir las posibles herramientas, tecnologías y decisiones técnicas
-del agente propuesto.
+\subsection{Descripción general}
 
-\subsection{Descripción general de la arquitectura}
+El sistema propuesto se compone de dos capas principales: una aplicación cliente encargada de la interacción con el usuario y un backend de inteligencia artificial responsable del procesamiento y generación de respuestas.
 
-Incluya aquí una descripción general del sistema.
+La aplicación cliente, desarrollada utilizando el motor Godot, actúa como la única interfaz de comunicación con el usuario. Esta capa gestiona la entrada de datos (texto y voz), la representación visual del agente y la presentación de las respuestas.
 
-Ejemplo:
+El backend de inteligencia artificial opera como una capa de servicios independiente que procesa las solicitudes del usuario, gestiona el contexto de la conversación y construye respuestas estructuradas. Esta separación permite aislar la lógica de interacción de la lógica de generación de comportamiento, facilitando el control experimental del sistema.
 
-\begin{quote}
-El sistema estará compuesto por una interfaz de usuario, un módulo de procesamiento
-del lenguaje natural, un modelo de inteligencia artificial, una base de conocimiento,
-servicios de voz opcionales y una representación visual del agente.
-\end{quote}
+\subsection{Aplicación cliente: Godot}
+
+La aplicación cliente será desarrollada utilizando el motor de videojuegos Godot, el cual permite integrar interfaces conversacionales, animación de personajes y procesamiento de entrada/salida en tiempo real.
+
+Dentro de esta capa, se implementa el agente como una entidad con representación visual básica (embodiment), incluyendo animaciones simples, expresiones y sincronización con el habla. Además, se gestiona un controlador de conversación encargado de coordinar la entrada del usuario, la comunicación con el backend y la reproducción de las respuestas.
+
+Godot actúa como la única capa que interactúa directamente con el usuario, permitiendo capturar entradas, renderizar el agente y reproducir audio o texto de salida.
+
+\subsection{Backend de Inteligencia Artificial}
+
+El backend está compuesto por múltiples servicios especializados que operan de manera orquestada para procesar la interacción.
+
+\subsubsection{Capa de orquestación}
+
+La capa de orquestación es responsable de recibir las solicitudes provenientes de la aplicación cliente, gestionar el flujo de información entre los distintos módulos y construir la respuesta final del sistema.
+
+Esta capa coordina el uso del modelo de lenguaje, la memoria, los servicios de voz y los módulos de comportamiento, asegurando consistencia en la generación de respuestas.
+
+\subsubsection{Modelo de lenguaje: Gemini}
+
+El núcleo del sistema está basado en un modelo de lenguaje grande (LLM), específicamente Gemini, el cual se encarga de interpretar el contexto de la conversación, realizar razonamiento y generar respuestas en lenguaje natural.
+
+Gemini permite producir respuestas coherentes y adaptables, siendo el componente principal para la generación de contenido textual dentro del sistema.
+
+\subsubsection{Reconocimiento de voz: Whisper AI}
+
+Para la entrada de voz, el sistema utiliza Whisper AI como servicio de reconocimiento de voz (Speech-to-Text). Este componente convierte la entrada de audio del usuario en texto, permitiendo su procesamiento por el modelo de lenguaje.
+
+La inclusión de este módulo permite soportar interacción multimodal sin afectar la arquitectura principal del sistema.
+
+\subsubsection{Síntesis de voz: Edge-TTS}
+
+El sistema incorpora Edge-TTS como servicio de síntesis de voz (Text-to-Speech), permitiendo convertir las respuestas generadas en audio.
+
+Este componente facilita la generación de una experiencia más natural durante la interacción, especialmente cuando se combina con la representación visual del agente en la aplicación cliente.
+
+\subsubsection{Memoria: Memoria}
+
+El sistema utiliza un servicio de memoria denominado \textit{Memoria}, desarrollado a partir de la propuesta LLMWiki de Anrej Karphaty, encargado de almacenar y recuperar información relevante sobre la interacción.
+
+Este componente permite mantener contexto a largo plazo, incluyendo historial de conversación, preferencias del usuario y datos relevantes que pueden influir en la generación de respuestas.
+
+La integración de Memoria permite enriquecer el comportamiento del agente más allá del contexto inmediato, facilitando una interacción más coherente y consistente.
+
+\subsubsection{Sistema de habilidades y control de comportamiento}
+
+El backend incluye un sistema de habilidades basado en configuraciones estructuradas (por ejemplo, archivos YAML), que permite definir comportamientos específicos del agente.
+
+Sobre este sistema se implementa un módulo de control de comportamiento, el cual constituye el elemento central de la propuesta. Este módulo permite ajustar el estilo comunicativo del agente en función de patrones asociados a una persona conocida por el usuario.
+
+Para ello, se definen perfiles conductuales que incluyen características como tono, estructura del lenguaje, expresiones recurrentes y estilo conversacional. Estos perfiles son utilizados para guiar la generación del modelo de lenguaje mediante técnicas de prompting estructurado o ajustes del contexto.
+
+A diferencia de enfoques basados en alineación reactiva o mimetismo, este módulo no depende exclusivamente del comportamiento del usuario durante la interacción, sino que se basa en representaciones previas, permitiendo explorar la activación de modelos mentales existentes en el usuario.
+
+\subsection{Flujo de interacción}
+
+El flujo de interacción del sistema sigue los siguientes pasos:
+
+\begin{enumerate}
+    \item El usuario introduce texto o voz a través de la aplicación cliente en Godot.
+    \item La aplicación envía la solicitud al backend junto con el contexto de la conversación.
+    \item La capa de orquestación procesa la solicitud, utilizando Gemini, Memoria y el módulo de comportamiento.
+    \item Se genera una respuesta estructurada que puede incluir texto, audio y acciones del agente.
+    \item La respuesta es enviada de vuelta a la aplicación cliente.
+    \item Godot renderiza la respuesta mediante texto, voz y animaciones del agente.
+\end{enumerate}
+
+\subsection{Justificación de la arquitectura}
+
+La arquitectura propuesta permite separar claramente la interacción del usuario de la lógica de generación de comportamiento, lo cual es fundamental para el objetivo de la investigación.
+
+El uso de Godot facilita el control de la experiencia de usuario y la representación visual del agente, mientras que el backend modular permite integrar múltiples componentes de inteligencia artificial de manera flexible.
+
+La incorporación de un módulo explícito de control de comportamiento permite ir más allá de enfoques tradicionales basados en adaptación reactiva, habilitando la generación de comportamiento alineado con representaciones previas. Esto resulta coherente con el objetivo de explorar cómo se pueden inducir percepciones de familiaridad mediante la activación de modelos mentales en el usuario.
+
+
 
 \subsection{Diagrama preliminar}
 
@@ -281,80 +352,6 @@ servicios de voz opcionales y una representación visual del agente.
 
 %%\end{figure}
 %%
-
-\subsection{Soluciones de inteligencia artificial}
-
-Explique qué técnicas de IA se utilizarán.
-
-Ejemplos:
-
-\begin{itemize}
-    \item Modelos de lenguaje grandes.
-    \item Sistemas basados en recuperación de información.
-    \item Agentes conversacionales.
-    \item Modelos de recomendación.
-    \item Clasificadores o modelos predictivos.
-\end{itemize}
-
-Justifique la elección con base en literatura académica.
-
-\subsection{Motor gráfico o plataforma de visualización}
-
-Explique si usará una plataforma como Unity, Unreal Engine, WebGL, una aplicación web,
-una aplicación móvil u otra tecnología.
-
-\subsection{Servicios de voz}
-
-Indique si el agente necesita:
-
-\begin{itemize}
-    \item Reconocimiento automático de voz.
-    \item Síntesis de voz.
-    \item Entrada por texto solamente.
-    \item Interacción multimodal.
-\end{itemize}
-
-\subsection{Representación visual del agente}
-
-Describa cómo se representa visualmente el agente.
-
-Ejemplos:
-
-\begin{itemize}
-    \item Avatar 2D.
-    \item Avatar 3D.
-    \item Personaje humanoide.
-    \item Mascota virtual.
-    \item Interfaz sin cuerpo físico.
-\end{itemize}
-
-Explique por qué esa representación es adecuada para el problema y los usuarios.
-
-\subsection{Entorno de despliegue}
-
-Indique dónde funcionará el sistema:
-
-\begin{itemize}
-    \item PC.
-    \item Móvil.
-    \item Web.
-    \item Realidad virtual.
-    \item Realidad aumentada.
-    \item Realidad extendida.
-\end{itemize}
-
-Justifique la elección según el contexto de uso.
-
-\section{Conclusiones Preliminares}
-
-Resuma brevemente:
-
-\begin{itemize}
-    \item El problema abordado.
-    \item El agente propuesto.
-    \item La relevancia de la investigación.
-    \item Las principales brechas que se intentan abordar.
-\end{itemize}
 
 \printbibliography
 \end{document}
