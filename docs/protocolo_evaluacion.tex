@@ -1,0 +1,118 @@
+\documentclass[12pt]{article}
+
+\usepackage[letterpaper, margin=1in]{geometry}
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{setspace}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{hyperref}
+
+\onehalfspacing
+
+\title{
+\textbf{Diseño Metodológico para la Evaluación de Familiaridad Conductual en Agentes Virtuales Inteligentes}\\
+\large Entregable 2
+}
+
+\author{
+Luis Carlos Quesada Rodríguez\\
+Universidad de Costa Rica\\
+Escuela de Ciencias de la Computación e Informática
+}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Apartado A: Definición de Condiciones}
+
+\subsection{Condición Experimental: Condición A}
+
+La condición experimental corresponde a un Agente Virtual Inteligente que incorpora patrones de familiaridad conductual asociados a una persona conocida por el usuario. El agente utiliza una representación visual genérica, una interfaz conversacional basada en texto y voz, y un comportamiento comunicativo guiado por perfiles conductuales previamente definidos. Estos perfiles incluyen patrones de lenguaje, tono, expresiones recurrentes y estructuras conversacionales inspiradas en una persona familiar para el usuario, sin utilizar señales explícitas de identidad o similitud física.
+
+\subsection{Condición de Control: Condición B}
+
+La condición de control corresponde al mismo Agente Virtual Inteligente utilizando la misma interfaz, representación visual, voz y tareas experimentales. Sin embargo, en esta condición el agente utiliza comportamiento conversacional genérico, sin incorporar patrones de familiaridad conductual asociados a una persona conocida.
+
+\subsection{Justificación}
+
+La comparación entre ambas condiciones permite aislar el efecto de la familiaridad conductual, ya que los elementos visuales, técnicos y contextuales permanecen constantes entre condiciones. La variable experimental principal corresponde al comportamiento conversacional del agente, permitiendo evaluar si los patrones de familiaridad conductual influyen en la percepción del usuario.
+
+\section{Apartado B: Matriz de Consistencia Metodológica}
+
+\begin{longtable}{|p{3.2cm}|p{3.5cm}|p{4cm}|p{4.2cm}|}
+\hline
+\textbf{Pregunta de Investigación} & \textbf{Variable o Constructo} & \textbf{Instrumento Validado} & \textbf{Tarea Asociada} \\
+\hline
+RQ1: Inferencia de patrones de familiaridad conductual & Detección implícita de familiaridad conductual & Ítems Likert personalizados sobre familiaridad y reconocimiento conductual & Conversación breve con el agente sin revelar identidad representada. \\
+\hline
+RQ2: Naturalidad y presencia social & Naturalidad percibida y presencia social & Godspeed / meCUE & Interacción conversacional con el agente para resolver una consulta breve. \\
+\hline
+RQ3: Respuesta afectiva & Valencia emocional y cercanía percibida & SAM (Self-Assessment Manikin) & Evaluación emocional posterior a la interacción. \\
+\hline
+RQ4: Conocimiento contextual previo percibido & Perceived knowledge / conocimiento contextual percibido & Ítems adaptados de Poletaykina et al. (2025) & Evaluación post-interacción sobre si el agente parece conocer o comprender al usuario. \\
+\hline
+\caption{Matriz de consistencia metodológica.}
+\end{longtable}
+
+\section{Apartado C: Protocolo Experimental HTML}
+
+El protocolo experimental será implementado mediante un archivo HTML adaptado a partir de la guía proporcionada. Este archivo incluirá la identificación formal del estudio, el consentimiento informado, la asignación aleatoria de condición, las instrucciones de la tarea, el listado de cuestionarios posteriores a la interacción y el plan de anonimización.
+
+\subsection{Identificación del Estudio}
+
+El protocolo incluirá el nombre del estudio, el nombre del investigador, la unidad académica responsable y el contexto del curso. Cada participante será identificado mediante un ID anónimo generado al inicio del procedimiento.
+
+\subsection{Consentimiento Informado}
+
+Antes de iniciar la interacción, el participante deberá aceptar un consentimiento informado. Este consentimiento indicará que la participación es voluntaria, que puede retirarse del estudio en cualquier momento y que los registros de conversación serán utilizados únicamente con fines académicos.
+
+\subsection{Asignación de Condición}
+
+El protocolo asignará aleatoriamente a cada participante a la Condición A o Condición B. La condición asignada no será revelada al participante para evitar sesgos de inducción.
+
+\subsection{Instrucciones al Participante}
+
+Las instrucciones serán neutrales y objetivas. No se indicará que el agente intenta representar o imitar a una persona conocida. El participante únicamente recibirá la instrucción de interactuar con el agente para resolver una consulta breve y completar posteriormente los cuestionarios.
+
+\subsection{Cuestionarios Post-Interacción}
+
+Después de la interacción, el participante completará cuestionarios relacionados con naturalidad, presencia social, respuesta afectiva, familiaridad conductual y conocimiento contextual percibido.
+
+\subsection{Anonimización y Resguardo de Datos}
+
+Los datos serán asociados únicamente a un ID anónimo. Los logs de conversación se almacenarán de forma segura y no incluirán nombres reales ni datos personales innecesarios. La información será utilizada únicamente para fines académicos.
+
+\section{Apartado D: Justificación Teórica en HCI}
+
+\subsection{Embodiment y Soporte No Verbal}
+
+El agente utilizará una representación visual genérica para mantener una forma mínima de embodiment sin introducir señales explícitas de identidad visual. Esta decisión permite conservar soporte visual para la interacción, evitando que la familiaridad sea inducida por la apariencia del agente.
+
+\subsection{Comportamiento Relacional}
+
+El diseño del agente se apoya en la idea de que ciertos comportamientos conversacionales pueden influir en la percepción de cercanía, confianza y naturalidad. Por ello, la condición experimental incorpora patrones comunicativos asociados a una persona conocida, manteniendo constantes los demás elementos de la interacción.
+
+\subsection{Familiaridad Conductual y Modelos Mentales}
+
+La propuesta se basa en que los usuarios construyen modelos mentales de personas conocidas y que estos pueden ser activados mediante señales conductuales. En este experimento, se evalúa si patrones conversacionales asociados a una persona familiar pueden inducir percepciones de familiaridad sin revelar explícitamente la identidad representada.
+
+\subsection{Efecto Proteus}
+
+El diseño también considera que la percepción del agente puede influir en el comportamiento del usuario durante la interacción. En este sentido, el Efecto Proteus se considera como una posible fuente de variación en la conducta del participante, especialmente si el agente es percibido como más cercano, familiar o socialmente presente.
+
+\section{Archivos Entregados}
+
+El repositorio de GitHub incluirá los siguientes archivos dentro de la carpeta \texttt{/docs}:
+
+\begin{itemize}
+    \item Reporte escrito en formato PDF o \texttt{.tex}.
+    \item Archivo HTML adaptado del protocolo experimental.
+    \item Recursos visuales o diagramas necesarios para documentar el experimento.
+\end{itemize}
+
+\end{document}
