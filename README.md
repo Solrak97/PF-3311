@@ -174,11 +174,17 @@ The system is designed to evaluate:
 | Component | Technology |
 |----------|--------|
 | Client | Godot Engine |
-| LLM | Gemini |
+| LLM | Gemini (proposal) / **Ollama** (local prototype in `src/backend`) |
 | STT | Whisper AI |
 | TTS | Edge-TTS |
 | Memory | Memoria |
 | Behavior | YAML + Prompting |
+
+---
+
+## Local prototype (`src/`)
+
+An interactive **Buddy** loop lives under [`src/`](src/README.md): a Godot client talks to a Python backend over **WebSocket** (streaming assistant text, animation hints, and **Edge-TTS** audio). See [`src/README.md`](src/README.md) for setup and run commands.
 
 ---
 
