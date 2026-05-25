@@ -1,208 +1,186 @@
-# Familiarity-Driven AI Agent
+# PF-3311 — Familiaridad conductual en agentes virtuales inteligentes
 
-## Overview
+**Efecto de la familiaridad conductual en agentes conversacionales sobre la percepción del usuario**
 
-This project explores a novel approach to human-agent interaction based on behavioral familiarity.
-
-Modern AI agents are capable of generating coherent and context-aware responses, but they often fail to produce interactions that feel personally meaningful, natural, or familiar to users. This project investigates whether it is possible to improve user perception by aligning agent behavior with mental models that users already possess about known individuals.
-
-Instead of adapting to the current user dynamically, the agent is designed to behave as if it were a familiar person, leveraging patterns of communication associated with that individual.
-
----
-
-## Research Motivation
-
-Human social interaction relies heavily on mental models of other people. These models allow us to:
-
-- Predict behavior
-- Interpret intentions
-- Infer emotional states
-- Reduce uncertainty in communication
-
-Familiarity plays a key role in this process.
-
-However, current AI agents:
-
-- Adapt reactively to user input
-- Use generic conversational styles
-- Do not leverage pre-existing social knowledge
-
-This project proposes that:
-
-> Familiarity can be induced by aligning agent behavior with a known individual, triggering existing mental models in the user.
+| | |
+|---|---|
+| **Código** | PF-3311 |
+| **Investigador principal** | Luis Carlos Quesada Rodríguez |
+| **Unidad** | Escuela de Ciencias de la Computación e Informática, Universidad de Costa Rica |
+| **Estado** | Investigación y prototipado |
 
 ---
 
-## Core Idea
+## Resumen
 
-Instead of:
-User → Agent adapts to User (reactive alignment)
+Los agentes conversacionales actuales suelen sonar coherentes, pero poco **familiares** a nivel cognitivo: adaptan su estilo al usuario en el momento o usan patrones genéricos, sin apoyarse en **modelos mentales** que la persona ya tiene sobre alguien conocido.
 
+Este proyecto explora si un agente puede inducir percepción de familiaridad alineando su **comportamiento comunicativo** (lenguaje, tono, ritmo, expresiones) con una persona de referencia — **sin** depender de la apariencia ni de revelar la identidad modelada. La familiaridad debería emerger del comportamiento, no del avatar.
 
-We explore:
+```
+Usuario → Agente con patrones de persona conocida → Se activa el modelo mental del usuario
+```
 
+En contraste con la alineación reactiva habitual:
 
-User → Agent behaves like Known Person → User activates mental model
-
-
-This shifts the interaction from:
-
-- reactive adaptation  
-to  
-- model-driven perception
+```
+Usuario → Agente se adapta al usuario → Estilo genérico o superficial
+```
 
 ---
 
-## System Architecture
+## Preguntas de investigación
 
-The system is divided into two main layers:
+| ID | Pregunta |
+|----|----------|
+| **RQ1** | ¿En qué medida los usuarios infieren familiaridad conductual sin indicaciones explícitas de identidad? |
+| **RQ2** | ¿Cómo influyen esos patrones en naturalidad y presencia social percibidas? |
+| **RQ3** | ¿Qué respuesta afectiva (valencia, cercanía) generan frente a un agente sin esos patrones? |
+| **RQ4** | ¿El agente se percibe con conocimiento contextual previo sobre el usuario? |
 
-### 1. Client Application (Godot)
-
-- Handles all user interaction
-- Displays the agent (visual embodiment)
-- Captures input (text / voice)
-- Renders responses (text, voice, animation)
-
-> Godot is the only layer that directly interacts with the user.
+Detalle metodológico e instrumentos: [`docs/protocolo_evaluacion.tex`](docs/protocolo_evaluacion.tex) (PDF: [`docs/protocolo_de_evaluacion.pdf`](docs/protocolo_de_evaluacion.pdf)).
 
 ---
 
-### 2. AI Backend
+## Diseño experimental
 
-The backend processes requests and generates responses.
+Estudio **intra-sujetos** con **contrabalanceo** de orden:
 
-#### Components:
+| Grupo | Orden |
+|-------|--------|
+| 1 | Condición A → Condición B |
+| 2 | Condición B → Condición A |
 
-- **Orchestration Layer**
-  - Coordinates all modules
-  - Builds structured responses
+- **Condición A (experimental):** mismo avatar y voz neutros; conversación con **patrones de familiaridad conductual** y recuperación contextual asociada al perfil modelado.
+- **Condición B (control):** misma interfaz, avatar, voz y tarea; comportamiento conversacional **genérico**, sin perfil de familiaridad.
 
-- **LLM (Gemini)**
-  - Core reasoning and response generation
+Cada sesión: conversación semi-estructurada (~5 min) sobre temas cotidianos. Tras cada interacción: Godspeed, SAM, Likert de familiaridad conductual e ítems de conocimiento contextual percibido. Al cierre: entrevista cualitativa breve.
 
-- **Speech-to-Text (Whisper AI)**
-  - Converts voice input into text
-
-- **Text-to-Speech (Edge-TTS)**
-  - Generates voice output
-
-- **Memory System (Memoria)**
-  - Stores long-term interaction data
-  - Provides context beyond the current conversation
-
-- **Skill System (YAML-based)**
-  - Defines structured behaviors and rules
+**Guía operativa para el investigador en sala:** [`docs/guia_procedimiento.html`](docs/guia_procedimiento.html) (checklist, guiones, manejo de datos anonimizados).
 
 ---
 
-### 3. Behavioral Control Module
+## Arquitectura del sistema
 
-This is the key component of the project.
+### Visión (propuesta de investigación)
 
-It modifies the agent’s behavior to reflect:
+Dos capas desacopladas:
 
-- Language style
-- Tone
-- Expression patterns
-- Conversational structure
+| Capa | Rol |
+|------|-----|
+| **Cliente (Godot)** | Única interfaz con el usuario: entrada texto/voz, embodiment 3D, animación, reproducción de audio |
+| **Backend (Python)** | Orquestación, LLM, STT/TTS, memoria, perfiles conductuales (YAML + prompting) |
 
-based on a **known individual**.
+Componentes previstos en la propuesta ([`docs/proposal.tex`](docs/proposal.tex)):
 
-Unlike traditional approaches:
-
-| Approach         | Behavior Source        |
-|----------------|----------------------|
-| Alignment       | Current user          |
-| Mimicry         | Observed signals      |
-| This project    | Pre-existing mental model |
-
----
-
-## Interaction Flow
-
-1. User provides input (text or voice)
-2. Godot sends request to backend
-3. Backend processes:
-   - Context
-   - Memory
-   - Behavioral profile
-4. LLM generates response
-5. Behavioral module adjusts output
-6. Response returned to Godot
-7. Agent displays:
-   - Text
-   - Voice
-   - Animation
-
----
-
-## Embodiment Strategy
-
-The agent includes a generic visual representation, but:
-
-- It does NOT resemble the target person
-- It avoids identity-based cues
-
-This ensures that:
-
-> Familiarity emerges from behavior, not appearance
-
----
-
-## Research Questions
-
-The system is designed to evaluate:
-
-- Does behavioral familiarity increase perceived naturalness?
-- Can users detect familiarity without explicit cues?
-- What emotional responses are triggered?
-- Is the agent perceived as having prior knowledge?
-
----
-
-## Goals
-
-- Explore familiarity as a controllable design variable
-- Move beyond reactive adaptation in AI systems
-- Build agents that feel more socially meaningful
-
----
-
-## Tech Stack
-
-| Component | Technology |
-|----------|--------|
-| Client | Godot Engine |
-| LLM | Gemini (proposal) / **Ollama** (local prototype in `src/backend`) |
-| STT | Whisper AI |
+| Módulo | Tecnología (objetivo) |
+|--------|------------------------|
+| Razonamiento | Gemini |
+| STT | Whisper |
 | TTS | Edge-TTS |
-| Memory | Memoria |
-| Behavior | YAML + Prompting |
+| Memoria a largo plazo | Memoria (estilo LLM-wiki / Karpathy) |
+| Control conductual | Perfiles YAML + capa de comportamiento |
+
+El avatar es **genérico** a propósito: no debe parecerse a la persona modelada; la hipótesis se prueba vía conducta, no identidad visual.
+
+### Prototipo implementado (`src/`)
+
+Implementación actual para desarrollo y pruebas locales del flujo **Buddy**:
+
+| Componente | Implementación actual |
+|------------|------------------------|
+| Cliente | Godot 4.6 — [`src/familiar_godot/`](src/familiar_godot/) |
+| Backend | FastAPI + WebSocket — [`src/backend/`](src/backend/) |
+| LLM | **Ollama** (local; intercambiable por API compatible) |
+| TTS | **Edge-TTS** (audio MP3 por frames binarios en WebSocket) |
+| STT / VAD | Interfaces + Whisper (`faster-whisper`); mic en roadmap |
+| Memoria / perfiles YAML | Pendiente |
+
+Flujo del prototipo:
+
+1. El usuario escribe en Godot (voz planificada).
+2. WebSocket → backend: streaming de texto (Ollama), metadatos de animación, TTS en segmentos.
+3. Godot muestra el texto, reproduce audio en cola y refleja `clip_id` de animación.
+
+Instrucciones de ejecución: [`src/README.md`](src/README.md).
 
 ---
 
-## Local prototype (`src/`)
+## Estructura del repositorio
 
-An interactive **Buddy** loop lives under [`src/`](src/README.md): a Godot client talks to a Python backend over **WebSocket** (streaming assistant text, animation hints, and **Edge-TTS** audio). See [`src/README.md`](src/README.md) for setup and run commands.
-
----
-
-## Status
-
-This project is currently in the research and prototyping phase.
-
----
-
-## Future Work
-
-- User studies and evaluation
-- Behavioral profile refinement
-- Multi-person modeling
-- Cross-domain applications
+```
+PF-3311/
+├── docs/
+│   ├── proposal.tex              # Propuesta de investigación
+│   ├── protocolo_evaluacion.tex  # Diseño metodológico y condiciones A/B
+│   ├── protocolo_de_evaluacion.pdf
+│   ├── guia_procedimiento.html   # Guía del investigador en sesión
+│   └── references.bib
+├── src/
+│   ├── familiar_godot/           # Cliente Godot
+│   └── backend/                  # Servicio Python (uv)
+└── README.md
+```
 
 ---
 
-## Author
+## Inicio rápido (prototipo)
 
-Developed as part of a research proposal on familiarity-driven interaction in AI agents.
+Requisitos: [Ollama](https://ollama.com/), [uv](https://docs.astral.sh/uv/), Godot 4.6+, red para Edge-TTS.
+
+```bash
+# 1. Modelo local (ajuste OLLAMA_MODEL en .env si usa otro tag)
+ollama pull llama3.1
+
+# 2. Backend
+cd src/backend
+uv sync
+copy .env.example .env   # Windows; en Unix: cp .env.example .env
+uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
+# 3. Godot: abrir src/familiar_godot/project.godot y ejecutar la escena principal
+```
+
+Prueba por terminal:
+
+```bash
+cd src/backend
+uv run python scripts/test_ws_turn.py "Hola, ¿cómo estás?"
+```
+
+---
+
+## Documentación
+
+| Documento | Contenido |
+|-----------|-----------|
+| [`docs/proposal.tex`](docs/proposal.tex) | Marco teórico, problema, arquitectura objetivo, RQs |
+| [`docs/protocolo_evaluacion.tex`](docs/protocolo_evaluacion.tex) | Condiciones A/B, diseño, matriz metodológica |
+| [`docs/guia_procedimiento.html`](docs/guia_procedimiento.html) | Protocolo en sala, consentimiento, cuestionarios, cierre |
+| [`src/README.md`](src/README.md) | Detalle técnico del prototipo |
+| [`src/backend/README.md`](src/backend/README.md) | API, variables de entorno, dependencias |
+
+---
+
+## Obetivos del proyecto
+
+- Tratar la **familiaridad como variable de diseño** controlable en agentes conversacionales.
+- Ir más allá de la adaptación reactiva superficial hacia la **activación de modelos mentales preexistentes**.
+- Construir un banco experimental (agente + protocolo + instrumentos) para estudios con usuarios en condiciones A/B.
+
+---
+
+## Trabajo en curso
+
+- [ ] Perfiles conductuales (YAML) y capa de comportamiento sobre el LLM
+- [ ] Integración de memoria contextual (Memoria o equivalente)
+- [ ] Entrada por voz (Whisper + endpointing / VAD)
+- [ ] Avatar 3D y animaciones ligadas a `anim.command`
+- [ ] Modo experimental A/B conmutables desde configuración
+- [ ] Estudios con participantes según [`docs/guia_procedimiento.html`](docs/guia_procedimiento.html)
+
+---
+
+## Referencia
+
+Proyecto de investigación — Universidad de Costa Rica. Propuesta y protocolo en `docs/`; implementación de referencia en `src/`.

@@ -1,4 +1,8 @@
-# `src/` layout
+# Prototipo técnico (`src/`)
+
+Contexto del estudio PF-3311, diseño experimental y documentación: ver [README principal](../README.md).
+
+## Layout
 
 | Path | Role |
 |------|------|
