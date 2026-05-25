@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evaluación de Familiaridad Conductual en Agentes Virtuales Inteligentes</title>
+  <style>
+    :root { --primary:#0F3B82; --primary-light:#2A5BAA; --bg-body:#F4F7F6; --bg-card:#FFFFFF; --text-main:#333333; --text-muted:#666666; --border-color:#E2E8F0; --radius:8px; --shadow:0 4px 6px rgba(0,0,0,0.05); }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg-body);color:var(--text-main);line-height:1.6;padding:40px 20px;display:flex;justify-content:center}
+    .container{max-width:800px;width:100%}
+    .card{background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow);padding:40px;border:1px solid var(--border-color)}
+    h1{color:var(--primary);font-size:1.8rem;margin-bottom:8px;border-bottom:2px solid var(--primary-light);padding-bottom:10px}
+    h2{color:var(--primary-light);font-size:1.3rem;margin-top:30px;margin-bottom:15px}
+    h3{color:var(--text-main);font-size:1.1rem;margin-top:20px;margin-bottom:10px}
+    p{margin-bottom:15px}
+    ul{margin-bottom:15px;padding-left:20px}
+    li{margin-bottom:8px}
+    .metadata-box{background:#F8FAFC;border-left:4px solid var(--primary);padding:15px;margin-bottom:30px;border-radius:0 var(--radius) var(--radius) 0}
+    .metadata-box p{margin-bottom:5px;font-size:.95rem}
+    .metadata-box strong{color:var(--primary)}
+    .quote{background:#F1F5F9;font-style:italic;padding:15px;border-radius:var(--radius);margin:15px 0;color:#475569}
+    .checkbox-list{list-style:none;padding-left:0}
+    .checkbox-list li{display:flex;align-items:flex-start;margin-bottom:10px}
+    .checkbox-list li::before{content:'☐';font-size:1.2rem;margin-right:10px;color:var(--primary-light);line-height:1.2}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+
+      <h1>Guía de Procedimiento del Investigador</h1>
+      <p style="font-size:1.1rem;color:var(--text-muted);margin-bottom:25px;">
+        Evaluación de Familiaridad Conductual en Agentes Virtuales Inteligentes
+      </p>
+
+      <div class="metadata-box">
+        <p><strong>Estudio:</strong> Evaluación de percepción social y familiaridad conductual en agentes virtuales inteligentes</p>
+        <p><strong>Código de Proyecto:</strong> PF-3311</p>
+        <p><strong>Investigador Principal:</strong> Luis Carlos Quesada Rodríguez</p>
+        <p><strong>Unidad Ejecutora:</strong> Escuela de Ciencias de la Computación e Informática, Universidad de Costa Rica</p>
+      </div>
+
+      <h2>1. Resumen del Estudio y Preparación</h2>
+      <p>
+        Esta guía detalla el protocolo experimental para evaluar la percepción de usuarios durante interacciones breves con un Agente Virtual Inteligente. El estudio compara dos condiciones: una condición con patrones de familiaridad conductual y una condición con comportamiento conversacional genérico.
+      </p>
+      <p>
+        Cada participante interactuará con ambas condiciones. El orden de presentación será contrabalanceado para reducir efectos de aprendizaje, fatiga o familiarización con el sistema.
+      </p>
+
+      <h3>1.1 Checklist de Materiales</h3>
+      <ul class="checkbox-list">
+        <li>Formulario de consentimiento informado.</li>
+        <li>Computadora configurada con la plataforma del agente.</li>
+        <li>Audífonos con micrófono funcional y desinfectados.</li>
+        <li>Tabla o sistema de asignación aleatoria de orden experimental.</li>
+        <li>Enlaces pre-cargados a cuestionarios iniciales y post-interacción.</li>
+        <li>Registro de participantes mediante ID anónimo.</li>
+        <li>Medio seguro para resguardar consentimientos, cuestionarios y logs.</li>
+      </ul>
+
+      <h2>2. Inducción y Bienvenida</h2>
+
+      <h3>2.1 Consentimiento Informado</h3>
+      <p><strong>Saludo:</strong></p>
+      <div class="quote">
+        "Hola _____, muchas gracias por venir. Mi nombre es _____. Yo seré el investigador encargado del estudio el día de hoy."
+      </div>
+
+      <p><strong>Entrega del consentimiento:</strong></p>
+      <div class="quote">
+        "Vamos a revisar el consentimiento informado. Su participación es voluntaria y usted puede retirarse del estudio en cualquier momento sin ninguna consecuencia."
+      </div>
+
+      <p><strong>Pregunta obligatoria de aceptación:</strong></p>
+      <div class="quote">
+        "Después de leer el consentimiento, ¿todavía desea participar del estudio?"
+      </div>
+
+      <p>
+        Indique al participante que puede omitir cualquier tema de conversación que le genere incomodidad durante la interacción.
+      </p>
+
+      <p>
+        <strong>Si la respuesta es afirmativa:</strong> registrar el ID anónimo del participante. Si aplica, verificar mayoría de edad. Guardar el consentimiento firmado en el medio correspondiente.
+      </p>
+
+      <h3>2.2 Asignación al Grupo de Estudio</h3>
+      <p>
+        De acuerdo con la tabla de asignación aleatoria, determine el orden de interacción correspondiente. Cada participante realizará dos interacciones: una con la Condición A y otra con la Condición B.
+      </p>
+      <ul>
+        <li><strong>Grupo 1:</strong> Condición A → Condición B.</li>
+        <li><strong>Grupo 2:</strong> Condición B → Condición A.</li>
+      </ul>
+      <p>
+        La condición asignada y la diferencia entre condiciones no deben ser reveladas al participante antes ni durante la interacción.
+      </p>
+
+      <h3>2.3 Cuestionarios Iniciales</h3>
+      <p>
+        Solicite al participante completar un cuestionario inicial breve antes de interactuar con el agente. Este cuestionario incluirá datos demográficos básicos, experiencia previa con asistentes virtuales, chatbots o avatares, y medidas generales de familiaridad con la persona utilizada como referencia conductual en el estudio.
+      </p>
+      <p>
+        El cuestionario inicial debe formularse de manera neutral para evitar revelar la hipótesis del experimento.
+      </p>
+
+      <h2>3. Fase de Interacción</h2>
+
+      <h3>3.1 Instrucciones y Prueba de Audio</h3>
+      <p><strong>Investigador:</strong></p>
+      <div class="quote">
+        "A continuación, usted interactuará con un agente virtual en dos sesiones breves. Cada sesión durará aproximadamente cinco minutos. Por favor, colóquese los audífonos."
+      </div>
+
+      <p>
+        Realice una prueba rápida para asegurarse de que el micrófono capta la voz correctamente y que el volumen de los audífonos es adecuado.
+      </p>
+
+      <p><strong>Explicación neutral de la tarea:</strong></p>
+      <div class="quote">
+        "Durante cada sesión, converse sobre actividades recientes, su rutina diaria o temas cotidianos que considere cómodos de discutir. Trate de interactuar de manera natural. Yo saldré de la habitación, o me ubicaré fuera de su campo visual, para darle privacidad. Después de cada interacción, le pediré completar algunos cuestionarios breves. ¿Tiene alguna pregunta antes de comenzar?"
+      </div>
+
+      <h3>3.2 Primera Interacción</h3>
+      <p>
+        Active la primera condición correspondiente según el grupo asignado. El participante conversa con el agente virtual durante aproximadamente cinco minutos en una conversación semi-estructurada sobre temas cotidianos y experiencias recientes.
+      </p>
+      <p>
+        El investigador se retira de la vista del participante para reducir posibles sesgos durante la interacción.
+      </p>
+
+      <h3>3.3 Cuestionarios Post-Interacción 1</h3>
+      <p><strong>Investigador:</strong></p>
+      <div class="quote">
+        "Gracias. Ahora, le pediré que complete una serie de cuestionarios cortos relacionados con la interacción recién completada."
+      </div>
+      <p>
+        Proporcione los instrumentos correspondientes: Godspeed Questionnaire Series, SAM (Self-Assessment Manikin), escala Likert de familiaridad conductual e ítems de conocimiento contextual percibido.
+      </p>
+
+      <h3>3.4 Segunda Interacción</h3>
+      <p>
+        Active la segunda condición correspondiente según el orden asignado. El participante conversa nuevamente con el agente virtual durante aproximadamente cinco minutos bajo las mismas instrucciones generales.
+      </p>
+      <p>
+        Mantenga constantes la interfaz, duración, tipo de tarea, avatar, voz y entorno de interacción.
+      </p>
+
+      <h3>3.5 Cuestionarios Post-Interacción 2</h3>
+      <p><strong>Investigador:</strong></p>
+      <div class="quote">
+        "Gracias. Ahora, le pediré que complete nuevamente los cuestionarios, esta vez sobre la segunda interacción."
+      </div>
+      <p>
+        Proporcione los mismos instrumentos aplicados después de la primera interacción.
+      </p>
+
+      <h2>4. Cierre del Estudio y Recolección Cualitativa</h2>
+
+      <h3>4.1 Entrevista Cualitativa Breve</h3>
+      <p>
+        Después de completar ambas interacciones y cuestionarios, realice una entrevista estructurada breve. Solicite permiso para grabar el audio exclusivamente con fines de transcripción, si aplica.
+      </p>
+
+      <div class="metadata-box">
+        <p><strong>Preguntas de apreciación cualitativa:</strong></p>
+        <ul>
+          <li>"En términos generales, ¿cómo describiría su experiencia hablando con el agente virtual?"</li>
+          <li>"¿Percibió diferencias entre las dos interacciones realizadas?"</li>
+          <li>"¿Hubo algún momento o detalle que le gustara especialmente?"</li>
+          <li>"¿Hubo algún aspecto del agente que le pareciera extraño, incómodo o frustrante?"</li>
+          <li>"¿Notó alguna característica particular en la forma de hablar o actuar del agente?"</li>
+          <li>"¿Hubo algún aspecto del comportamiento del agente que le resultara familiar o reconocible?"</li>
+          <li>"¿Qué le mejoraría a este sistema?"</li>
+        </ul>
+      </div>
+
+      <h3>4.2 Despedida</h3>
+      <p>
+        Detenga la grabación, si fue utilizada. Agradezca profundamente su tiempo y participación.
+      </p>
+      <p><strong>Investigador:</strong></p>
+      <div class="quote">
+        "Muchas gracias por ayudarnos a generar conocimiento en esta área. Su aporte ha sido sumamente valioso. ¡Que tenga un excelente día!"
+      </div>
+
+      <h2>5. Gestión Final de Datos y Respaldo</h2>
+      <p>Inmediatamente después de que el participante abandone el espacio de evaluación:</p>
+
+      <ul>
+        <li>
+          <strong>Almacenamiento Seguro:</strong> Verifique que los logs de ambas interacciones y los cuestionarios correspondientes se hayan almacenado correctamente bajo el ID anónimo del participante.
+        </li>
+        <li>
+          <strong>Anonimización:</strong> Confirme que todos los datos, cuestionarios, audios y logs estén vinculados únicamente al ID anónimo del participante y no a su nombre legal.
+        </li>
+        <li>
+          <strong>Separación de condiciones:</strong> Registre internamente el orden experimental aplicado, sin asociarlo públicamente al nombre del participante.
+        </li>
+        <li>
+          <strong>Resguardo:</strong> Almacene los datos en un repositorio o medio seguro, con acceso restringido únicamente al investigador responsable.
+        </li>
+        <li>
+          <strong>Limpieza:</strong> Desinfecte el equipo utilizado, incluyendo teclado, ratón, audífonos y micrófono, y prepare el espacio para el siguiente participante.
+        </li>
+      </ul>
+
+    </div>
+  </div>
+</body>
+</html>
