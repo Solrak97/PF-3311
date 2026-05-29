@@ -148,6 +148,11 @@ layout_mode = 2
 theme_override_constants/separation = 10
 alignment = 0
 
+[node name="NewChatButton" type="Button" parent="Margin/VBox/AvatarPanel/AvatarRoot/Overlay/OverlayMargin/OverlayVBox/TopRow/TopRight"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+
 [node name="RestartExperimentButton" type="Button" parent="Margin/VBox/AvatarPanel/AvatarRoot/Overlay/OverlayMargin/OverlayVBox/TopRow/TopRight"]
 unique_name_in_owner = true
 layout_mode = 2

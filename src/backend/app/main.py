@@ -64,10 +64,17 @@ async def ws_session(websocket: WebSocket) -> None:
                 session_id = str(payload.get("session_id", "")).strip()
                 participant_id = str(payload.get("participant_id", "")).strip()
                 condition = str(payload.get("condition", "")).strip()
+                if not session_id:
+                    await send_event(
+                        websocket,
+                        "session.hello_ack",
+                        {"error": "missing_session_id"},
+                    )
+                    continue
                 logger.info(
                     "session.hello participant=%s session=%s condition=%s",
                     participant_id or "?",
-                    session_id or "?",
+                    session_id,
                     condition or "?",
                 )
                 await send_event(
@@ -81,13 +88,47 @@ async def ws_session(websocket: WebSocket) -> None:
                         "session_id": session_id,
                     },
                 )
+            elif typ in ("session.new", "session.reset"):
+                session_id = str(payload.get("session_id", "")).strip()
+                participant_id = str(payload.get("participant_id", "")).strip()
+                if not session_id:
+                    await send_event(
+                        websocket,
+                        "session.hello_ack",
+                        {"error": "missing_session_id"},
+                    )
+                    continue
+                logger.info(
+                    "session.new participant=%s session=%s",
+                    participant_id or "?",
+                    session_id,
+                )
+                await send_event(
+                    websocket,
+                    "session.hello_ack",
+                    {
+                        "backend": "familiar",
+                        "voice": settings.edge_tts_voice,
+                        "model": settings.resolved_llm_model,
+                        "llm_provider": settings.llm_provider,
+                        "session_id": session_id,
+                        "fresh": True,
+                    },
+                )
             elif typ == "turn.user_text":
                 text = str(payload.get("text", ""))
                 if not text.strip():
                     await send_event(websocket, "turn.end", {"error": "empty_text"})
                     continue
                 participant_id = str(payload.get("participant_id", "unknown"))
-                session_id = str(payload.get("session_id", "default"))
+                session_id = str(payload.get("session_id", "")).strip()
+                if not session_id:
+                    await send_event(
+                        websocket,
+                        "turn.end",
+                        {"error": "missing_session_id"},
+                    )
+                    continue
                 condition = str(payload.get("condition", "B")).upper()
                 if condition not in {"A", "B"}:
                     condition = "B"

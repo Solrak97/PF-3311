@@ -21,7 +21,7 @@ Lighting / background / post-FX: edit `scenes/avatar_environment.tres` (SSAO, gl
 
 **VSync** is on in `project.godot` (`display/window/vsync/vsync_mode=1`). Avatar SubViewport uses MSAA 4× + FXAA.
 
-Each **Start Chat A / B** run creates a new `session_id` (fresh LLM context; turns stored under that id in SQLite). Participant id is stable per machine (`user://familiar_participant_id.txt`) for research grouping.
+Each **Start Chat A / B** run creates a new `session_id` (fresh LLM context; turns stored under that id in SQLite). Use **＋ New chat** in the HUD anytime to clear the transcript and start another empty session without leaving the scene. Participant id is stable per machine (`user://familiar_participant_id.txt`) for research grouping only — it is not sent to the LLM as cross-session memory.
 
 The game window starts **maximized** and UI uses `canvas_items` stretch (`aspect=expand`) so panels and chat scale with your display. The 3D avatar viewport resizes to fill the top card.
 

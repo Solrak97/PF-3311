@@ -38,7 +38,7 @@ Research dashboard and APIs:
 - `http://127.0.0.1:8000/research/sessions`
 - `http://127.0.0.1:8000/research/sessions/{session_id}/turns`
 
-Turns are persisted in SQLite (`SQLITE_PATH`, default `./data/experiment.db`), keyed by `session_id` from the client. LLM context uses **only turns from the current session** (no carry-over from prior runs). Each Godot **Start Chat A/B** generates a new `session_id`.
+Turns are persisted in SQLite (`SQLITE_PATH`, default `./data/experiment.db`), keyed by `session_id` from the client. LLM context uses **only turns from the current `session_id`** (no carry-over from prior runs). Each Godot **Start Chat A/B** or **New chat** generates a new `session_id`. Turns with a missing/empty `session_id` are rejected.
 
 ## Environment
 
@@ -52,6 +52,27 @@ See [.env.example](.env.example). Primary knobs for shipping:
 | `LLM_API_KEY` | Bearer token when using remote OpenAI-compatible APIs |
 
 `OLLAMA_BASE_URL` / `OLLAMA_MODEL` still work as fallbacks if `LLM_*` are unset.
+
+| Variable | Purpose |
+|----------|---------|
+| `EDGE_TTS_VOICE` | Microsoft neural voice id (default `en-US-AriaNeural`) |
+
+### TTS voice (Edge)
+
+Set `EDGE_TTS_VOICE` in `.env` and restart the backend. List US English options:
+
+```bash
+uv run python scripts/list_edge_voices.py en-US
+```
+
+Generate short MP3 previews to compare (written under `data/voice_previews/`):
+
+```bash
+uv run python scripts/preview_edge_voices.py
+uv run python scripts/preview_edge_voices.py en-US-GuyNeural en-US-AnaNeural
+```
+
+Buddy-friendly `en-US` picks to try: **Ana** (lighter), **Jenny** (chatty), **Guy** / **Eric** / **Christopher** (warm male), **Brian** (upbeat). **Aria** (default) is clearer but more “assistant” than companion.
 
 Full shipping layout: [`docs/DEPLOY.md`](../../docs/DEPLOY.md).
 

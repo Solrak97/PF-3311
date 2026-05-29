@@ -33,6 +33,7 @@ static func setup_main_screen(nodes: Dictionary) -> void:
 	var pill_sep: VSeparator = nodes.get("pill_sep")
 	var condition_badge: Label = nodes.get("condition_badge")
 	var timer_label: Label = nodes.get("timer_label")
+	var new_chat_button: Button = nodes.get("new_chat_button")
 	var menu_button: Button = nodes.get("menu_button")
 	var send_button: Button = nodes.get("send_button")
 	var output: RichTextLabel = nodes.get("output")
@@ -57,6 +58,8 @@ static func setup_main_screen(nodes: Dictionary) -> void:
 		style_condition_badge(condition_badge, condition)
 	if timer_label != null:
 		style_timer(timer_label)
+	if new_chat_button != null:
+		style_new_chat_button(new_chat_button)
 	if menu_button != null:
 		style_menu_button(menu_button)
 	if send_button != null:
@@ -128,6 +131,10 @@ static func chat_panel_style() -> StyleBoxFlat:
 
 static func style_secondary_button(btn: Button) -> void:
 	style_menu_button(btn)
+
+
+static func style_new_chat_button(btn: Button) -> void:
+	_apply_compact_button(btn, SURFACE, TEXT, "＋  New chat", Vector2(132, 40))
 
 
 static func style_menu_button(btn: Button) -> void:

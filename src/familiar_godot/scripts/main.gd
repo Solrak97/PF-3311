@@ -34,6 +34,7 @@ var _buddy_reply_open: bool = false
 @onready var _input: LineEdit = %LineEdit
 @onready var _send: Button = %SendButton
 @onready var _timer_label: Label = %TimerLabel
+@onready var _new_chat_button: Button = %NewChatButton
 @onready var _restart_experiment_button: Button = %RestartExperimentButton
 @onready var _condition_badge: Label = %ConditionBadge
 @onready var _background: ColorRect = $Background
@@ -110,6 +111,7 @@ func _ready() -> void:
 		"pill_sep": _pill_sep,
 		"condition_badge": _condition_badge,
 		"timer_label": _timer_label,
+		"new_chat_button": _new_chat_button,
 		"menu_button": _restart_experiment_button,
 		"send_button": _send,
 		"output": _out,
@@ -121,6 +123,7 @@ func _ready() -> void:
 	_condition_badge.text = "Condition %s" % condition
 	_clear_chat_log()
 	_send.pressed.connect(_on_send)
+	_new_chat_button.pressed.connect(_on_new_chat)
 	_restart_experiment_button.pressed.connect(_on_restart_experiment)
 	_input.text_submitted.connect(func(_t: String) -> void:
 		_on_send()
@@ -258,9 +261,19 @@ func _dispatch_packet(pkt: PackedByteArray) -> void:
 
 
 func _send_hello() -> void:
+	_send_session_event("session.hello")
+
+
+func _send_session_new() -> void:
+	_send_session_event("session.new")
+
+
+func _send_session_event(event_type: String) -> void:
+	if _peer.get_ready_state() != WebSocketPeer.STATE_OPEN:
+		return
 	var msg: Dictionary = {
 		"v": 1,
-		"type": "session.hello",
+		"type": event_type,
 		"payload": {
 			"client": "godot",
 			"participant_id": participant_id,
@@ -307,6 +320,23 @@ func _on_send() -> void:
 
 func _clear_chat_log() -> void:
 	_out.text = ExperimentUI.chat_placeholder()
+
+
+func _on_new_chat() -> void:
+	if _turn_busy:
+		_set_status("wait for buddy to finish before starting a new chat")
+		return
+	_player.stop()
+	_stop_buddy_thinking()
+	_begin_new_session()
+	_clear_chat_log()
+	_seconds_left = session_duration_sec
+	_second_accumulator = 0.0
+	_update_timer_label()
+	_send.disabled = false
+	if _peer.get_ready_state() == WebSocketPeer.STATE_OPEN:
+		_send_session_new()
+	_focus_chat_input()
 
 
 func _on_restart_experiment() -> void:

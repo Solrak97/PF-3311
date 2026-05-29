@@ -14,3 +14,4 @@ build/
 
 # Local experiment SQLite (per-session turn logs)
 src/backend/data/*.db
+src/backend/data/voice_previews/
