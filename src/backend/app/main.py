@@ -7,8 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.audio.tts import EdgeTtsEngine
-from app.brain.ollama import OllamaBrain
+from app.brain.factory import create_brain
 from app.pipeline.turn import run_text_turn, send_event
+from app.dashboard import build_dashboard_router
+from app.storage.sqlite_store import SQLiteExperimentStore
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,13 +25,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_brain = OllamaBrain()
+_brain = create_brain()
 _tts = EdgeTtsEngine()
+_store = SQLiteExperimentStore(settings.sqlite_path)
+
+app.include_router(build_dashboard_router(_store))
 
 
 @app.get("/healthz")
 async def healthz() -> dict[str, str]:
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "llm_provider": settings.llm_provider,
+        "llm_model": settings.resolved_llm_model,
+    }
 
 
 @app.websocket("/ws/session")
@@ -52,13 +61,24 @@ async def ws_session(websocket: WebSocket) -> None:
                 payload = {}
 
             if typ == "session.hello":
+                session_id = str(payload.get("session_id", "")).strip()
+                participant_id = str(payload.get("participant_id", "")).strip()
+                condition = str(payload.get("condition", "")).strip()
+                logger.info(
+                    "session.hello participant=%s session=%s condition=%s",
+                    participant_id or "?",
+                    session_id or "?",
+                    condition or "?",
+                )
                 await send_event(
                     websocket,
                     "session.hello_ack",
                     {
                         "backend": "familiar",
                         "voice": settings.edge_tts_voice,
-                        "model": settings.ollama_model,
+                        "model": settings.resolved_llm_model,
+                        "llm_provider": settings.llm_provider,
+                        "session_id": session_id,
                     },
                 )
             elif typ == "turn.user_text":
@@ -66,7 +86,30 @@ async def ws_session(websocket: WebSocket) -> None:
                 if not text.strip():
                     await send_event(websocket, "turn.end", {"error": "empty_text"})
                     continue
-                await run_text_turn(websocket, text, _brain, _tts)
+                participant_id = str(payload.get("participant_id", "unknown"))
+                session_id = str(payload.get("session_id", "default"))
+                condition = str(payload.get("condition", "B")).upper()
+                if condition not in {"A", "B"}:
+                    condition = "B"
+                order_group = str(payload.get("order_group", "A-B"))
+                try:
+                    turn_index = int(payload.get("turn_index", 0))
+                except (TypeError, ValueError):
+                    turn_index = 0
+
+                await run_text_turn(
+                    websocket,
+                    text,
+                    _brain,
+                    _tts,
+                    store=_store,
+                    participant_id=participant_id,
+                    session_id=session_id,
+                    condition=condition,
+                    order_group=order_group,
+                    turn_index=turn_index,
+                    model_name=settings.resolved_llm_model,
+                )
             else:
                 logger.warning("unknown ws message type: %s", typ)
     except WebSocketDisconnect:

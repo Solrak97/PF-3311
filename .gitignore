@@ -11,3 +11,6 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+
+# Local experiment SQLite (per-session turn logs)
+src/backend/data/*.db

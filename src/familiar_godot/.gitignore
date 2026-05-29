@@ -1,3 +1,7 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Redundant archives (extracted .vrm is tracked)
+landing/**/*.zip
+landing/**/*.unitypackage

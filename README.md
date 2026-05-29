@@ -157,6 +157,7 @@ uv run python scripts/test_ws_turn.py "Hola, ¿cómo estás?"
 | [`docs/proposal.tex`](docs/proposal.tex) | Marco teórico, problema, arquitectura objetivo, RQs |
 | [`docs/protocolo_evaluacion.tex`](docs/protocolo_evaluacion.tex) | Condiciones A/B, diseño, matriz metodológica |
 | [`docs/guia_procedimiento.html`](docs/guia_procedimiento.html) | Protocolo en sala, consentimiento, cuestionarios, cierre |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Estado de implementación y siguientes hitos técnicos |
 | [`src/README.md`](src/README.md) | Detalle técnico del prototipo |
 | [`src/backend/README.md`](src/backend/README.md) | API, variables de entorno, dependencias |
 

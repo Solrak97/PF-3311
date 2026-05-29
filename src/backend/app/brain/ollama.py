@@ -9,8 +9,8 @@ from app.config import settings
 
 class OllamaBrain:
     def __init__(self, base_url: str | None = None, model: str | None = None) -> None:
-        self._base = (base_url or settings.ollama_base_url).rstrip("/")
-        self._model = model or settings.ollama_model
+        self._base = (base_url or settings.llm_base_url).rstrip("/")
+        self._model = model or settings.resolved_llm_model
 
     async def stream_chat(self, messages: list[dict[str, Any]]) -> AsyncIterator[str]:
         url = f"{self._base}/api/chat"

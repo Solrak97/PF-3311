@@ -8,6 +8,15 @@ from fastapi import WebSocket
 
 from app.audio.tts import EdgeTtsEngine
 from app.brain.ollama import OllamaBrain
+from app.config import settings
+from app.pipeline.text_clean import (
+    contains_roleplay_markers,
+    extract_roleplay_animation_hints,
+    merge_animations,
+    strip_roleplay_for_stream,
+    strip_roleplay_markers,
+)
+from app.storage.sqlite_store import SQLiteExperimentStore
 
 logger = logging.getLogger(__name__)
 
@@ -17,14 +26,21 @@ META_START = re.compile(r"\n\s*(?:<JSON|\{\s*\"animations\")")
 
 SYSTEM_PROMPT = """You are Buddy, a friendly embodied assistant the user talks to in a 3D scene.
 Keep answers concise and conversational (this will be spoken aloud). Prefer short paragraphs.
-After your answer, append one final line exactly in this machine-readable format (tags required):
+You should remember prior turns from the same participant when available, and reference them naturally.
+
+Never use roleplay formatting in the spoken reply: no *asterisk actions*, no [bracket directions].
+Write only words Buddy would say out loud.
+
+You MUST still end every reply with the JSON animations line (required, on its own line):
 <JSON>{"animations":[{"clip_id":"idle","blend_time":0.2}]}</JSON>
 
-clip_id must be one of: idle, nod, wave, think. Use one or two animations that fit the tone."""
+clip_id must be one of: idle, nod, wave, think. Pick one or two clips that match the mood (e.g. wave when greeting, nod when agreeing, think when pondering)."""
 
 
 def _spoken_and_animations(full: str) -> tuple[str, list[dict[str, Any]]]:
-    text = _visible_cutoff(full.strip())
+    raw_visible = _visible_cutoff(full.strip())
+    roleplay_anims = extract_roleplay_animation_hints(raw_visible)
+    text = strip_roleplay_markers(raw_visible)
     m = JSON_BLOCK.search(full.strip())
     if not m:
         meta = META_START.search(full.strip())
@@ -34,19 +50,22 @@ def _spoken_and_animations(full: str) -> tuple[str, list[dict[str, Any]]]:
                 data = json.loads(tail.removeprefix("<JSON>").removesuffix("</JSON>").strip())
                 anims = data.get("animations") if isinstance(data, dict) else []
                 if isinstance(anims, list):
-                    return text, [a for a in anims if isinstance(a, dict)]
+                    json_anims = [a for a in anims if isinstance(a, dict)]
+                    return text, merge_animations(json_anims, roleplay_anims)
             except json.JSONDecodeError:
                 pass
-        return text, []
+        return text, roleplay_anims
     raw = m.group(1)
     try:
         data = json.loads(raw)
     except json.JSONDecodeError:
-        return text[: m.start()].strip(), []
+        body = strip_roleplay_markers(full.strip()[: m.start()])
+        return body, roleplay_anims
     anims = data.get("animations")
     if not isinstance(anims, list):
         anims = []
-    return text, [a for a in anims if isinstance(a, dict)]
+    json_anims = [a for a in anims if isinstance(a, dict)]
+    return text, merge_animations(json_anims, roleplay_anims)
 
 
 def spoken_for_tts(full: str) -> str:
@@ -70,7 +89,7 @@ def _visible_cutoff(full: str) -> str:
 
 
 def _visible_delta(full: str, sent_visible_len: int) -> tuple[str, int]:
-    visible = _visible_cutoff(full)
+    visible = strip_roleplay_for_stream(_visible_cutoff(full))
     new_text = visible[sent_visible_len:]
     return new_text, len(visible)
 
@@ -79,12 +98,44 @@ async def send_event(ws: WebSocket, typ: str, payload: dict[str, Any]) -> None:
     await ws.send_text(json.dumps({"v": 1, "type": typ, "payload": payload}, ensure_ascii=False))
 
 
-async def run_text_turn(ws: WebSocket, user_text: str, brain: OllamaBrain, tts: EdgeTtsEngine) -> None:
+async def run_text_turn(
+    ws: WebSocket,
+    user_text: str,
+    brain: OllamaBrain,
+    tts: EdgeTtsEngine,
+    *,
+    store: SQLiteExperimentStore | None = None,
+    participant_id: str = "unknown",
+    session_id: str = "default",
+    condition: str = "B",
+    order_group: str = "A-B",
+    turn_index: int = 0,
+    model_name: str = "ollama",
+) -> None:
     await send_event(ws, "listening.state", {"state": "processing"})
-    messages: list[dict[str, Any]] = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": user_text.strip()},
-    ]
+    messages: list[dict[str, Any]] = [{"role": "system", "content": SYSTEM_PROMPT}]
+    if store is not None:
+        prior = store.recent_turns_for_session(session_id=session_id, limit=8)
+        logger.info(
+            "session=%s condition=%s prior_turns=%s (session-scoped only)",
+            session_id,
+            condition,
+            len(prior),
+        )
+        for item in prior:
+            prev_user = str(item.get("user_text", "")).strip()
+            prev_assistant = str(item.get("assistant_text", "")).strip()
+            if prev_user:
+                messages.append({"role": "user", "content": prev_user})
+            if prev_assistant:
+                # Older DB rows may still contain *actions*; don't teach the model to repeat them.
+                messages.append(
+                    {
+                        "role": "assistant",
+                        "content": strip_roleplay_markers(prev_assistant),
+                    }
+                )
+    messages.append({"role": "user", "content": user_text.strip()})
     full = ""
     sent_visible_len = 0
     try:
@@ -101,6 +152,19 @@ async def run_text_turn(ws: WebSocket, user_text: str, brain: OllamaBrain, tts: 
 
     spoken, anims = _spoken_and_animations(full)
     display = spoken if spoken else spoken_for_tts(full)
+    raw_visible = _visible_cutoff(full.strip())
+    logger.info(
+        "turn display_chars=%s anims=%s roleplay_in_raw=%s json_block=%s",
+        len(display),
+        [str(a.get("clip_id")) for a in anims],
+        contains_roleplay_markers(raw_visible),
+        bool(JSON_BLOCK.search(full.strip())),
+    )
+    if contains_roleplay_markers(raw_visible):
+        logger.warning(
+            "model emitted roleplay markers (stripped from chat/TTS): %r",
+            raw_visible[:240],
+        )
     await send_event(ws, "llm.done", {"full_text": display})
 
     if anims:
@@ -113,6 +177,9 @@ async def run_text_turn(ws: WebSocket, user_text: str, brain: OllamaBrain, tts: 
 
     tts_text = spoken_for_tts(full)
     audio_errors: list[str] = []
+    raw_tts_len = len(tts_text.strip())
+    tts_truncated = raw_tts_len > settings.max_tts_chars
+    tts_chunk_count = 0
     if tts_text:
         try:
             segments = await tts.synthesize_mp3_segments(tts_text)
@@ -122,6 +189,10 @@ async def run_text_turn(ws: WebSocket, user_text: str, brain: OllamaBrain, tts: 
             return
 
         total = len(segments)
+        tts_chunk_count = total
+        if total == 0:
+            audio_errors.append("no_tts_segments")
+            logger.warning("tts generated no segments (len=%s)", raw_tts_len)
         for index, mp3 in enumerate(segments):
             try:
                 if not mp3:
@@ -148,4 +219,33 @@ async def run_text_turn(ws: WebSocket, user_text: str, brain: OllamaBrain, tts: 
                 )
             await asyncio.sleep(0)
 
-    await send_event(ws, "turn.end", {"audio_errors": audio_errors})
+    await send_event(
+        ws,
+        "turn.end",
+        {
+            "audio_errors": audio_errors,
+            "tts_truncated": tts_truncated,
+            "tts_text_len": raw_tts_len,
+            "tts_chunk_count": tts_chunk_count,
+        },
+    )
+
+    if store is not None:
+        try:
+            store.insert_turn(
+                SQLiteExperimentStore.make_record(
+                    participant_id=participant_id,
+                    session_id=session_id,
+                    condition=condition,
+                    order_group=order_group,
+                    turn_index=turn_index,
+                    user_text=user_text,
+                    assistant_text=display,
+                    profile_used=condition.upper() == "A",
+                    retrieval_used=False,
+                    model_name=model_name,
+                    audio_error_count=len(audio_errors),
+                )
+            )
+        except Exception:  # noqa: BLE001
+            logger.exception("failed to store turn in sqlite")

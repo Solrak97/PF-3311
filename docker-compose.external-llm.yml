@@ -1,0 +1,31 @@
+# Backend only — point LLM_BASE_URL / LLM_API_KEY at a remote or host Ollama/OpenAI-compatible API.
+# Usage: docker compose -f docker-compose.external-llm.yml up --build -d
+
+services:
+  backend:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+    container_name: pf3311-backend
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai_compat}
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://host.docker.internal:11434}
+      LLM_MODEL: ${LLM_MODEL:-llama3.2}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      EDGE_TTS_VOICE: ${EDGE_TTS_VOICE:-en-US-AriaNeural}
+      SQLITE_PATH: /app/data/experiment.db
+      MAX_TTS_CHARS: 2000
+      TTS_CHUNK_CHARS: 240
+    volumes:
+      - backend_data:/app/data
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  backend_data:

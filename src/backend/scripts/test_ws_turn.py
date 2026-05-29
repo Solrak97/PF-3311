@@ -14,7 +14,18 @@ async def main() -> None:
         await ws.send(json.dumps({"v": 1, "type": "session.hello", "payload": {"client": "test"}}))
         await ws.send(
             json.dumps(
-                {"v": 1, "type": "turn.user_text", "payload": {"session_id": "test", "text": user_text}}
+                {
+                    "v": 1,
+                    "type": "turn.user_text",
+                    "payload": {
+                        "participant_id": "p-demo",
+                        "session_id": "s-demo",
+                        "condition": "A",
+                        "order_group": "A-B",
+                        "turn_index": 1,
+                        "text": user_text,
+                    },
+                }
             )
         )
         full = ""

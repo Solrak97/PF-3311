@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://b4chat0a"]
+
+[ext_resource type="PackedScene" path="res://scenes/main.tscn" id="1_base"]
+
+[node name="ChatA" instance=ExtResource("1_base")]
+condition = "A"

@@ -1,6 +1,9 @@
-[gd_scene load_steps=2 format=3 uid="uid://b7k2buddy0main"]
+[gd_scene load_steps=4 format=3 uid="uid://u4iteqpe6emn"]
 
-[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://c5hm45yadexqh" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://dtxu5gvrq3hrd" path="res://scripts/avatar_controller.gd" id="3_avatar"]
+[ext_resource type="Script" uid="uid://dm8jnth6u2tpc" path="res://scripts/avatar_presenter.gd" id="4_presenter"]
+[ext_resource type="PackedScene" uid="uid://cf3uv0bbi3n7d" path="res://scenes/avatar_stage.tscn" id="5_stage"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -11,48 +14,194 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_main")
 
-[node name="VBox" type="VBoxContainer" parent="."]
+[node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 12.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.93, 0.93, 0.95, 1)
+
+[node name="AvatarController" type="Node" parent="."]
+script = ExtResource("3_avatar")
+
+[node name="AvatarPresenter" type="Node" parent="."]
+script = ExtResource("4_presenter")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
 offset_top = 12.0
-offset_right = -12.0
+offset_right = -16.0
 offset_bottom = -12.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="StatusLabel" type="Label" parent="VBox"]
+[node name="VBox" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="AvatarPanel" type="PanelContainer" parent="Margin/VBox"]
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 1.55
+
+[node name="AvatarRoot" type="Control" parent="Margin/VBox/AvatarPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="AvatarViewportContainer" type="SubViewportContainer" parent="Margin/VBox/AvatarPanel/AvatarRoot"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch = true
+
+[node name="AvatarViewport" type="SubViewport" parent="Margin/VBox/AvatarPanel/AvatarRoot/AvatarViewportContainer"]
+unique_name_in_owner = true
+own_world_3d = true
+handle_input_locally = false
+size = Vector2i(800, 480)
+render_target_update_mode = 4
+msaa_3d = 2
+screen_space_aa = 1
+
+[node name="AvatarStage" parent="Margin/VBox/AvatarPanel/AvatarRoot/AvatarViewportContainer/AvatarViewport" instance=ExtResource("5_stage")]
+
+[node name="Overlay" type="Control" parent="Margin/VBox/AvatarPanel/AvatarRoot"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="OverlayMargin" type="MarginContainer" parent="Margin/VBox/AvatarPanel/AvatarRoot/Overlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="OverlayVBox" type="VBoxContainer" parent="Margin/VBox/AvatarPanel/AvatarRoot/Overlay/OverlayMargin"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="TopRow" type="HBoxContainer" parent="Margin/VBox/AvatarPanel/AvatarRoot/Overlay/OverlayMargin/OverlayVBox"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "status: …"
+theme_override_constants/separation = 12
+alignment = 0
 
-[node name="Output" type="RichTextLabel" parent="VBox"]
+[node name="ConditionPill" type="PanelContainer" parent="Margin/VBox/AvatarPanel/AvatarRoot/Overlay/OverlayMargin/OverlayVBox/TopRow"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="PillMargin" type="MarginContainer" parent="Margin/VBox/AvatarPanel/AvatarRoot/Overlay/OverlayMargin/OverlayVBox/TopRow/ConditionPill"]
+layout_mode = 2
+
+[node name="PillPad" type="HBoxContainer" parent="Margin/VBox/AvatarPanel/AvatarRoot/Overlay/OverlayMargin/OverlayVBox/TopRow/ConditionPill/PillMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="ConditionBadge" type="Label" parent="Margin/VBox/AvatarPanel/AvatarRoot/Overlay/OverlayMargin/OverlayVBox/TopRow/ConditionPill/PillMargin/PillPad"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Condition A"
+
+[node name="PillSep" type="VSeparator" parent="Margin/VBox/AvatarPanel/AvatarRoot/Overlay/OverlayMargin/OverlayVBox/TopRow/ConditionPill/PillMargin/PillPad"]
+layout_mode = 2
+custom_minimum_size = Vector2(1, 18)
+
+[node name="TimerLabel" type="Label" parent="Margin/VBox/AvatarPanel/AvatarRoot/Overlay/OverlayMargin/OverlayVBox/TopRow/ConditionPill/PillMargin/PillPad"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "10:00"
+
+[node name="TopSpacer" type="Control" parent="Margin/VBox/AvatarPanel/AvatarRoot/Overlay/OverlayMargin/OverlayVBox/TopRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TopRight" type="HBoxContainer" parent="Margin/VBox/AvatarPanel/AvatarRoot/Overlay/OverlayMargin/OverlayVBox/TopRow"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 0
+
+[node name="RestartExperimentButton" type="Button" parent="Margin/VBox/AvatarPanel/AvatarRoot/Overlay/OverlayMargin/OverlayVBox/TopRow/TopRight"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="HudFill" type="Control" parent="Margin/VBox/AvatarPanel/AvatarRoot/Overlay/OverlayMargin/OverlayVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="ChatPanel" type="PanelContainer" parent="Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 1.0
+
+[node name="ChatPad" type="MarginContainer" parent="Margin/VBox/ChatPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="ChatVBox" type="VBoxContainer" parent="Margin/VBox/ChatPanel/ChatPad"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Output" type="RichTextLabel" parent="Margin/VBox/ChatPanel/ChatPad/ChatVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 100)
 bbcode_enabled = true
-text = "Buddy client — type a message and press Send."
+scroll_following = true
+fit_content = false
 
-[node name="AnimLabel" type="Label" parent="VBox"]
-unique_name_in_owner = true
+[node name="InputRow" type="HBoxContainer" parent="Margin/VBox/ChatPanel/ChatPad/ChatVBox"]
 layout_mode = 2
-text = "anim: —"
+theme_override_constants/separation = 10
 
-[node name="InputRow" type="HBoxContainer" parent="VBox"]
-layout_mode = 2
-
-[node name="LineEdit" type="LineEdit" parent="VBox/InputRow"]
+[node name="LineEdit" type="LineEdit" parent="Margin/VBox/ChatPanel/ChatPad/ChatVBox/InputRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-placeholder_text = "Type a message…"
+custom_minimum_size = Vector2(0, 48)
+placeholder_text = "Type your message…"
 
-[node name="SendButton" type="Button" parent="VBox/InputRow"]
+[node name="SendButton" type="Button" parent="Margin/VBox/ChatPanel/ChatPad/ChatVBox/InputRow"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Send"
+
+[node name="AnimLabel" type="Label" parent="."]
+visible = false
+unique_name_in_owner = true
+text = "anim: —"
 
 [node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
 unique_name_in_owner = true
