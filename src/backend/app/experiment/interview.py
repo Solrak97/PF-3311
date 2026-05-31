@@ -108,18 +108,6 @@ def build_interview_messages(
     return messages
 
 
-async def _stream_llm(brain: Any, messages: list[dict[str, Any]]) -> str:
-    logger.debug(
-        "interview_llm messages=%d roles=%s",
-        len(messages),
-        [m.get("role") for m in messages],
-    )
-    parts: list[str] = []
-    async for chunk in brain.stream_chat(messages):
-        parts.append(chunk)
-    return "".join(parts).strip()
-
-
 async def generate_interview_start(
     brain: Any,
     *,
@@ -127,35 +115,16 @@ async def generate_interview_start(
     modeled_user_alias: str,
     registry: SkillRegistry | None = None,
 ) -> dict[str, Any]:
-    skill = _load_interview_skill(registry)
-    prompts = _prompt_items(skill)
-    if not prompts:
-        raise ValueError("interview_skill_missing_prompts")
-    first = prompts[0]
-    system = INTERVIEW_SYSTEM_PROMPT + _safety_block(skill) + _progress_block(
-        answered_index=0,
-        total=len(prompts),
-        next_prompt=first,
-    )
-    alias_note = f"Participant alias: {modeled_user_alias}." if modeled_user_alias.strip() else ""
-    user_boot = (
-        f"[START_INTERVIEW profile_id={profile_id}. {alias_note}]\n"
-        "Welcome the participant briefly in a warm, natural tone. "
-        "Remind them they may skip any question. "
-        "Then ask your first question inspired by the next topic (do not read it verbatim)."
-    )
-    message = await _stream_llm(
+    from app.agents.interview_graph import run_interview_start as graph_start
+
+    result = await graph_start(
         brain,
-        build_interview_messages(system=system, conversation_history=[], steering=user_boot),
+        profile_id=profile_id,
+        modeled_user_alias=modeled_user_alias,
+        registry=registry,
     )
-    logger.info("interview_start profile=%s total_prompts=%d", profile_id, len(prompts))
-    return {
-        "message": message,
-        "prompt_index": 0,
-        "total_prompts": len(prompts),
-        "complete": False,
-        "samples": [],
-    }
+    logger.info("interview_start profile=%s total_prompts=%d", profile_id, result.get("total_prompts", 0))
+    return result
 
 
 async def generate_interview_turn(
@@ -170,80 +139,29 @@ async def generate_interview_turn(
     skip: bool = False,
     registry: SkillRegistry | None = None,
 ) -> dict[str, Any]:
-    skill = _load_interview_skill(registry)
-    prompts = _prompt_items(skill)
-    if not prompts:
-        raise ValueError("interview_skill_missing_prompts")
-    if prompt_index < 0 or prompt_index >= len(prompts):
-        raise ValueError("invalid_prompt_index")
+    from app.agents.interview_graph import run_interview_turn as graph_turn
 
-    history = conversation_history or []
-    current = prompts[prompt_index]
-    updated_samples = list(samples)
-    sample_saved = False
-    asked_prompt = last_assistant_before_last_user(history) or str(current.get("text", ""))
-
-    if not skip and user_message.strip():
-        updated_samples.append(
-            {
-                "prompt_id": str(current.get("id", "")),
-                "category": str(current.get("category", "")),
-                "prompt": asked_prompt,
-                "response": user_message.strip(),
-                "timestamp": _utc_now_iso(),
-            }
-        )
-        sample_saved = True
-
-    next_index = prompt_index + 1
-    complete = next_index >= len(prompts)
-    nxt = prompts[next_index] if not complete else None
-    system = INTERVIEW_SYSTEM_PROMPT + _safety_block(skill) + _progress_block(
-        answered_index=next_index,
-        total=len(prompts),
-        next_prompt=nxt,
-    )
-
-    if complete:
-        steering = (
-            "[INTERVIEW_COMPLETE] Based on the full conversation above, thank the participant briefly. "
-            "Tell them they can press Save to store the profile. Do not ask another question."
-        )
-    elif skip:
-        steering = (
-            f"[INTERVIEWER_TURN {next_index + 1}/{len(prompts)}] "
-            "The participant skipped the previous question. Acknowledge briefly without pressure. "
-            "Then ask ONE new question inspired by the next topic (do not quote it verbatim)."
-        )
-    else:
-        steering = (
-            f"[INTERVIEWER_TURN {next_index + 1}/{len(prompts)}] "
-            "Read the participant's last answer in the conversation above. "
-            "Give a brief natural acknowledgment, then ask ONE follow-up question inspired by the next topic "
-            "(do not quote it verbatim)."
-        )
-
-    message = await _stream_llm(
+    result = await graph_turn(
         brain,
-        build_interview_messages(system=system, conversation_history=history, steering=steering),
+        profile_id=profile_id,
+        modeled_user_alias=modeled_user_alias,
+        prompt_index=prompt_index,
+        user_message=user_message,
+        samples=samples,
+        conversation_history=conversation_history,
+        skip=skip,
+        registry=registry,
     )
     logger.info(
         "interview_turn profile=%s index=%d->%d history=%d skip=%s samples=%d",
         profile_id,
         prompt_index,
-        next_index,
-        len(normalize_history(history)),
+        result.get("prompt_index", prompt_index),
+        len(normalize_history(conversation_history or [])),
         skip,
-        len(updated_samples),
+        len(result.get("samples") or []),
     )
-    return {
-        "message": message,
-        "prompt_index": next_index,
-        "total_prompts": len(prompts),
-        "complete": complete,
-        "samples": updated_samples,
-        "sample_saved": sample_saved,
-    }
+    return result
 
 
 def build_raw_profile_payload(

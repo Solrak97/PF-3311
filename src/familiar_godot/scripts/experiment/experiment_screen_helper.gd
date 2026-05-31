@@ -2,6 +2,7 @@ class_name ExperimentScreenHelper
 extends RefCounted
 
 const MENU_SCENE := "res://scenes/experiment/ExperimentMenu.tscn"
+const CARD_WIDTH := 520
 
 
 static func mount(root: Control, title: String) -> Dictionary:
@@ -27,6 +28,7 @@ static func mount(root: Control, title: String) -> Dictionary:
 	page.add_child(scroll)
 	var scroll_body := VBoxContainer.new()
 	scroll_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll_body.alignment = BoxContainer.ALIGNMENT_CENTER
 	scroll.add_child(scroll_body)
 	var center := CenterContainer.new()
 	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -42,7 +44,7 @@ static func mount(root: Control, title: String) -> Dictionary:
 	card.add_child(margin)
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 14)
-	vbox.custom_minimum_size = Vector2(520, 0)
+	vbox.custom_minimum_size = Vector2(CARD_WIDTH, 0)
 	margin.add_child(vbox)
 	var title_label := Label.new()
 	title_label.text = title
@@ -52,17 +54,33 @@ static func mount(root: Control, title: String) -> Dictionary:
 	vbox.add_child(title_label)
 	var status := Label.new()
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status.add_theme_color_override("font_color", Color(0.45, 0.48, 0.55))
 	vbox.add_child(status)
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 10)
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(content)
+	_bind_scroll_centering(root, scroll, scroll_body)
 	return {
 		"content": content,
 		"status": status,
 		"vbox": vbox,
 	}
+
+
+static func _bind_scroll_centering(root: Control, scroll: ScrollContainer, scroll_body: VBoxContainer) -> void:
+	var sync := func() -> void:
+		_sync_scroll_body_height(scroll, scroll_body)
+	if not root.resized.is_connected(sync):
+		root.resized.connect(sync)
+	sync.call_deferred()
+
+
+static func _sync_scroll_body_height(scroll: ScrollContainer, scroll_body: VBoxContainer) -> void:
+	var height := scroll.size.y
+	if height > 0:
+		scroll_body.custom_minimum_size.y = height
 
 
 static func add_labeled_option(parent: Control, label_text: String) -> OptionButton:
@@ -98,6 +116,7 @@ static func add_button(parent: Control, text: String, callback: Callable) -> But
 	var btn := Button.new()
 	btn.text = text
 	btn.pressed.connect(callback)
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	parent.add_child(btn)
 	return btn
 

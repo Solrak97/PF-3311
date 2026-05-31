@@ -35,10 +35,11 @@ The app launches directly into the experiment menu. Participant-facing chat duri
 Experimental Setup
   ├── Assign Profiles (Profile A dropdown; B = generic_control_agent)
   ├── Train Profile          (LLM interview with full transcript context; saved to raw JSON)
-  └── Evaluate Profile
+  └── Evaluate Profile       (sample chat against condition A profile, then rate)
 Experimental Run
   ├── Order A → B / B → A
   └── Session orchestrator → main.tscn (5 min × 2) → questionnaire placeholder → end
+      (participants can use **Salir de la sesión** to exit early; **Fin interacción** ends the current block only)
 Quit
 ```
 

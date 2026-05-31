@@ -1,4 +1,5 @@
 """Quick smoke test for sqlite session upsert and stats."""
+import gc
 import os
 import tempfile
 
@@ -6,7 +7,8 @@ from app.storage.sqlite_store import SQLiteExperimentStore
 
 
 def main() -> None:
-    path = tempfile.mktemp(suffix=".db")
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
     try:
         store = SQLiteExperimentStore(path)
         store.record_session_end(
@@ -32,9 +34,13 @@ def main() -> None:
         assert stats["sessions"] >= 2
         print("ok")
     finally:
-        store = None
+        del store
+        gc.collect()
         if os.path.exists(path):
-            os.remove(path)
+            try:
+                os.remove(path)
+            except PermissionError:
+                pass
 
 
 if __name__ == "__main__":

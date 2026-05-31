@@ -61,7 +61,7 @@ async def _ack_session(
     await send_event(websocket, "session.hello_ack", payload)
 
 
-app.include_router(build_dashboard_router(_store))
+app.include_router(build_dashboard_router(_store, _profile_store))
 app.include_router(build_experiment_router(_profile_store, _brain))
 
 

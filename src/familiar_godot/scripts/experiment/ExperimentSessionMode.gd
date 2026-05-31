@@ -60,6 +60,7 @@ func _show_setup() -> void:
 		ExperimentSessionManager.log_run_event("session_start")
 		_start_interaction(1)
 	)
+	ExperimentScreenHelper.add_button(_content, "Salir de la sesión", _confirm_exit_early)
 	ExperimentScreenHelper.add_button(_content, "Back", func() -> void:
 		ExperimentSessionManager.reset_run()
 		ExperimentScreenHelper.go_to(RUN_MENU)
@@ -92,13 +93,35 @@ func _show_questionnaire() -> void:
 	ExperimentScreenHelper.add_button(_content, "Continuar a Interacción 2", func() -> void:
 		_start_interaction(2)
 	)
+	ExperimentScreenHelper.add_button(_content, "Salir de la sesión", _confirm_exit_early)
+
+
+func _confirm_exit_early() -> void:
+	if not ExperimentSessionManager.is_run_active:
+		ExperimentExitHelper.confirm_exit(self, func() -> void:
+			ExperimentSessionManager.reset_run()
+			ExperimentScreenHelper.go_to(RUN_MENU)
+		)
+		return
+	ExperimentExitHelper.confirm_exit(self, _exit_early)
+
+
+func _exit_early() -> void:
+	ExperimentSessionManager.exit_run_early("orchestrator_ui")
+	get_tree().change_scene_to_file(ORCHESTRATOR_SCENE)
 
 
 func _show_end() -> void:
 	_mount("Sesión finalizada")
 	var msg := Label.new()
 	msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	msg.text = "La sesión ha finalizado. Avise al investigador."
+	if ExperimentSessionManager.early_exit:
+		msg.text = (
+			"La sesión terminó antes de completar el protocolo. "
+			+ "Avise al investigador."
+		)
+	else:
+		msg.text = "La sesión ha finalizado. Avise al investigador."
 	_content.add_child(msg)
 	ExperimentScreenHelper.add_button(_content, "Menú principal", func() -> void:
 		ExperimentSessionManager.reset_run()

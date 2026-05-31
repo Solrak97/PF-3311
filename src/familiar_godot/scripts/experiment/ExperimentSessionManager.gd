@@ -18,6 +18,9 @@ var current_interaction_index: int = 0
 var current_condition: String = "B"
 var assigned_order_label: String = ""
 
+var early_exit: bool = false
+var early_exit_reason: String = ""
+
 var conversation_history: Array[Dictionary] = []
 
 signal interaction_finished(interaction_index: int)
@@ -35,6 +38,8 @@ func reset_run() -> void:
 	current_interaction_index = 0
 	current_condition = "B"
 	assigned_order_label = ""
+	early_exit = false
+	early_exit_reason = ""
 	conversation_history.clear()
 
 
@@ -84,6 +89,17 @@ func finish_interaction() -> void:
 	else:
 		phase = Phase.QUESTIONNAIRE
 	interaction_finished.emit(current_interaction_index)
+
+
+func exit_run_early(reason: String = "participant_request") -> void:
+	if early_exit:
+		return
+	early_exit = true
+	early_exit_reason = reason.strip_edges()
+	_log_run_event("session_exit_early", {"reason": early_exit_reason})
+	phase = Phase.DONE
+	is_run_active = false
+	run_finished.emit()
 
 
 func participant_interaction_label() -> String:

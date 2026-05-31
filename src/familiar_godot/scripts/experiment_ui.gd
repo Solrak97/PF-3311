@@ -10,6 +10,12 @@ const ACCENT := Color(0.9, 0.49, 0.27, 1.0)
 const ACCENT_HOVER := Color(0.95, 0.55, 0.32, 1.0)
 const ACCENT_PRESS := Color(0.82, 0.44, 0.24, 1.0)
 const ACCENT_B := Color(0.45, 0.58, 0.85, 1.0)
+const BUBBLE_USER_BG := Color(1.0, 0.93, 0.88, 1.0)
+const BUBBLE_ASSISTANT_BG := Color(1.0, 1.0, 1.0, 1.0)
+const BUBBLE_MIRROR_BG := Color(0.94, 0.91, 0.98, 1.0)
+const BUBBLE_LABEL_MUTED := Color(0.54, 0.56, 0.62, 1.0)
+const BUBBLE_MIRROR_LABEL := Color(0.36, 0.29, 0.48, 1.0)
+const BUBBLE_PAD := "12,10,12,10"
 const PILL_PAD_H := 16
 const PILL_PAD_V := 10
 
@@ -196,16 +202,54 @@ static func escape_bbcode(text: String) -> String:
 
 static func format_user_bubble(text: String) -> String:
 	var esc := _escape(text)
-	return "\n[right][color=#1f2430][font_size=15]%s[/font_size][/color][/right]\n" % esc
+	var bg := _color_hex(BUBBLE_USER_BG)
+	var fg := _color_hex(TEXT)
+	var muted := _color_hex(BUBBLE_LABEL_MUTED)
+	var header := "[color=%s][font_size=12]You[/font_size][/color]\n" % muted
+	var body := "[color=%s][font_size=15]%s[/font_size][/color]" % [fg, esc]
+	return (
+		"\n[right][table=2][cell expand=1][/cell]"
+		+ "[cell bg=%s border=%s]%s%s[/cell][/table][/right]\n"
+		% [bg, BUBBLE_PAD, header, body]
+	)
 
 
-static func format_assistant_open() -> String:
-	# Left-aligned by default; only [color] and [font_size] (must close in reverse order).
-	return "\n[color=#1f2430][font_size=15]"
+static func format_assistant_bubble(text: String, kind: String = "interview") -> String:
+	var esc := _escape(text)
+	var bg := BUBBLE_ASSISTANT_BG
+	var label := "Interviewer"
+	var label_col := BUBBLE_LABEL_MUTED
+	match kind:
+		"mirror":
+			bg = BUBBLE_MIRROR_BG
+			label = "Imitation try"
+			label_col = BUBBLE_MIRROR_LABEL
+		"finish":
+			label = "Interviewer"
+	var header := "[color=%s][font_size=12]%s[/font_size][/color]\n" % [_color_hex(label_col), label]
+	var body := "[color=%s][font_size=15]%s[/font_size][/color]" % [_color_hex(TEXT), esc]
+	return _assistant_bubble_block(header + body, bg)
+
+
+static func format_assistant_open(label: String = "Buddy") -> String:
+	var header := "[color=%s][font_size=12]%s[/font_size][/color]\n" % [_color_hex(BUBBLE_LABEL_MUTED), label]
+	var body_open := "[color=%s][font_size=15]" % _color_hex(TEXT)
+	return _assistant_bubble_block(header + body_open, BUBBLE_ASSISTANT_BG)
 
 
 static func format_assistant_close() -> String:
-	return "[/font_size][/color]\n"
+	return "[/font_size][/color][/cell][cell expand=1][/cell][/table]\n"
+
+
+static func _assistant_bubble_block(inner_bbcode: String, bg: Color) -> String:
+	return (
+		"\n[table=2][cell bg=%s border=%s]%s[/cell][cell expand=1][/cell][/table]\n"
+		% [_color_hex(bg), BUBBLE_PAD, inner_bbcode]
+	)
+
+
+static func _color_hex(c: Color) -> String:
+	return c.to_html(false)
 
 
 static func _apply_compact_button(

@@ -55,19 +55,59 @@ func post_experiment_chat(payload: Dictionary) -> void:
 
 
 func interview_start(profile_id: String, modeled_user_alias: String) -> void:
-	_post_json(
-		"/profiles/interview/start",
-		{"profile_id": profile_id, "modeled_user_alias": modeled_user_alias},
-		"interview_start"
-	)
+	training_start(profile_id, modeled_user_alias, "interview_start")
 
 
 func interview_turn(payload: Dictionary) -> void:
-	_post_json("/profiles/interview/turn", payload, "interview_turn")
+	training_answer(payload, "interview_turn")
 
 
 func interview_save(payload: Dictionary) -> void:
-	_post_json("/profiles/interview/save", payload, "interview_save")
+	training_finalize(str(payload.get("profile_id", "")), "interview_save")
+
+
+func interview_finish(profile_id: String) -> void:
+	training_finish(profile_id, "interview_finish")
+
+
+func training_start(profile_id: String, modeled_user_alias: String, action: String = "training_start") -> void:
+	_post_json(
+		"/profiles/training/start",
+		{"profile_id": profile_id, "modeled_user_alias": modeled_user_alias},
+		action
+	)
+
+
+func training_answer(payload: Dictionary, action: String = "training_answer") -> void:
+	_post_json(
+		"/profiles/training/answer",
+		{
+			"profile_id": payload.get("profile_id", ""),
+			"user_message": payload.get("user_message", ""),
+			"skip": payload.get("skip", false),
+		},
+		action
+	)
+
+
+func training_finalize(profile_id: String, action: String = "training_finalize") -> void:
+	_post_json("/profiles/training/finalize", {"profile_id": profile_id}, action)
+
+
+func training_finish(profile_id: String, action: String = "training_finish") -> void:
+	_post_json("/profiles/training/finish", {"profile_id": profile_id}, action)
+
+
+func validation_start(profile_id: String) -> void:
+	_post_json("/profiles/validation/start", {"profile_id": profile_id}, "validation_start")
+
+
+func validation_rating(payload: Dictionary) -> void:
+	_post_json("/profiles/validation/rating", payload, "validation_rating")
+
+
+func validation_finalize(profile_id: String) -> void:
+	_post_json("/profiles/validation/finalize", {"profile_id": profile_id}, "validation_finalize")
 
 
 const MOCK_INTERVIEW_QUESTIONS: Array[String] = [
@@ -165,62 +205,115 @@ func _emit_mock(action: String, body: Dictionary) -> void:
 		"post_validation":
 			request_finished.emit(action, true, {"ok": true}, "")
 		"experiment_chat":
+			var history: Array = body.get("conversation_history", [])
+			var user_msg := str(body.get("message", "")).strip_edges()
+			var reply := "[MOCK] Entendido"
+			if not user_msg.is_empty():
+				reply = "[MOCK] (%s) Suena interesante — cuéntame un poco más." % user_msg.left(40)
+			if history is Array and history.size() > 0:
+				reply = "[MOCK] Sigo aquí contigo. " + reply
 			request_finished.emit(
 				action,
 				true,
 				{
-					"text": "[MOCK] Hola, estoy aquí para conversar contigo.",
-					"metadata": {"condition": body.get("condition", "B"), "profile_used": false},
+					"text": reply,
+					"metadata": {
+						"condition": "A",
+						"profile_id": body.get("profile_id", ""),
+						"profile_used": true,
+						"retrieval_used": false,
+					},
 				},
 				""
 			)
-		"interview_start":
+		"interview_start", "training_start":
 			request_finished.emit(
 				action,
 				true,
 				{
-					"message": "[MOCK] Hola. Puedes saltar cualquier pregunta. " + MOCK_INTERVIEW_QUESTIONS[0],
+					"message": "[MOCK] Hola. Conversación abierta — sin número fijo de preguntas. Cuéntame, ¿cómo va tu día?",
 					"prompt_index": 0,
-					"total_prompts": MOCK_INTERVIEW_QUESTIONS.size(),
+					"total_prompts": 0,
+					"open_ended": true,
 					"complete": false,
 					"samples": [],
+					"sample_count": 0,
+					"min_samples_to_finish": 3,
+					"turn_mode": "interview",
+					"conversation_history": [],
 				},
 				""
 			)
-		"interview_turn":
+		"interview_turn", "training_answer":
 			request_finished.emit(action, true, _mock_interview_turn(body), "")
-		"interview_save":
+		"interview_finish", "training_finish":
+			request_finished.emit(
+				action,
+				true,
+				{
+					"message": "[MOCK] Perfecto. Ya puedes guardar el perfil.",
+					"complete": true,
+					"total_prompts": 0,
+					"open_ended": true,
+					"turn_mode": "finish",
+					"samples": [],
+					"sample_count": 3,
+					"min_samples_to_finish": 3,
+				},
+				""
+			)
+		"interview_save", "training_finalize":
 			request_finished.emit(action, true, {"ok": true, "profile_id": body.get("profile_id", "")}, "")
+		"validation_finalize":
+			request_finished.emit(
+				action,
+				true,
+				{
+					"profile_id": body.get("profile_id", ""),
+					"passed": true,
+					"mean_similarity": 5.0,
+					"mean_naturalness": 5.0,
+					"mean_identity_safety": 6.0,
+				},
+				""
+			)
 		_:
 			request_finished.emit(action, false, {}, "unknown_mock_action")
 
 
 func _mock_interview_turn(body: Dictionary) -> Dictionary:
-	var idx := int(body.get("prompt_index", 0))
-	var samples: Array = body.get("samples", [])
-	if samples == null:
-		samples = []
 	var user_message := str(body.get("user_message", "")).strip_edges()
 	var skip := bool(body.get("skip", false))
-	var total := MOCK_INTERVIEW_QUESTIONS.size()
-	if not skip and not user_message.is_empty() and idx >= 0 and idx < total:
+	var samples: Array = []
+	if not skip and not user_message.is_empty():
 		samples.append({
-			"prompt_id": "mock_%d" % idx,
-			"category": "mock",
-			"prompt": MOCK_INTERVIEW_QUESTIONS[idx],
+			"prompt_id": "mock_turn",
+			"category": "open",
+			"prompt": "[MOCK] Previous question",
 			"response": user_message,
 			"timestamp": Time.get_datetime_string_from_system(true),
 		})
-	var next_idx := idx + 1
-	var complete := next_idx >= total
-	var message := "[MOCK] Gracias. Pulsa Guardar para crear el perfil."
-	if not complete:
-		message = "[MOCK] Entendido. " + MOCK_INTERVIEW_QUESTIONS[next_idx]
+	var count := samples.size()
+	var message := "[MOCK] Entendido."
+	if count > 0 and count % 2 == 0:
+		message = (
+			"[MOCK] Ahora voy a tratar de imitarte y me dices qué te parece.\n\n"
+			+ "Imagina que un amigo te pregunta cómo te fue el día.\n\n"
+			+ "Yo diría algo como: «%s»\n\n"
+			+ "¿Es esto algo que dirías?"
+		) % user_message.left(60)
+	elif count > 0:
+		message = "[MOCK] Gracias. Cuéntame algo más sobre cómo sueles reaccionar ante noticias."
 	return {
 		"message": message,
-		"prompt_index": next_idx,
-		"total_prompts": total,
-		"complete": complete,
+		"prompt_index": count,
+		"total_prompts": 0,
+		"open_ended": true,
+		"complete": false,
 		"samples": samples,
+		"sample_count": count,
+		"min_samples_to_finish": 3,
 		"sample_saved": not skip and not user_message.is_empty(),
+		"turn_mode": "mirror" if count > 0 and count % 2 == 0 else "interview",
+		"conversation_history": [],
 	}

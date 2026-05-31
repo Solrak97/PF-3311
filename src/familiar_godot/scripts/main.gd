@@ -57,6 +57,7 @@ var _tts_spectrum_idx: int = -1
 var _session_end_sent: bool = false
 var _experiment_run: bool = false
 var _experiment_returned: bool = false
+var _exit_early_button: Button
 var _assistant_reply_buffer: String = ""
 
 
@@ -165,6 +166,13 @@ func _ready() -> void:
 	_avatar_viewport_container = _resolve_viewport_container()
 	if _experiment_run:
 		_new_chat_button.visible = false
+		_exit_early_button = Button.new()
+		_exit_early_button.text = "Salir"
+		ExperimentUI.style_secondary_button(_exit_early_button)
+		_exit_early_button.pressed.connect(_on_exit_early_pressed)
+		_restart_experiment_button.get_parent().add_child(_exit_early_button)
+		_restart_experiment_button.get_parent().move_child(_exit_early_button, 0)
+		_restart_experiment_button.text = "Fin interacción"
 		_condition_badge.text = ExperimentSessionManager.participant_interaction_label()
 	else:
 		_condition_badge.text = "Condition %s" % condition
@@ -452,6 +460,21 @@ func _on_restart_experiment() -> void:
 	var err := get_tree().change_scene_to_file(MAIN_MENU_SCENE)
 	if err != OK:
 		_set_status("could not return to menu: %s" % err)
+
+
+func _on_exit_early_pressed() -> void:
+	if _turn_busy:
+		_set_status("wait for current turn to finish before exiting")
+		return
+	ExperimentExitHelper.confirm_exit(self, _complete_exit_early)
+
+
+func _complete_exit_early() -> void:
+	_send_session_end("early_exit")
+	_flush_ws_outbound()
+	_experiment_returned = true
+	ExperimentSessionManager.exit_run_early("chat_ui")
+	get_tree().change_scene_to_file(ORCHESTRATOR_SCENE)
 
 
 func _return_to_orchestrator() -> void:

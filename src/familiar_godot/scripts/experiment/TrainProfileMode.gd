@@ -12,6 +12,7 @@ var _input: TextEdit
 var _send: Button
 var _save: Button
 var _skip: Button
+var _finish: Button
 var _start: Button
 
 const INPUT_MIN_LINES := 3
@@ -23,6 +24,8 @@ var _interview_busy: bool = false
 var _interview_complete: bool = false
 var _prompt_index: int = 0
 var _total_prompts: int = 0
+var _min_samples: int = 3
+var _turn_mode: String = "interview"
 var _samples: Array = []
 var _conversation_history: Array = []
 
@@ -34,8 +37,9 @@ func _ready() -> void:
 	var hint := Label.new()
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.text = (
-		"An LLM interviewer collects conversational samples to build a behavioral profile. "
-		+ "Consent is handled offline by the research team."
+		"Open conversation — no fixed question count. The agent collects how you naturally talk, "
+		+ "and sometimes tries answering as you would so you can correct it. "
+		+ "Press Finish interview when you're satisfied, then Save profile."
 	)
 	content.add_child(hint)
 	_profile_id = ExperimentScreenHelper.add_labeled_line(content, "Profile ID", "e.g. profile-001")
@@ -43,18 +47,29 @@ func _ready() -> void:
 	_progress = Label.new()
 	_progress.text = "Interview not started."
 	content.add_child(_progress)
+	var chat_panel := PanelContainer.new()
+	chat_panel.custom_minimum_size = Vector2(0, CHAT_MIN_HEIGHT)
+	chat_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	chat_panel.add_theme_stylebox_override("panel", ExperimentUI.chat_panel_style())
+	content.add_child(chat_panel)
+	var chat_margin := MarginContainer.new()
+	chat_margin.add_theme_constant_override("margin_left", 12)
+	chat_margin.add_theme_constant_override("margin_top", 10)
+	chat_margin.add_theme_constant_override("margin_right", 12)
+	chat_margin.add_theme_constant_override("margin_bottom", 10)
+	chat_panel.add_child(chat_margin)
 	_chat_scroll = ScrollContainer.new()
-	_chat_scroll.custom_minimum_size = Vector2(0, CHAT_MIN_HEIGHT)
 	_chat_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_chat_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_chat_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	content.add_child(_chat_scroll)
+	chat_margin.add_child(_chat_scroll)
 	_chat = RichTextLabel.new()
 	_chat.bbcode_enabled = true
 	_chat.fit_content = true
-	_chat.scroll_active = true
+	_chat.scroll_active = false
 	_chat.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_chat.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ExperimentUI.style_chat_output(_chat)
 	_chat_scroll.add_child(_chat)
 	var input_panel := PanelContainer.new()
 	input_panel.add_theme_stylebox_override("panel", ExperimentUI.viewport_panel())
@@ -85,7 +100,8 @@ func _ready() -> void:
 	_send.pressed.connect(_on_send)
 	input_row.add_child(_send)
 	_start = ExperimentScreenHelper.add_button(content, "Start interview", _on_start)
-	_skip = ExperimentScreenHelper.add_button(content, "Skip question", _on_skip)
+	_skip = ExperimentScreenHelper.add_button(content, "Skip", _on_skip)
+	_finish = ExperimentScreenHelper.add_button(content, "Finish interview", _on_finish)
 	_save = ExperimentScreenHelper.add_button(content, "Save profile", _on_save)
 	ExperimentScreenHelper.add_button(content, "Back", func() -> void:
 		ExperimentScreenHelper.go_to(SETUP_MENU)
@@ -155,6 +171,7 @@ func _set_interview_controls(active: bool) -> void:
 	_input.editable = active and not _interview_busy
 	_send.disabled = not active or _interview_busy
 	_skip.disabled = not active or _interview_busy or _interview_complete
+	_finish.disabled = not active or _interview_busy or _interview_complete or _samples.size() < _min_samples
 	_start.disabled = active and not _interview_complete
 	_save.disabled = not _interview_complete or _interview_busy
 	_profile_id.editable = not active
@@ -184,7 +201,7 @@ func _on_send() -> void:
 		return
 	var text := _input.text.strip_edges()
 	if text.is_empty():
-		_status.text = "Write an answer or use Skip question."
+		_status.text = "Write an answer or use Skip."
 		return
 	_submit_turn(text, false)
 
@@ -217,18 +234,28 @@ func _submit_turn(user_message: String, skip: bool) -> void:
 	_status.text = "Interviewer thinking…"
 	ExperimentApi.interview_turn({
 		"profile_id": _profile_id.text.strip_edges(),
-		"modeled_user_alias": _alias.text.strip_edges(),
-		"prompt_index": _prompt_index,
 		"user_message": user_message,
 		"skip": skip,
-		"samples": _samples,
-		"conversation_history": _conversation_history,
 	})
 
 
+func _on_finish() -> void:
+	if not _interview_active or _interview_busy or _interview_complete:
+		return
+	if _samples.size() < _min_samples:
+		_status.text = "Need at least %d answers before finishing." % _min_samples
+		return
+	_interview_busy = true
+	_finish.disabled = true
+	_skip.disabled = true
+	_send.disabled = true
+	_status.text = "Wrapping up interview…"
+	ExperimentApi.interview_finish(_profile_id.text.strip_edges())
+
+
 func _on_save() -> void:
-	if _samples.is_empty():
-		_status.text = "Complete the interview before saving."
+	if not _interview_complete:
+		_status.text = "Finish the interview first, then save."
 		return
 	var payload := {
 		"profile_id": _profile_id.text.strip_edges(),
@@ -246,25 +273,30 @@ func _on_save() -> void:
 
 
 func _apply_interview_state(data: Dictionary) -> void:
-	_prompt_index = int(data.get("prompt_index", _prompt_index))
-	_total_prompts = int(data.get("total_prompts", _total_prompts))
+	_prompt_index = int(data.get("prompt_index", data.get("sample_count", _prompt_index)))
+	_total_prompts = int(data.get("total_prompts", 0))
+	_min_samples = int(data.get("min_samples_to_finish", 3))
+	_turn_mode = str(data.get("turn_mode", "interview"))
 	_interview_complete = bool(data.get("complete", false))
 	var incoming = data.get("samples", null)
 	if incoming is Array:
 		_samples = incoming
+	var incoming_history = data.get("conversation_history", null)
+	if incoming_history is Array:
+		_conversation_history = incoming_history
 	var message := str(data.get("message", "")).strip_edges()
 	if not message.is_empty():
-		_append_assistant(message)
-		_history_append("assistant", message)
-	if _total_prompts > 0:
-		var shown := mini(_prompt_index + 1, _total_prompts) if not _interview_complete else _total_prompts
-		_progress.text = "Interview %d/%d — %d sample(s) collected" % [
-			shown,
-			_total_prompts,
-			_samples.size(),
-		]
-	else:
-		_progress.text = "%d sample(s) collected" % _samples.size()
+		_append_assistant(message, _turn_mode)
+		if not (incoming_history is Array):
+			_history_append("assistant", message)
+	var mirror_hint := ""
+	if _turn_mode == "mirror":
+		mirror_hint = " — imitación: responde si suena como tú"
+	_progress.text = "%d sample(s) collected (min %d to finish)%s" % [
+		_samples.size(),
+		_min_samples,
+		mirror_hint,
+	]
 	if _interview_complete:
 		_progress.text += " — ready to save"
 		_status.text = "Interview complete. Press Save profile."
@@ -277,10 +309,8 @@ func _append_user(text: String) -> void:
 	_scroll_chat_to_bottom()
 
 
-func _append_assistant(text: String) -> void:
-	_chat.append_text(ExperimentUI.format_assistant_open())
-	_chat.append_text(ExperimentUI.escape_bbcode(text))
-	_chat.append_text(ExperimentUI.format_assistant_close())
+func _append_assistant(text: String, turn_mode: String = "interview") -> void:
+	_chat.append_text(ExperimentUI.format_assistant_bubble(text, turn_mode))
 	_scroll_chat_to_bottom()
 
 
@@ -312,6 +342,14 @@ func _on_api_finished(action: String, success: bool, data: Variant, error: Strin
 				return
 			_apply_interview_state(data)
 			_status.text = "Interview complete." if _interview_complete else "Answer recorded."
+		"interview_finish":
+			_interview_busy = false
+			if not success or not (data is Dictionary):
+				_status.text = "Could not finish interview (%s)." % error
+				_set_interview_controls(_interview_active)
+				return
+			_apply_interview_state(data)
+			_status.text = "Interview complete. Press Save profile."
 		"interview_save", "post_raw":
 			_interview_busy = false
 			if success:

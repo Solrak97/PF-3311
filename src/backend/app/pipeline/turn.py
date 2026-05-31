@@ -16,9 +16,9 @@ from app.pipeline.text_clean import (
     strip_roleplay_for_stream,
     strip_roleplay_markers,
 )
-from app.experiment.chat import build_system_prompt, resolved_profile_id, with_ws_animation_protocol
+from app.agents.chat_graph import prepare_chat_messages
+from app.experiment.chat import resolved_profile_id
 from app.profiles.store import ProfileStore
-from app.skills.registry import SkillRegistry
 from app.storage.sqlite_store import SQLiteExperimentStore
 
 logger = logging.getLogger(__name__)
@@ -127,39 +127,47 @@ async def run_text_turn(
         cond == "B" or profile_id.strip() or experiment_mode
     )
     if use_experiment_prompt:
-        system, profile_used, retrieval_used = build_system_prompt(
+        prior: list[dict[str, Any]] = []
+        if store is not None:
+            prior = store.recent_turns_for_session(session_id=session_id, limit=8)
+            logger.info(
+                "session=%s condition=%s prior_turns=%s (session-scoped only)",
+                session_id,
+                condition,
+                len(prior),
+            )
+        messages, profile_used, retrieval_used = await prepare_chat_messages(
+            profile_store,
             condition=condition,
-            profile_store=profile_store,
             profile_id=profile_id,
             user_message=user_text.strip(),
-            skills=SkillRegistry(),
+            session_turns=prior,
+            include_ws_animation_protocol=True,
         )
-        system = with_ws_animation_protocol(system)
     else:
         system = SYSTEM_PROMPT
-    messages: list[dict[str, Any]] = [{"role": "system", "content": system}]
-    if store is not None:
-        prior = store.recent_turns_for_session(session_id=session_id, limit=8)
-        logger.info(
-            "session=%s condition=%s prior_turns=%s (session-scoped only)",
-            session_id,
-            condition,
-            len(prior),
-        )
-        for item in prior:
-            prev_user = str(item.get("user_text", "")).strip()
-            prev_assistant = str(item.get("assistant_text", "")).strip()
-            if prev_user:
-                messages.append({"role": "user", "content": prev_user})
-            if prev_assistant:
-                # Older DB rows may still contain *actions*; don't teach the model to repeat them.
-                messages.append(
-                    {
-                        "role": "assistant",
-                        "content": strip_roleplay_markers(prev_assistant),
-                    }
-                )
-    messages.append({"role": "user", "content": user_text.strip()})
+        messages = [{"role": "system", "content": system}]
+        if store is not None:
+            prior = store.recent_turns_for_session(session_id=session_id, limit=8)
+            logger.info(
+                "session=%s condition=%s prior_turns=%s (session-scoped only)",
+                session_id,
+                condition,
+                len(prior),
+            )
+            for item in prior:
+                prev_user = str(item.get("user_text", "")).strip()
+                prev_assistant = str(item.get("assistant_text", "")).strip()
+                if prev_user:
+                    messages.append({"role": "user", "content": prev_user})
+                if prev_assistant:
+                    messages.append(
+                        {
+                            "role": "assistant",
+                            "content": strip_roleplay_markers(prev_assistant),
+                        }
+                    )
+        messages.append({"role": "user", "content": user_text.strip()})
     full = ""
     sent_visible_len = 0
     try:

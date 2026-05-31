@@ -6,6 +6,7 @@ from html import escape
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
+from app.profiles.store import ProfileStore
 from app.storage.sqlite_store import SQLiteExperimentStore
 
 _CSS = """
@@ -143,7 +144,8 @@ def _page(title: str, body: str) -> str:
 </html>"""
 
 
-def _stats_cards(stats: dict, figures: dict) -> str:
+def _stats_cards(stats: dict, figures: dict, profile_stats: dict | None = None) -> str:
+    profile_stats = profile_stats or {}
     return f"""
 <div class="cards">
   <div class="card"><div class="label">Sessions</div><div class="value">{stats.get('sessions', 0)}</div></div>
@@ -158,6 +160,9 @@ def _stats_cards(stats: dict, figures: dict) -> str:
     <div class="value">{escape(str(figures.get('avg_duration_label', '—')))}</div>
     <div class="sub">{figures.get('sessions_with_duration', 0)} sessions with timer data</div>
   </div>
+  <div class="card"><div class="label">Profiles</div><div class="value">{profile_stats.get('profiles', 0)}</div></div>
+  <div class="card"><div class="label">YAML profiles</div><div class="value">{profile_stats.get('with_yaml', 0)}</div></div>
+  <div class="card"><div class="label">Validation passed</div><div class="value">{profile_stats.get('validation_passed', 0)}</div></div>
 </div>"""
 
 
@@ -192,18 +197,85 @@ def _session_index_rows(sessions: list[dict]) -> str:
     return "\n".join(rows)
 
 
-def _render_index(store: SQLiteExperimentStore, limit: int) -> str:
+def _validation_badge(passed: bool | None) -> str:
+    if passed is True:
+        return "<span class='badge' style='background:#e8f5e9;color:#2d6a4f'>passed</span>"
+    if passed is False:
+        return "<span class='badge' style='background:#fff5f5;color:#9b1c1c'>not passed</span>"
+    return "<span class='badge'>—</span>"
+
+
+def _profile_index_rows(profiles: list[dict]) -> str:
+    if not profiles:
+        return (
+            "<tr><td colspan='9' class='empty'>No profiles yet — train one under "
+            "Experimental Setup → Train Profile.</td></tr>"
+        )
+    rows: list[str] = []
+    for p in profiles:
+        pid = escape(str(p.get("profile_id", "")))
+        pid_js = pid.replace("'", "\\'")
+        alias = escape(str(p.get("modeled_user_alias") or "—"))
+        yaml_mark = "yes" if p.get("has_behavioral_yaml") else "—"
+        refinement = "yes" if p.get("has_refinement") else "—"
+        sessions = ", ".join(p.get("active_sessions") or []) or "—"
+        rows.append(
+            f"<tr class='session-row' data-profile-id='{pid}'>"
+            f"<td class='mono' onclick='openProfile(\"{pid_js}\")'>{pid}</td>"
+            f"<td onclick='openProfile(\"{pid_js}\")'>{alias}</td>"
+            f"<td onclick='openProfile(\"{pid_js}\")'>{int(p.get('sample_count') or 0)}</td>"
+            f"<td onclick='openProfile(\"{pid_js}\")'>{escape(yaml_mark)}</td>"
+            f"<td onclick='openProfile(\"{pid_js}\")'>{_validation_badge(p.get('validation_passed'))}</td>"
+            f"<td onclick='openProfile(\"{pid_js}\")'>{escape(refinement)}</td>"
+            f"<td onclick='openProfile(\"{pid_js}\")'>{escape(sessions)}</td>"
+            f"<td onclick='openProfile(\"{pid_js}\")'>{_format_dt(str(p.get('created_at', '')))}</td>"
+            f"<td class='actions'>"
+            f"<button type='button' class='btn btn-danger btn-sm' "
+            f"onclick='event.stopPropagation(); deleteProfile(\"{pid_js}\")'>Delete</button>"
+            f"</td>"
+            "</tr>"
+        )
+    return "\n".join(rows)
+
+
+def _render_index(store: SQLiteExperimentStore, profile_store: ProfileStore | None, limit: int) -> str:
     stats = store.stats()
     figures = store.session_figures()
     sessions = store.list_sessions(limit=limit)
+    profile_stats = profile_store.profile_stats() if profile_store else {}
+    profiles = profile_store.list_profiles_detail() if profile_store else []
     body = f"""
 <h1>PF-3311 Research Dashboard</h1>
-<p class="hint">Click a session row to open the message log. Session time uses the Godot timer when the client sends <code>session.end</code>; otherwise it shows active span between first and last message.</p>
-{_stats_cards(stats, figures)}
+<p class="hint">Session logs from experiment runs and behavioral profiles from training/validation. Click a row to inspect details.</p>
+{_stats_cards(stats, figures, profile_stats)}
 <div class="panel">
   <div class="toolbar">
-    <h2>Sessions</h2>
-    <button type="button" class="btn btn-danger" onclick="deleteAllData()">Delete all data</button>
+    <h2>Behavioral profiles</h2>
+    <button type="button" class="btn btn-danger" onclick="deleteAllProfiles()">Delete all profiles</button>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Profile ID</th>
+        <th>Alias</th>
+        <th>Samples</th>
+        <th>YAML</th>
+        <th>Validation</th>
+        <th>Refinement</th>
+        <th>Active sessions</th>
+        <th>Created (UTC)</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {_profile_index_rows(profiles)}
+    </tbody>
+  </table>
+</div>
+<div class="panel">
+  <div class="toolbar">
+    <h2>Chat sessions</h2>
+    <button type="button" class="btn btn-danger" onclick="deleteAllData()">Delete all session data</button>
   </div>
   <table>
     <thead>
@@ -241,8 +313,26 @@ def _render_index(store: SQLiteExperimentStore, limit: int) -> str:
     </div>
   </div>
 </div>
+<div id="profile-modal" class="modal-backdrop" onclick="if(event.target===this) closeProfileModal()">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div>
+        <h2 id="profile-modal-title">Profile</h2>
+        <div id="profile-modal-meta" class="modal-meta"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="profile-modal-delete" class="btn btn-danger" style="display:none" onclick="deleteCurrentProfile()">Delete profile</button>
+        <button type="button" class="btn modal-close" onclick="closeProfileModal()">Close</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="profile-modal-body"></div>
+    </div>
+  </div>
+</div>
 <script>
 let currentSessionId = null;
+let currentProfileId = null;
 
 function esc(s) {{
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -327,24 +417,142 @@ async function deleteCurrentSession() {{
   await deleteSession(currentSessionId);
 }}
 async function deleteAllData() {{
-  if (!confirm('Delete ALL logged sessions and messages? This cannot be undone.')) return;
-  if (!confirm('Really delete everything in the research database?')) return;
+  if (!confirm('Delete ALL logged chat sessions and messages? This cannot be undone.')) return;
+  if (!confirm('Really delete all session data in the research database?')) return;
   const res = await fetch('/research/data', {{ method: 'DELETE' }});
   if (!res.ok) {{
-    alert('Could not delete data.');
+    alert('Could not delete session data.');
     return;
   }}
   closeModal();
   location.reload();
 }}
-document.addEventListener('keydown', e => {{ if (e.key === 'Escape') closeModal(); }});
+async function openProfile(profileId) {{
+  currentProfileId = profileId;
+  const modal = document.getElementById('profile-modal');
+  const title = document.getElementById('profile-modal-title');
+  const meta = document.getElementById('profile-modal-meta');
+  const body = document.getElementById('profile-modal-body');
+  const deleteBtn = document.getElementById('profile-modal-delete');
+  deleteBtn.style.display = 'inline-block';
+  title.textContent = 'Loading…';
+  meta.textContent = '';
+  body.innerHTML = '<p class="empty">Loading profile…</p>';
+  modal.classList.add('open');
+  try {{
+    const res = await fetch('/research/profiles/' + encodeURIComponent(profileId));
+    if (!res.ok) throw new Error('not found');
+    const data = await res.json();
+    title.textContent = profileId;
+    const files = data.files || {{}};
+    meta.innerHTML = [
+      'Raw: ' + (files.raw ? 'yes' : 'no'),
+      'YAML: ' + (files.behavioral_yaml ? 'yes' : 'no'),
+      'Refinement: ' + (files.refinement ? 'yes' : 'no'),
+      'Validation records: ' + esc(String(files.validation_records || 0)),
+    ].join(' · ');
+    const raw = data.raw || {{}};
+    const behavioral = data.behavioral || {{}};
+    const validation = data.validation || {{}};
+    const summary = validation.summary || {{}};
+    const style = esc(behavioral.style_summary || '(no style summary)');
+    const samples = Array.isArray(raw.samples) ? raw.samples.length : 0;
+    body.innerHTML = (
+      '<div class="msg"><div class="who">Overview</div><div class="text">'
+      + 'Alias: ' + esc(raw.modeled_user_alias || behavioral.modeled_user_alias || '—') + '\\n'
+      + 'Training samples: ' + samples + '\\n'
+      + 'Validation passed: ' + esc(String(summary.passed ?? '—')) + '\\n'
+      + 'Mean similarity: ' + esc(String(summary.mean_similarity ?? '—'))
+      + '</div></div>'
+      + '<div class="msg agent"><div class="who">Style summary</div><div class="text">' + style + '</div></div>'
+    );
+  }} catch (err) {{
+    body.innerHTML = '<p class="empty">Failed to load profile.</p>';
+    console.error(err);
+  }}
+}}
+function closeProfileModal() {{
+  currentProfileId = null;
+  document.getElementById('profile-modal-delete').style.display = 'none';
+  document.getElementById('profile-modal').classList.remove('open');
+}}
+async function deleteProfile(profileId) {{
+  if (!confirm('Delete profile "' + profileId + '" and all related files (raw, YAML, validation, refinement, sessions)?')) return;
+  const res = await fetch('/research/profiles/' + encodeURIComponent(profileId), {{ method: 'DELETE' }});
+  if (!res.ok) {{
+    alert('Could not delete profile.');
+    return;
+  }}
+  if (currentProfileId === profileId) closeProfileModal();
+  location.reload();
+}}
+async function deleteCurrentProfile() {{
+  if (!currentProfileId) return;
+  await deleteProfile(currentProfileId);
+}}
+async function deleteAllProfiles() {{
+  if (!confirm('Delete ALL behavioral profiles and related files?')) return;
+  if (!confirm('This removes raw samples, YAML profiles, validation, and refinement data. Continue?')) return;
+  const res = await fetch('/research/profiles', {{ method: 'DELETE' }});
+  if (!res.ok) {{
+    alert('Could not delete profiles.');
+    return;
+  }}
+  closeProfileModal();
+  location.reload();
+}}
+document.addEventListener('keydown', e => {{
+  if (e.key === 'Escape') {{ closeModal(); closeProfileModal(); }}
+}});
 </script>
 """
     return _page("PF-3311 Research Dashboard", body)
 
 
-def build_dashboard_router(store: SQLiteExperimentStore) -> APIRouter:
+def build_dashboard_router(
+    store: SQLiteExperimentStore,
+    profile_store: ProfileStore | None = None,
+) -> APIRouter:
     router = APIRouter(prefix="/research", tags=["research"])
+
+    @router.get("/profiles")
+    async def list_profiles() -> list[dict]:
+        if profile_store is None:
+            return []
+        return profile_store.list_profiles_detail()
+
+    @router.get("/profiles/stats")
+    async def profile_stats() -> dict:
+        if profile_store is None:
+            return {"profiles": 0, "with_yaml": 0, "with_validation": 0, "validation_passed": 0}
+        return profile_store.profile_stats()
+
+    @router.get("/profiles/{profile_id}")
+    async def get_profile(profile_id: str) -> dict:
+        if profile_store is None:
+            raise HTTPException(status_code=503, detail="profile_store_unavailable")
+        try:
+            detail = profile_store.get_profile_detail(profile_id.strip())
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        if detail is None:
+            raise HTTPException(status_code=404, detail="profile_not_found")
+        return detail
+
+    @router.delete("/profiles/{profile_id}")
+    async def delete_profile(profile_id: str) -> dict:
+        if profile_store is None:
+            raise HTTPException(status_code=503, detail="profile_store_unavailable")
+        try:
+            return profile_store.delete_profile(profile_id.strip())
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @router.delete("/profiles")
+    async def delete_all_profiles() -> dict:
+        if profile_store is None:
+            raise HTTPException(status_code=503, detail="profile_store_unavailable")
+        return profile_store.delete_all_profiles()
 
     @router.get("/stats")
     async def stats() -> dict:
@@ -378,6 +586,6 @@ def build_dashboard_router(store: SQLiteExperimentStore) -> APIRouter:
 
     @router.get("/dashboard", response_class=HTMLResponse)
     async def dashboard(limit: int = Query(default=200, ge=1, le=500)) -> str:
-        return _render_index(store, limit)
+        return _render_index(store, profile_store, limit)
 
     return router

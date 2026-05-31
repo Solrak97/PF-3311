@@ -1,7 +1,10 @@
 extends Control
 
 const SETUP_MENU := "res://scenes/experiment/ExperimentalSetupMenu.tscn"
-const SUMMARY_MAX_HEIGHT := 200
+const SUMMARY_MAX_HEIGHT := 160
+const CHAT_MIN_HEIGHT := 220
+const INPUT_MIN_LINES := 2
+const INPUT_LINE_HEIGHT := 22
 
 const RATING_LABELS: Dictionary = {
 	"tone_similarity": "Tone similarity",
@@ -17,10 +20,16 @@ var _profile_select: OptionButton
 var _status: Label
 var _summary_scroll: ScrollContainer
 var _summary: Label
-var _sample_out: RichTextLabel
+var _chat_scroll: ScrollContainer
+var _chat: RichTextLabel
+var _input: TextEdit
+var _send: Button
+var _clear_chat: Button
 var _sliders: Dictionary = {}
 var _ratings: Array[Dictionary] = []
-var _current_prompt: String = ""
+var _conversation_history: Array = []
+var _chat_busy: bool = false
+var _pending_user_message: String = ""
 var _loaded: bool = false
 var _local_ids: Array[String] = []
 
@@ -50,11 +59,48 @@ func _ready() -> void:
 	_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_summary_scroll.add_child(_summary)
-	ExperimentScreenHelper.add_button(content, "Generate sample response", _on_generate)
-	_sample_out = RichTextLabel.new()
-	_sample_out.custom_minimum_size = Vector2(0, 80)
-	_sample_out.scroll_active = true
-	content.add_child(_sample_out)
+	var chat_label := Label.new()
+	chat_label.text = "Sample chat (condition A profile)"
+	content.add_child(chat_label)
+	_chat_scroll = ScrollContainer.new()
+	_chat_scroll.custom_minimum_size = Vector2(0, CHAT_MIN_HEIGHT)
+	_chat_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_chat_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	content.add_child(_chat_scroll)
+	_chat = RichTextLabel.new()
+	_chat.bbcode_enabled = true
+	_chat.fit_content = true
+	_chat.scroll_active = true
+	_chat.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_chat.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_chat_scroll.add_child(_chat)
+	var input_panel := PanelContainer.new()
+	input_panel.add_theme_stylebox_override("panel", ExperimentUI.viewport_panel())
+	content.add_child(input_panel)
+	var input_margin := MarginContainer.new()
+	input_margin.add_theme_constant_override("margin_left", 10)
+	input_margin.add_theme_constant_override("margin_top", 8)
+	input_margin.add_theme_constant_override("margin_right", 10)
+	input_margin.add_theme_constant_override("margin_bottom", 8)
+	input_panel.add_child(input_margin)
+	var input_col := VBoxContainer.new()
+	input_col.add_theme_constant_override("separation", 8)
+	input_margin.add_child(input_col)
+	_input = TextEdit.new()
+	_input.placeholder_text = "Message the profile… (Enter to send, Shift+Enter for new line)"
+	_input.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	_input.custom_minimum_size = Vector2(0, INPUT_MIN_LINES * INPUT_LINE_HEIGHT)
+	_input.gui_input.connect(_on_input_gui_input)
+	input_col.add_child(_input)
+	var input_row := HBoxContainer.new()
+	input_row.add_theme_constant_override("separation", 8)
+	input_row.alignment = BoxContainer.ALIGNMENT_END
+	input_col.add_child(input_row)
+	_send = Button.new()
+	_send.text = "Send"
+	_send.pressed.connect(_on_send)
+	input_row.add_child(_send)
+	_clear_chat = ExperimentScreenHelper.add_button(content, "Clear chat", _on_clear_chat)
 	for key in ExperimentPrompts.RATING_KEYS:
 		content.add_child(_make_slider_row(key))
 	ExperimentScreenHelper.add_button(content, "Add rating", _on_add_rating)
@@ -64,19 +110,21 @@ func _ready() -> void:
 	)
 	if not ExperimentApi.request_finished.is_connected(_on_api_finished):
 		ExperimentApi.request_finished.connect(_on_api_finished)
+	_set_chat_controls(false)
 	_refresh_profile_list()
-	call_deferred("_sync_summary_width")
+	call_deferred("_sync_layout_widths")
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
-		call_deferred("_sync_summary_width")
+		call_deferred("_sync_layout_widths")
 
 
-func _sync_summary_width() -> void:
-	if _summary_scroll == null or _summary == null:
-		return
-	_summary.custom_minimum_size.x = maxf(_summary_scroll.size.x - 8.0, 320.0)
+func _sync_layout_widths() -> void:
+	if _summary_scroll != null and _summary != null:
+		_summary.custom_minimum_size.x = maxf(_summary_scroll.size.x - 8.0, 320.0)
+	if _chat_scroll != null and _chat != null:
+		_chat.custom_minimum_size.x = maxf(_chat_scroll.size.x - 8.0, 320.0)
 
 
 func _selected_profile_id() -> String:
@@ -86,6 +134,7 @@ func _selected_profile_id() -> String:
 func _refresh_profile_list() -> void:
 	_loaded = false
 	_summary.text = ""
+	_reset_chat()
 	_local_ids = ProfileCatalog.list_local_raw_profile_ids()
 	ProfileCatalog.populate_option(_profile_select, _local_ids)
 	_status.text = "Loading profiles from backend…"
@@ -94,6 +143,21 @@ func _refresh_profile_list() -> void:
 
 func _apply_profile_options(profile_ids: Array[String]) -> void:
 	ProfileCatalog.populate_option(_profile_select, profile_ids)
+
+
+func _reset_chat() -> void:
+	_conversation_history.clear()
+	_pending_user_message = ""
+	_chat.clear()
+	_input.clear()
+	_chat_busy = false
+	_set_chat_controls(_loaded)
+
+
+func _set_chat_controls(active: bool) -> void:
+	_input.editable = active and not _chat_busy
+	_send.disabled = not active or _chat_busy
+	_clear_chat.disabled = not active or _chat_busy
 
 
 func _make_slider_row(key: String) -> HBoxContainer:
@@ -128,19 +192,74 @@ func _on_load() -> void:
 		return
 	_status.text = "Loading profile…"
 	ExperimentApi.get_behavioral_profile(pid)
+	ExperimentApi.validation_start(pid)
 
 
-func _on_generate() -> void:
+func _on_clear_chat() -> void:
+	_reset_chat()
+	_status.text = "Chat cleared — send a message to continue evaluating."
+
+
+func _on_send() -> void:
+	if not _loaded or _chat_busy:
+		return
+	var text := _input.text.strip_edges()
+	if text.is_empty():
+		_status.text = "Write a message to chat with the profile."
+		return
 	var pid := _selected_profile_id()
-	if pid.is_empty():
-		_status.text = "Select a profile from the list."
+	_append_user(text)
+	_input.clear()
+	_pending_user_message = text
+	_chat_busy = true
+	_set_chat_controls(true)
+	_status.text = "Agent thinking…"
+	ExperimentApi.post_experiment_chat({
+		"participant_id": "evaluator",
+		"session_id": "evaluate-%s" % pid,
+		"interaction_index": 1,
+		"condition": "A",
+		"profile_id": pid,
+		"message": text,
+		"conversation_history": _conversation_history,
+	})
+
+
+func _on_input_gui_input(event: InputEvent) -> void:
+	if not _input.editable:
 		return
-	if not _loaded:
-		_status.text = "Load a behavioral profile first."
+	if event is InputEventKey:
+		var key := event as InputEventKey
+		if not key.pressed or key.echo:
+			return
+		if key.keycode == KEY_ENTER or key.keycode == KEY_KP_ENTER:
+			if key.shift_pressed or key.ctrl_pressed:
+				return
+			get_viewport().set_input_as_handled()
+			_on_send()
+
+
+func _history_append(role: String, content: String) -> void:
+	var text := content.strip_edges()
+	if text.is_empty():
 		return
-	_current_prompt = String(ExperimentPrompts.PROMPTS[0].get("prompt", ""))
-	_status.text = "Generating sample…"
-	ExperimentApi.post_validation_generate_sample(pid, _current_prompt)
+	_conversation_history.append({"role": role, "content": text})
+
+
+func _last_assistant_message() -> String:
+	for i in range(_conversation_history.size() - 1, -1, -1):
+		var item: Variant = _conversation_history[i]
+		if item is Dictionary and str(item.get("role", "")) == "assistant":
+			return str(item.get("content", "")).strip_edges()
+	return ""
+
+
+func _assistant_message_count() -> int:
+	var count := 0
+	for item in _conversation_history:
+		if item is Dictionary and str(item.get("role", "")) == "assistant":
+			count += 1
+	return count
 
 
 func _collect_ratings() -> Dictionary:
@@ -151,16 +270,38 @@ func _collect_ratings() -> Dictionary:
 
 
 func _on_add_rating() -> void:
-	if _sample_out.text.strip_edges().is_empty():
-		_status.text = "Generate a sample before rating."
+	if _assistant_message_count() == 0:
+		_status.text = "Chat with the profile before adding a rating."
 		return
+	var scores := _collect_ratings()
+	var last_user := ""
+	for i in range(_conversation_history.size() - 1, -1, -1):
+		var item: Variant = _conversation_history[i]
+		if item is Dictionary and str(item.get("role", "")) == "user":
+			last_user = str(item.get("content", ""))
+			break
+	var last_agent := _last_assistant_message()
 	_ratings.append({
-		"prompt": _current_prompt,
-		"agent_response": _sample_out.text,
-		"scores": _collect_ratings(),
+		"kind": "sample_chat",
+		"conversation": _conversation_history.duplicate(true),
+		"agent_response": last_agent,
+		"scores": scores,
 	})
-	_status.text = "Rating %d recorded." % _ratings.size()
-	_sample_out.text = ""
+	var pid := _selected_profile_id()
+	ExperimentApi.post_validation({
+		"profile_id": pid,
+		"validator_id": "godot-ui",
+		"created_at": Time.get_datetime_string_from_system(true),
+		"ratings": [_ratings.back()],
+	})
+	ExperimentApi.validation_rating({
+		"profile_id": pid,
+		"validator_id": "godot-ui",
+		"prompt": last_user,
+		"agent_response": last_agent,
+		"scores": scores,
+	})
+	_status.text = "Rating %d recorded from sample chat." % _ratings.size()
 
 
 func _on_finish() -> void:
@@ -178,6 +319,7 @@ func _on_finish() -> void:
 	var summary := _evaluate_thresholds()
 	_status.text = summary
 	ExperimentApi.post_validation(payload)
+	ExperimentApi.validation_finalize(pid)
 
 
 func _evaluate_thresholds() -> String:
@@ -215,6 +357,31 @@ func _save_local_validation(payload: Dictionary) -> void:
 		f.close()
 
 
+func _append_user(text: String) -> void:
+	_chat.append_text(ExperimentUI.format_user_bubble(text))
+	_scroll_chat_to_bottom()
+
+
+func _append_assistant(text: String) -> void:
+	_chat.append_text(ExperimentUI.format_assistant_open())
+	_chat.append_text(ExperimentUI.escape_bbcode(text))
+	_chat.append_text(ExperimentUI.format_assistant_close())
+	_scroll_chat_to_bottom()
+
+
+func _scroll_chat_to_bottom() -> void:
+	call_deferred("_scroll_chat_to_bottom_deferred")
+
+
+func _scroll_chat_to_bottom_deferred() -> void:
+	if _chat_scroll == null:
+		return
+	await get_tree().process_frame
+	var bar := _chat_scroll.get_v_scroll_bar()
+	if bar != null:
+		bar.value = bar.max_value
+
+
 func _on_api_finished(action: String, success: bool, data: Variant, error: String) -> void:
 	match action:
 		"list_profiles":
@@ -235,17 +402,40 @@ func _on_api_finished(action: String, success: bool, data: Variant, error: Strin
 				return
 			_loaded = true
 			_summary.text = String(data.get("style_summary", "(no summary)"))
-			call_deferred("_sync_summary_width")
-			_status.text = "Behavioral profile loaded."
-		"generate_sample":
+			if data.get("yaml_profile") is Dictionary:
+				var yaml := data.get("yaml_profile") as Dictionary
+				if yaml.get("style") is Dictionary:
+					_summary.text += "\n\n[YAML profile loaded]"
+			_reset_chat()
+			call_deferred("_sync_layout_widths")
+			_status.text = "Profile loaded — send a message in the sample chat below."
+		"experiment_chat":
+			_chat_busy = false
+			_set_chat_controls(_loaded)
 			if not success or not (data is Dictionary):
-				_status.text = "Sample generation failed (%s)." % error
+				_status.text = "Chat failed (%s)." % error
+				_pending_user_message = ""
 				return
-			_current_prompt = String(data.get("prompt", _current_prompt))
-			_sample_out.text = String(data.get("agent_response", ""))
-			_status.text = "Sample ready — adjust sliders and add rating."
+			var reply := str(data.get("text", "")).strip_edges()
+			if reply.is_empty():
+				_status.text = "Empty reply from agent."
+				_pending_user_message = ""
+				return
+			if not _pending_user_message.is_empty():
+				_history_append("user", _pending_user_message)
+				_pending_user_message = ""
+			_append_assistant(reply)
+			_history_append("assistant", reply)
+			_status.text = "Reply received — continue chatting or add a rating."
 		"post_validation":
 			if success:
 				_status.text = _status.text + "\nValidation submitted."
 			else:
 				_status.text = _status.text + "\nBackend submit failed (%s). Local copy saved." % error
+		"validation_finalize":
+			if success and data is Dictionary:
+				var passed := bool(data.get("passed", false))
+				_status.text = _status.text + "\nValidation %s." % ("passed" if passed else "did not pass thresholds")
+		"validation_rating":
+			if not success:
+				_status.text = "Validation rating failed (%s)." % error

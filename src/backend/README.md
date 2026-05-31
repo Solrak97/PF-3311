@@ -35,13 +35,16 @@ Research dashboard (same backend process / Docker container as the WebSocket API
 
 | URL | Purpose |
 |-----|---------|
-| `http://127.0.0.1:8000/research/dashboard` | HTML: summary figures, session table, click row → message modal, delete controls |
+| `http://127.0.0.1:8000/research/dashboard` | HTML: summary figures, **behavioral profiles** table, chat sessions table, detail modals, delete controls |
 | `http://127.0.0.1:8000/research/figures` | JSON: avg messages/session, avg session duration |
 | `http://127.0.0.1:8000/research/stats` | JSON: session / participant / turn totals |
+| `http://127.0.0.1:8000/research/profiles` | JSON: profile index (raw, YAML, validation, refinement metadata) |
+| `http://127.0.0.1:8000/research/profiles/stats` | JSON: profile totals (count, YAML, validation passed) |
+| `http://127.0.0.1:8000/research/profiles/{profile_id}` | JSON: full profile detail for one ID |
 | `http://127.0.0.1:8000/research/sessions` | JSON: session index |
 | `http://127.0.0.1:8000/research/sessions/{session_id}/turns` | JSON: full message log for one session |
 
-From the dashboard UI you can **delete a single session** (row button or modal) or **delete all data** (with confirmation). JSON delete endpoints: `DELETE /research/sessions/{session_id}` and `DELETE /research/data`.
+From the dashboard UI you can **delete a single profile** (row button or profile modal), **delete all profiles**, **delete a single chat session** (row button or session modal), or **delete all session data** (with confirmation). JSON delete endpoints: `DELETE /research/profiles/{profile_id}`, `DELETE /research/profiles`, `DELETE /research/sessions/{session_id}`, and `DELETE /research/data`.
 
 ### Data storage
 
@@ -80,9 +83,10 @@ data/profiles/          # runtime (gitignored)
 | Method | Path | Purpose |
 |--------|------|---------|
 | POST | `/profiles/raw` | Save training samples → compile behavioral profile |
-| POST | `/profiles/interview/start` | Start LLM profile-training interview |
-| POST | `/profiles/interview/turn` | Submit answer / skip → next interviewer question |
-| POST | `/profiles/interview/save` | Persist interview samples as raw + behavioral profile |
+| POST | `/profiles/interview/start` | Start open profile-training conversation |
+| POST | `/profiles/interview/turn` | Submit answer / skip → next turn (questions or mirror imitation) |
+| POST | `/profiles/interview/finish` | Participant satisfied — unlock save (min 3 samples) |
+| POST | `/profiles/interview/save` | Extract YAML profile from samples and persist |
 | GET | `/profiles` | List trained profile IDs |
 | GET | `/profiles/behavioral/{profile_id}` | Load compiled profile |
 | POST | `/profiles/validation/generate-sample` | Sample reply using profile (condition A prompt) |
@@ -106,6 +110,37 @@ If no profile path applies, the generic spoken Buddy prompt is used (dev fallbac
 SQLite `turns` table also stores `profile_id` and `interaction_index` when present.
 
 Config (`app/config.py`): `PROFILES_DATA_DIR`, `SKILLS_DIR`, `EXPERIMENT_INTERACTION_SEC` (default 300).
+
+## LangGraph profile lifecycle
+
+Behavioral profiles are orchestrated by LangGraph in `app/agents/`:
+
+| Graph | Module | HTTP |
+|-------|--------|------|
+| Profile training | `training_graph.py` | `POST /profiles/training/*` |
+| Profile refinement | `refinement_graph.py` | `POST /profiles/refinement/*` |
+| Pilot validation | `validation_graph.py` | `POST /profiles/validation/*` |
+| Experiment chat | `chat_graph.py` | `POST /experiment/chat`, WebSocket turns |
+
+Storage under `data/profiles/` (gitignored):
+
+```
+raw/{profile_id}.json
+behavioral/{profile_id}.yaml
+behavioral/{profile_id}.json   # style_summary mirror
+refinement/{profile_id}.json
+validation/{profile_id}.json
+sessions/{profile_id}_{phase}.json
+```
+
+Legacy `/profiles/interview/*` routes delegate to the training graph.
+
+Smoke tests:
+
+```bash
+uv run python scripts/smoke_profile_workflow.py
+uv run python scripts/smoke_langgraph_agents.py
+```
 
 ## Environment
 
