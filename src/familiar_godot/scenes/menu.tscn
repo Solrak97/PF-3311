@@ -48,19 +48,72 @@ custom_minimum_size = Vector2(420, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.18, 0.2, 0.26, 1)
 theme_override_font_sizes/font_size = 26
-text = "Familiar Study"
+text = "Welcome"
 horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="Center/Card/Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45, 0.48, 0.55, 1)
 theme_override_font_sizes/font_size = 15
-text = "PF-3311 · Choose a session to begin"
+text = "Choose a session to begin"
 horizontal_alignment = 1
 autowrap_mode = 2
 
 [node name="Spacer" type="Control" parent="Center/Card/Margin/VBox"]
 custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+
+[node name="SettingsPanel" type="PanelContainer" parent="Center/Card/Margin/VBox"]
+layout_mode = 2
+
+[node name="SettingsMargin" type="MarginContainer" parent="Center/Card/Margin/VBox/SettingsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="SettingsVBox" type="VBoxContainer" parent="Center/Card/Margin/VBox/SettingsPanel/SettingsMargin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SettingsTitle" type="Label" parent="Center/Card/Margin/VBox/SettingsPanel/SettingsMargin/SettingsVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.3, 0.36, 1)
+theme_override_font_sizes/font_size = 14
+text = "Participant settings"
+
+[node name="ParticipantRow" type="HBoxContainer" parent="Center/Card/Margin/VBox/SettingsPanel/SettingsMargin/SettingsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ParticipantLabel" type="Label" parent="Center/Card/Margin/VBox/SettingsPanel/SettingsMargin/SettingsVBox/ParticipantRow"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+text = "Participant ID"
+
+[node name="ParticipantIdEdit" type="LineEdit" parent="Center/Card/Margin/VBox/SettingsPanel/SettingsMargin/SettingsVBox/ParticipantRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "e.g. P001"
+
+[node name="OrderRow" type="HBoxContainer" parent="Center/Card/Margin/VBox/SettingsPanel/SettingsMargin/SettingsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="OrderLabel" type="Label" parent="Center/Card/Margin/VBox/SettingsPanel/SettingsMargin/SettingsVBox/OrderRow"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+text = "Order"
+
+[node name="OrderSelect" type="OptionButton" parent="Center/Card/Margin/VBox/SettingsPanel/SettingsMargin/SettingsVBox/OrderRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="StartSpacer" type="Control" parent="Center/Card/Margin/VBox"]
+custom_minimum_size = Vector2(0, 4)
 layout_mode = 2
 
 [node name="StartAButton" type="Button" parent="Center/Card/Margin/VBox"]

@@ -94,13 +94,16 @@ Implementación actual para desarrollo y pruebas locales del flujo **Buddy**:
 | LLM | **Ollama** (local; intercambiable por API compatible) |
 | TTS | **Edge-TTS** (audio MP3 por frames binarios en WebSocket) |
 | STT / VAD | Interfaces + Whisper (`faster-whisper`); mic en roadmap |
+| Logging | SQLite (`turns` + `sessions`) — dashboard en `/research/dashboard` |
 | Memoria / perfiles YAML | Pendiente |
 
 Flujo del prototipo:
 
-1. El usuario escribe en Godot (voz planificada).
-2. WebSocket → backend: streaming de texto (Ollama), metadatos de animación, TTS en segmentos.
-3. Godot muestra el texto, reproduce audio en cola y refleja `clip_id` de animación.
+1. En Godot: configurar **Participant ID** y **Order** en el menú; iniciar Chat A o B.
+2. El usuario escribe; cada turno se guarda (mensaje + respuesta) en SQLite.
+3. WebSocket → backend: streaming de texto (Ollama), animación, TTS en segmentos.
+4. Godot muestra el texto, reproduce audio y refleja `clip_id`. Al cerrar sesión, el cliente envía duración y conteo de mensajes.
+5. Investigador: revisar o borrar datos en `http://127.0.0.1:8000/research/dashboard`.
 
 Instrucciones de ejecución: [`src/README.md`](src/README.md).
 
@@ -138,7 +141,10 @@ uv sync
 copy .env.example .env   # Windows; en Unix: cp .env.example .env
 uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
-# 3. Godot: abrir src/familiar_godot/project.godot y ejecutar la escena principal
+# 3. Godot: abrir src/familiar_godot/project.godot, F5 (menú). Configurar Participant ID y Order antes de Chat A/B.
+
+# Dashboard (mismos datos que SQLite en src/backend/data/experiment.db):
+# http://127.0.0.1:8000/research/dashboard
 ```
 
 Prueba por terminal:
@@ -176,8 +182,9 @@ uv run python scripts/test_ws_turn.py "Hola, ¿cómo estás?"
 - [ ] Perfiles conductuales (YAML) y capa de comportamiento sobre el LLM
 - [ ] Integración de memoria contextual (Memoria o equivalente)
 - [ ] Entrada por voz (Whisper + endpointing / VAD)
-- [ ] Avatar 3D y animaciones ligadas a `anim.command`
-- [ ] Modo experimental A/B conmutables desde configuración
+- [x] Logging de sesiones y mensajes + dashboard de investigación
+- [x] Participant ID y orden A-B / B-A en menú Godot
+- [ ] Modo experimental A/B conmutables desde configuración (condiciones ya separadas en escenas)
 - [ ] Estudios con participantes según [`docs/guia_procedimiento.html`](docs/guia_procedimiento.html)
 
 ---

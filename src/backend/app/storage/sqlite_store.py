@@ -11,6 +11,17 @@ def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _format_seconds(secs: int) -> str:
+    secs = max(0, secs)
+    if secs < 60:
+        return f"{secs}s"
+    minutes, seconds = divmod(secs, 60)
+    if minutes < 60:
+        return f"{minutes}m {seconds}s"
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours}h {minutes}m"
+
+
 @dataclass
 class TurnRecord:
     participant_id: str
@@ -71,6 +82,73 @@ class SQLiteExperimentStore:
                 ON turns(participant_id, created_at);
                 """
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sessions (
+                    session_id TEXT PRIMARY KEY,
+                    participant_id TEXT NOT NULL,
+                    condition TEXT NOT NULL,
+                    order_group TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    ended_at TEXT,
+                    duration_sec INTEGER,
+                    message_count INTEGER NOT NULL DEFAULT 0,
+                    end_reason TEXT
+                );
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_sessions_participant
+                ON sessions(participant_id, started_at);
+                """
+            )
+
+    def record_session_start(
+        self,
+        *,
+        session_id: str,
+        participant_id: str,
+        condition: str,
+        order_group: str,
+    ) -> None:
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO sessions (
+                    session_id, participant_id, condition, order_group, started_at, message_count
+                ) VALUES (?, ?, ?, ?, ?, 0)
+                ON CONFLICT(session_id) DO NOTHING
+                """,
+                (session_id, participant_id, condition, order_group, _utc_now_iso()),
+            )
+
+    def record_session_end(
+        self,
+        *,
+        session_id: str,
+        duration_sec: int | None = None,
+        message_count: int | None = None,
+        end_reason: str = "",
+    ) -> None:
+        with self._connect() as conn:
+            turn_count = conn.execute(
+                "SELECT COUNT(*) AS n FROM turns WHERE session_id = ?",
+                (session_id,),
+            ).fetchone()
+            logged_turns = int(turn_count["n"]) if turn_count else 0
+            final_count = logged_turns if message_count is None else max(logged_turns, message_count)
+            conn.execute(
+                """
+                UPDATE sessions
+                SET ended_at = ?,
+                    duration_sec = COALESCE(?, duration_sec),
+                    message_count = ?,
+                    end_reason = COALESCE(NULLIF(?, ''), end_reason)
+                WHERE session_id = ?
+                """,
+                (_utc_now_iso(), duration_sec, final_count, end_reason, session_id),
+            )
 
     def insert_turn(self, record: TurnRecord) -> None:
         with self._connect() as conn:
@@ -97,26 +175,111 @@ class SQLiteExperimentStore:
                     record.created_at,
                 ),
             )
+            conn.execute(
+                """
+                UPDATE sessions
+                SET message_count = (
+                    SELECT COUNT(*) FROM turns WHERE session_id = ?
+                )
+                WHERE session_id = ?
+                """,
+                (record.session_id, record.session_id),
+            )
 
     def list_sessions(self, limit: int = 100) -> list[dict[str, Any]]:
         with self._connect() as conn:
             rows = conn.execute(
                 """
+                WITH turn_stats AS (
+                    SELECT
+                        session_id,
+                        participant_id,
+                        MIN(created_at) AS first_turn_at,
+                        MAX(created_at) AS last_turn_at,
+                        COUNT(*) AS turns,
+                        GROUP_CONCAT(DISTINCT condition) AS conditions,
+                        GROUP_CONCAT(DISTINCT order_group) AS order_groups
+                    FROM turns
+                    GROUP BY session_id, participant_id
+                ),
+                merged AS (
+                    SELECT
+                        COALESCE(s.session_id, ts.session_id) AS session_id,
+                        COALESCE(s.participant_id, ts.participant_id) AS participant_id,
+                        COALESCE(ts.first_turn_at, s.started_at) AS started_at,
+                        COALESCE(s.ended_at, ts.last_turn_at, s.started_at) AS last_turn_at,
+                        COALESCE(ts.turns, 0) AS turns,
+                        COALESCE(ts.conditions, s.condition) AS conditions,
+                        COALESCE(ts.order_groups, s.order_group) AS order_groups,
+                        s.duration_sec,
+                        s.end_reason
+                    FROM sessions s
+                    LEFT JOIN turn_stats ts ON ts.session_id = s.session_id
+                    UNION
+                    SELECT
+                        ts.session_id,
+                        ts.participant_id,
+                        ts.first_turn_at,
+                        ts.last_turn_at,
+                        ts.turns,
+                        ts.conditions,
+                        ts.order_groups,
+                        s.duration_sec,
+                        s.end_reason
+                    FROM turn_stats ts
+                    LEFT JOIN sessions s ON s.session_id = ts.session_id
+                    WHERE s.session_id IS NULL
+                )
                 SELECT
                     session_id,
                     participant_id,
-                    MIN(created_at) AS started_at,
-                    MAX(created_at) AS last_turn_at,
-                    COUNT(*) AS turns,
-                    GROUP_CONCAT(DISTINCT condition) AS conditions
-                FROM turns
-                GROUP BY session_id, participant_id
-                ORDER BY last_turn_at DESC
+                    started_at,
+                    last_turn_at,
+                    turns,
+                    conditions,
+                    order_groups,
+                    duration_sec,
+                    end_reason
+                FROM merged
+                ORDER BY COALESCE(last_turn_at, started_at) DESC
                 LIMIT ?
                 """,
                 (limit,),
             ).fetchall()
         return [dict(row) for row in rows]
+
+    def session_figures(self) -> dict[str, Any]:
+        sessions = self.list_sessions(limit=10_000)
+        if not sessions:
+            return {
+                "avg_messages_per_session": 0.0,
+                "avg_duration_sec": 0.0,
+                "avg_duration_label": "—",
+                "sessions_with_duration": 0,
+            }
+        total_turns = sum(int(s.get("turns") or 0) for s in sessions)
+        avg_messages = total_turns / len(sessions)
+        durations = [int(s["duration_sec"]) for s in sessions if s.get("duration_sec") is not None]
+        avg_duration_sec = sum(durations) / len(durations) if durations else 0.0
+        return {
+            "avg_messages_per_session": round(avg_messages, 1),
+            "avg_duration_sec": round(avg_duration_sec, 1),
+            "avg_duration_label": _format_seconds(int(avg_duration_sec)) if durations else "—",
+            "sessions_with_duration": len(durations),
+        }
+
+    def stats(self) -> dict[str, Any]:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT
+                    COUNT(DISTINCT session_id) AS sessions,
+                    COUNT(DISTINCT participant_id) AS participants,
+                    COUNT(*) AS turns
+                FROM turns
+                """
+            ).fetchone()
+        return dict(row) if row else {"sessions": 0, "participants": 0, "turns": 0}
 
     def list_turns_for_session(self, session_id: str) -> list[dict[str, Any]]:
         with self._connect() as conn:
@@ -133,6 +296,38 @@ class SQLiteExperimentStore:
                 (session_id,),
             ).fetchall()
         return [dict(row) for row in rows]
+
+    def delete_session(self, session_id: str) -> dict[str, int]:
+        with self._connect() as conn:
+            turns_row = conn.execute(
+                "SELECT COUNT(*) AS n FROM turns WHERE session_id = ?",
+                (session_id,),
+            ).fetchone()
+            turns_deleted = int(turns_row["n"]) if turns_row else 0
+            conn.execute("DELETE FROM turns WHERE session_id = ?", (session_id,))
+            session_result = conn.execute(
+                "DELETE FROM sessions WHERE session_id = ?",
+                (session_id,),
+            )
+            sessions_deleted = int(session_result.rowcount)
+        return {
+            "session_id": session_id,
+            "turns_deleted": turns_deleted,
+            "sessions_deleted": sessions_deleted,
+        }
+
+    def delete_all_data(self) -> dict[str, int]:
+        with self._connect() as conn:
+            turns_row = conn.execute("SELECT COUNT(*) AS n FROM turns").fetchone()
+            sessions_row = conn.execute("SELECT COUNT(*) AS n FROM sessions").fetchone()
+            turns_deleted = int(turns_row["n"]) if turns_row else 0
+            sessions_deleted = int(sessions_row["n"]) if sessions_row else 0
+            conn.execute("DELETE FROM turns")
+            conn.execute("DELETE FROM sessions")
+        return {
+            "turns_deleted": turns_deleted,
+            "sessions_deleted": sessions_deleted,
+        }
 
     def recent_turns_for_session(self, session_id: str, limit: int = 8) -> list[dict[str, Any]]:
         with self._connect() as conn:

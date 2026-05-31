@@ -29,6 +29,35 @@ _brain = create_brain()
 _tts = EdgeTtsEngine()
 _store = SQLiteExperimentStore(settings.sqlite_path)
 
+
+def _session_fields(payload: dict) -> tuple[str, str, str, str]:
+    session_id = str(payload.get("session_id", "")).strip()
+    participant_id = str(payload.get("participant_id", "")).strip() or "unknown"
+    condition = str(payload.get("condition", "B")).upper()
+    if condition not in {"A", "B"}:
+        condition = "B"
+    order_group = str(payload.get("order_group", "A-B"))
+    return session_id, participant_id, condition, order_group
+
+
+async def _ack_session(
+    websocket: WebSocket,
+    *,
+    session_id: str,
+    fresh: bool = False,
+) -> None:
+    payload: dict[str, Any] = {
+        "backend": "familiar",
+        "voice": settings.edge_tts_voice,
+        "model": settings.resolved_llm_model,
+        "llm_provider": settings.llm_provider,
+        "session_id": session_id,
+    }
+    if fresh:
+        payload["fresh"] = True
+    await send_event(websocket, "session.hello_ack", payload)
+
+
 app.include_router(build_dashboard_router(_store))
 
 
@@ -61,9 +90,7 @@ async def ws_session(websocket: WebSocket) -> None:
                 payload = {}
 
             if typ == "session.hello":
-                session_id = str(payload.get("session_id", "")).strip()
-                participant_id = str(payload.get("participant_id", "")).strip()
-                condition = str(payload.get("condition", "")).strip()
+                session_id, participant_id, condition, order_group = _session_fields(payload)
                 if not session_id:
                     await send_event(
                         websocket,
@@ -72,25 +99,21 @@ async def ws_session(websocket: WebSocket) -> None:
                     )
                     continue
                 logger.info(
-                    "session.hello participant=%s session=%s condition=%s",
-                    participant_id or "?",
+                    "session.hello participant=%s session=%s condition=%s order=%s",
+                    participant_id,
                     session_id,
-                    condition or "?",
+                    condition,
+                    order_group,
                 )
-                await send_event(
-                    websocket,
-                    "session.hello_ack",
-                    {
-                        "backend": "familiar",
-                        "voice": settings.edge_tts_voice,
-                        "model": settings.resolved_llm_model,
-                        "llm_provider": settings.llm_provider,
-                        "session_id": session_id,
-                    },
+                _store.record_session_start(
+                    session_id=session_id,
+                    participant_id=participant_id,
+                    condition=condition,
+                    order_group=order_group,
                 )
+                await _ack_session(websocket, session_id=session_id)
             elif typ in ("session.new", "session.reset"):
-                session_id = str(payload.get("session_id", "")).strip()
-                participant_id = str(payload.get("participant_id", "")).strip()
+                session_id, participant_id, condition, order_group = _session_fields(payload)
                 if not session_id:
                     await send_event(
                         websocket,
@@ -99,21 +122,50 @@ async def ws_session(websocket: WebSocket) -> None:
                     )
                     continue
                 logger.info(
-                    "session.new participant=%s session=%s",
-                    participant_id or "?",
+                    "session.new participant=%s session=%s order=%s",
+                    participant_id,
                     session_id,
+                    order_group,
+                )
+                _store.record_session_start(
+                    session_id=session_id,
+                    participant_id=participant_id,
+                    condition=condition,
+                    order_group=order_group,
+                )
+                await _ack_session(websocket, session_id=session_id, fresh=True)
+            elif typ == "session.end":
+                session_id, participant_id, condition, order_group = _session_fields(payload)
+                if not session_id:
+                    await send_event(websocket, "session.end_ack", {"error": "missing_session_id"})
+                    continue
+                try:
+                    duration_sec = int(payload.get("duration_sec", 0))
+                except (TypeError, ValueError):
+                    duration_sec = 0
+                try:
+                    message_count = int(payload.get("message_count", 0))
+                except (TypeError, ValueError):
+                    message_count = 0
+                end_reason = str(payload.get("reason", "")).strip()
+                logger.info(
+                    "session.end participant=%s session=%s duration=%ss messages=%s reason=%s",
+                    participant_id,
+                    session_id,
+                    duration_sec,
+                    message_count,
+                    end_reason or "?",
+                )
+                _store.record_session_end(
+                    session_id=session_id,
+                    duration_sec=duration_sec if duration_sec > 0 else None,
+                    message_count=message_count if message_count > 0 else None,
+                    end_reason=end_reason,
                 )
                 await send_event(
                     websocket,
-                    "session.hello_ack",
-                    {
-                        "backend": "familiar",
-                        "voice": settings.edge_tts_voice,
-                        "model": settings.resolved_llm_model,
-                        "llm_provider": settings.llm_provider,
-                        "session_id": session_id,
-                        "fresh": True,
-                    },
+                    "session.end_ack",
+                    {"session_id": session_id},
                 )
             elif typ == "turn.user_text":
                 text = str(payload.get("text", ""))

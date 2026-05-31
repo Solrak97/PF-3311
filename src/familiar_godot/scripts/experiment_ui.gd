@@ -68,11 +68,13 @@ static func setup_main_screen(nodes: Dictionary) -> void:
 		style_chat_output(output)
 
 
-static func setup_menu_screen(bg: ColorRect, card: PanelContainer, quit_btn: Button) -> void:
+static func setup_menu_screen(bg: ColorRect, card: PanelContainer, quit_btn: Button, settings_panel: PanelContainer = null) -> void:
 	if bg != null:
 		bg.color = WINDOW_BG
 	if card != null:
 		card.add_theme_stylebox_override("panel", viewport_panel())
+	if settings_panel != null:
+		settings_panel.add_theme_stylebox_override("panel", viewport_panel())
 	if quit_btn != null:
 		style_menu_button(quit_btn)
 		quit_btn.text = "Quit"

@@ -40,7 +40,7 @@ Health check: `GET http://127.0.0.1:8000/healthz` returns `llm_provider` and `ll
 
 1. Open `src/familiar_godot/project.godot` in Godot 4.6.
 2. **Project → Export** → add **Windows Desktop** (or target OS).
-3. Export to e.g. `dist/Familiar.exe`.
+3. Export to e.g. `dist/PF3311-Client.exe`.
 
 Point the client at the backend:
 
@@ -49,7 +49,7 @@ Point the client at the backend:
 
   ```powershell
   $env:FAMILIAR_BACKEND_WS = "ws://127.0.0.1:8000/ws/session"
-  .\Familiar.exe
+  .\PF3311-Client.exe
   ```
 
 The env var overrides the exported default when non-empty.

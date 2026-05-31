@@ -1,7 +1,6 @@
-# Familiar backend
+# Backend (PF-3311)
 
-WebSocket API for the Godot client: Ollama chat streaming, Edge-TTS audio, optional Whisper STT.
-
+WebSocket API for the Godot client: Ollama chat streaming, Edge-TTS audio, optional Whisper STT. Persists experiment turns and session metadata in SQLite for the research dashboard.
 Uses [uv](https://docs.astral.sh/uv/) for the virtualenv and dependencies.
 
 ## Setup
@@ -32,13 +31,32 @@ Or from `src/backend/scripts/`:
 
 **WebSocket drops during dev?** `--reload` restarts the server when files change. Each turn writes to `data/experiment.db`, which used to trigger a restart and close open WS connections. The excludes above fix that. For a stable session, run without reload: `uv run uvicorn app.main:app --host 127.0.0.1 --port 8000`.
 
-Research dashboard and APIs:
+Research dashboard (same backend process / Docker container as the WebSocket API):
 
-- `http://127.0.0.1:8000/research/dashboard`
-- `http://127.0.0.1:8000/research/sessions`
-- `http://127.0.0.1:8000/research/sessions/{session_id}/turns`
+| URL | Purpose |
+|-----|---------|
+| `http://127.0.0.1:8000/research/dashboard` | HTML: summary figures, session table, click row → message modal, delete controls |
+| `http://127.0.0.1:8000/research/figures` | JSON: avg messages/session, avg session duration |
+| `http://127.0.0.1:8000/research/stats` | JSON: session / participant / turn totals |
+| `http://127.0.0.1:8000/research/sessions` | JSON: session index |
+| `http://127.0.0.1:8000/research/sessions/{session_id}/turns` | JSON: full message log for one session |
 
-Turns are persisted in SQLite (`SQLITE_PATH`, default `./data/experiment.db`), keyed by `session_id` from the client. LLM context uses **only turns from the current `session_id`** (no carry-over from prior runs). Each Godot **Start Chat A/B** or **New chat** generates a new `session_id`. Turns with a missing/empty `session_id` are rejected.
+From the dashboard UI you can **delete a single session** (row button or modal) or **delete all data** (with confirmation). JSON delete endpoints: `DELETE /research/sessions/{session_id}` and `DELETE /research/data`.
+
+### Data storage
+
+All logged data lives in SQLite (`SQLITE_PATH`, default `./data/experiment.db`; Docker: `/app/data/experiment.db` on volume `backend_data`):
+
+| Table | Contents |
+|-------|----------|
+| `turns` | Participant message, agent reply, condition, order group, timestamps |
+| `sessions` | Session start/end, client timer duration, message counts |
+
+The file is gitignored (`src/backend/data/*.db`). To wipe manually: stop the backend and delete the file, or use the dashboard **Delete all data** button.
+
+Godot sends `session.end` with elapsed timer seconds when the timer expires, the user opens the menu, starts **New chat**, or quits. Set **Participant ID** and **Order** (A-B / B-A) on the Godot menu before each run.
+
+LLM context uses **only turns from the current `session_id`** (no carry-over). Each **Start Chat A/B** or **New chat** generates a new `session_id`. Turns with a missing/empty `session_id` are rejected.
 
 ## Environment
 

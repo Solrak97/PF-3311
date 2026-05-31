@@ -8,26 +8,24 @@
 
 config_version=5
 
+[application]
+
+config/name="PF-3311"
+run/main_scene="res://scenes/menu.tscn"
+config/features=PackedStringArray("4.6", "Forward Plus")
+config/icon="res://icon.svg"
+
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=800
 window/size/mode=2
-window/size/resizable=true
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
-window/vsync/vsync_mode=1
-
-[application]
-
-config/name="Familiar - Godot"
-run/main_scene="res://scenes/menu.tscn"
-config/features=PackedStringArray("4.6", "Forward Plus")
-config/icon="res://icon.svg"
 
 [dotnet]
 
-project/assembly_name="Familiar - Godot"
+project/assembly_name="PF-3311"
 
 [editor_plugins]
 
@@ -39,6 +37,6 @@ enabled=PackedStringArray("res://addons/vrm/plugin.cfg", "res://addons/Godot-MTo
 
 [rendering]
 
+rendering_device/driver.windows="d3d12"
 anti_aliasing/quality/msaa_3d=2
 anti_aliasing/quality/use_debanding=true
-rendering_device/driver.windows="d3d12"

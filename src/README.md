@@ -6,8 +6,8 @@ Contexto del estudio PF-3311, diseño experimental y documentación: ver [README
 
 | Path | Role |
 |------|------|
-| [`familiar_godot/`](familiar_godot/) | Godot 4.6 client — naivee VRM avatar, WebSocket, audio |
-| [`backend/`](backend/) | Python FastAPI service — Ollama chat stream, Edge-TTS |
+| [`familiar_godot/`](familiar_godot/) | Godot 4.6 client — naivee VRM avatar, WebSocket, chat UI |
+| [`backend/`](backend/) | Python FastAPI — Ollama stream, Edge-TTS, SQLite logging, research dashboard |
 
 ## Run the buddy (dev)
 
@@ -23,15 +23,17 @@ Contexto del estudio PF-3311, diseño experimental y documentación: ver [README
    uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 --reload-exclude "data/*" --reload-exclude "*.db"
    ```
 
-   Research dashboard:
+   **Research dashboard:** `http://127.0.0.1:8000/research/dashboard`  
+   Session/message logs, summary figures, per-session delete, and wipe-all. Data file: `src/backend/data/experiment.db` (gitignored).
 
-   - `http://127.0.0.1:8000/research/dashboard`
+3. **Godot** — open `src/familiar_godot/project.godot`, run from `scenes/menu.tscn` (F5).
 
-3. **Godot** — open `src/familiar_godot/project.godot`, run the main scene (naivee VRM avatar; first open imports assets). Default WebSocket: `ws://127.0.0.1:8000/ws/session`. Override via **Backend Ws** or env `FAMILIAR_BACKEND_WS`.
+   - Set **Participant ID** and **Order** (A-B / B-A) on the menu before each participant.
+   - Default WebSocket: `ws://127.0.0.1:8000/ws/session` (override via **Backend Ws** or env `FAMILIAR_BACKEND_WS`).
 
 Configure the LLM in `src/backend/.env` (`LLM_PROVIDER`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`; see `.env.example`). Local Ollama needs no API key.
 
-Requires network for **Edge-TTS**. Whisper / mic endpointing are wired as libraries and modules for the next milestone; the current loop is **typed text → Ollama → optional animation JSON → MP3**.
+Requires network for **Edge-TTS**. Whisper / mic endpointing are wired as libraries for a later milestone; the current loop is **typed text → Ollama → animation JSON → MP3**.
 
 ## Docker shortcut
 
@@ -42,4 +44,6 @@ docker compose up --build -d
 docker exec -it pf3311-ollama ollama pull llama3.1:latest
 ```
 
-Shipping notes (Godot binary + Docker backend + LLM env): [`docs/DEPLOY.md`](../docs/DEPLOY.md).
+Dashboard on the same port: `http://127.0.0.1:8000/research/dashboard`. SQLite persists in Docker volume `backend_data`.
+
+Shipping notes: [`docs/DEPLOY.md`](../docs/DEPLOY.md).

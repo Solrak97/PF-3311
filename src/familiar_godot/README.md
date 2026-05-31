@@ -1,4 +1,4 @@
-# Familiar Godot client
+# Godot client (PF-3311)
 
 Godot **4.6** UI + WebSocket client for the PF-3311 experiment.
 
@@ -21,9 +21,22 @@ Lighting / background / post-FX: edit `scenes/avatar_environment.tres` (SSAO, gl
 
 **VSync** is on in `project.godot` (`display/window/vsync/vsync_mode=1`). Avatar SubViewport uses MSAA 4× + FXAA.
 
-Each **Start Chat A / B** run creates a new `session_id` (fresh LLM context; turns stored under that id in SQLite). Use **＋ New chat** in the HUD anytime to clear the transcript and start another empty session without leaving the scene. Participant id is stable per machine (`user://familiar_participant_id.txt`) for research grouping only — it is not sent to the LLM as cross-session memory.
+## Participant setup (menu)
 
-The game window starts **maximized** and UI uses `canvas_items` stretch (`aspect=expand`) so panels and chat scale with your display. The 3D avatar viewport resizes to fill the top card.
+Before **Start Chat A** or **Start Chat B**, set on the welcome screen:
+
+| Field | Saved to | Purpose |
+|-------|----------|---------|
+| **Participant ID** | `user://familiar_participant_id.txt` | Logged with every turn and session |
+| **Order** (A-B / B-A) | `user://familiar_order_group.txt` | Contrabalance group for analysis |
+
+Values persist across runs on the same machine. Override participant ID via env `FAMILIAR_PARTICIPANT_ID` if needed.
+
+## Sessions
+
+Each chat run creates a new `session_id`. Use **＋ New chat** in the HUD to clear the transcript and start fresh LLM context without leaving the scene. When a session ends (timer, menu, new chat, or quit), the client sends `session.end` to the backend with elapsed time and message count.
+
+The game window title is **PF-3311** (neutral; no study-condition wording in the UI). The window starts **maximized**; UI uses `canvas_items` stretch (`aspect=expand`) so panels and chat scale with your display. The 3D avatar viewport resizes to fill the top card.
 
 UI uses a shared warm gray palette via `scripts/experiment_ui.gd` (menu + chat). Edit colors there to retheme.
 
@@ -47,7 +60,7 @@ $env:FAMILIAR_BACKEND_WS = "ws://127.0.0.1:8000/ws/session"
 
 ## Export
 
-**Project → Export** → Windows Desktop. Ship with `FAMILIAR_BACKEND_WS` pointing at the lab server.
+**Project → Export** → Windows Desktop (e.g. `PF3311-Client.exe`). Ship with `FAMILIAR_BACKEND_WS` pointing at the lab server. See [`docs/DEPLOY.md`](../../docs/DEPLOY.md).
 
 ## License (naivee friends)
 

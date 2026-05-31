@@ -52,6 +52,7 @@ var _avatar_viewport: SubViewport
 var _avatar_viewport_container: SubViewportContainer
 var _tts_bus_index: int = -1
 var _tts_spectrum_idx: int = -1
+var _session_end_sent: bool = false
 
 
 func _apply_backend_from_env() -> void:
@@ -63,12 +64,20 @@ func _apply_backend_from_env() -> void:
 		participant_id = pid
 
 
+func _load_participant_settings() -> void:
+	_apply_backend_from_env()
+	if participant_id.is_empty():
+		participant_id = ParticipantSettings.load_participant_id()
+	order_group = ParticipantSettings.load_order_group()
+
+
 func _begin_new_session() -> void:
 	_ensure_participant_id()
 	session_id = _new_session_id()
 	_turn_index = 0
 	_turn_busy = false
 	_buddy_reply_open = false
+	_session_end_sent = false
 	_packet_backlog.clear()
 	_audio_queue.clear()
 	_reset_turn_state()
@@ -77,18 +86,11 @@ func _begin_new_session() -> void:
 func _ensure_participant_id() -> void:
 	if not participant_id.is_empty():
 		return
-	var path := "user://familiar_participant_id.txt"
-	if FileAccess.file_exists(path):
-		var f := FileAccess.open(path, FileAccess.READ)
-		if f != null:
-			participant_id = f.get_as_text().strip_edges()
-			f.close()
+	participant_id = ParticipantSettings.load_participant_id()
 	if participant_id.is_empty():
 		participant_id = "p-%s" % _random_token()
-		var w := FileAccess.open(path, FileAccess.WRITE)
-		if w != null:
-			w.store_string(participant_id)
-			w.close()
+		ParticipantSettings.save_participant_id(participant_id)
+	order_group = ParticipantSettings.load_order_group()
 
 
 func _new_session_id() -> String:
@@ -100,6 +102,7 @@ func _random_token() -> String:
 
 
 func _ready() -> void:
+	_load_participant_settings()
 	_begin_new_session()
 	ExperimentUI.apply(self)
 	ExperimentUI.setup_main_screen({
@@ -285,6 +288,32 @@ func _send_session_event(event_type: String) -> void:
 	_peer.send_text(JSON.stringify(msg))
 
 
+func _session_elapsed_sec() -> int:
+	return maxi(0, session_duration_sec - _seconds_left)
+
+
+func _send_session_end(reason: String) -> void:
+	if _session_end_sent or session_id.is_empty():
+		return
+	_session_end_sent = true
+	if _peer.get_ready_state() != WebSocketPeer.STATE_OPEN:
+		return
+	var msg: Dictionary = {
+		"v": 1,
+		"type": "session.end",
+		"payload": {
+			"participant_id": participant_id,
+			"session_id": session_id,
+			"condition": condition,
+			"order_group": order_group,
+			"duration_sec": _session_elapsed_sec(),
+			"message_count": _turn_index,
+			"reason": reason,
+		},
+	}
+	_peer.send_text(JSON.stringify(msg))
+
+
 func _on_send() -> void:
 	if _turn_busy:
 		_set_status("wait for buddy to finish…")
@@ -328,6 +357,7 @@ func _on_new_chat() -> void:
 		return
 	_player.stop()
 	_stop_buddy_thinking()
+	_send_session_end("new_chat")
 	_begin_new_session()
 	_clear_chat_log()
 	_seconds_left = session_duration_sec
@@ -343,6 +373,7 @@ func _on_restart_experiment() -> void:
 	if _turn_busy:
 		_set_status("wait for current turn to finish before restart")
 		return
+	_send_session_end("menu")
 	var err := get_tree().change_scene_to_file("res://scenes/menu.tscn")
 	if err != OK:
 		_set_status("could not return to menu: %s" % err)
@@ -359,6 +390,16 @@ func _tick_timer(delta: float) -> void:
 	if _seconds_left <= 0:
 		_send.disabled = true
 		_set_status("session time is over")
+		_send_session_end("timer")
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_send_session_end("window_close")
+
+
+func _exit_tree() -> void:
+	_send_session_end("exit")
 
 
 func _update_timer_label() -> void:
