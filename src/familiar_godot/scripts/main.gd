@@ -14,6 +14,8 @@ const FACE_TEX_PATH := "res://landing/OrangeBot_FBX/OrangeBot_FBX/Textures/Faces
 const WS_RECONNECT_DELAY_SEC := 2.0
 const TTS_BUS_NAME := "TTS"
 const TTS_LEVEL_GAIN := 12.0
+const ORCHESTRATOR_SCENE := "res://scenes/experiment/ExperimentSessionMode.tscn"
+const MAIN_MENU_SCENE := "res://scenes/experiment/ExperimentMenu.tscn"
 
 var _peer: WebSocketPeer = WebSocketPeer.new()
 var _session_ready: bool = false
@@ -53,6 +55,9 @@ var _avatar_viewport_container: SubViewportContainer
 var _tts_bus_index: int = -1
 var _tts_spectrum_idx: int = -1
 var _session_end_sent: bool = false
+var _experiment_run: bool = false
+var _experiment_returned: bool = false
+var _assistant_reply_buffer: String = ""
 
 
 func _apply_backend_from_env() -> void:
@@ -101,9 +106,44 @@ func _random_token() -> String:
 	return "%08x%08x" % [randi(), randi()]
 
 
+func _active_profile_id() -> String:
+	if _experiment_run:
+		return ExperimentSessionManager.active_profile_id()
+	return ParticipantSettings.profile_for_condition(condition)
+
+
+func _apply_profile_payload(payload: Dictionary) -> void:
+	payload["experiment_mode"] = true
+	payload["profile_id"] = _active_profile_id()
+	if _experiment_run:
+		payload["interaction_index"] = ExperimentSessionManager.current_interaction_index
+
+
+func _apply_experiment_run_config() -> void:
+	participant_id = ExperimentSessionManager.participant_id
+	condition = ExperimentSessionManager.current_condition
+	order_group = ExperimentSessionManager.assigned_order_label
+	session_duration_sec = ExperimentSessionManager.INTERACTION_SEC
+	session_id = ExperimentSessionManager.interaction_session_id()
+	_turn_index = 0
+	_turn_busy = false
+	_buddy_reply_open = false
+	_session_end_sent = false
+	_packet_backlog.clear()
+	_audio_queue.clear()
+	_reset_turn_state()
+
+
 func _ready() -> void:
 	_load_participant_settings()
-	_begin_new_session()
+	_experiment_run = (
+		ExperimentSessionManager.is_run_active
+		and ExperimentSessionManager.phase == ExperimentSessionManager.Phase.CHAT
+	)
+	if _experiment_run:
+		_apply_experiment_run_config()
+	else:
+		_begin_new_session()
 	ExperimentUI.apply(self)
 	ExperimentUI.setup_main_screen({
 		"background": _background,
@@ -123,7 +163,11 @@ func _ready() -> void:
 	_apply_backend_from_env()
 	_avatar_viewport = _resolve_viewport()
 	_avatar_viewport_container = _resolve_viewport_container()
-	_condition_badge.text = "Condition %s" % condition
+	if _experiment_run:
+		_new_chat_button.visible = false
+		_condition_badge.text = ExperimentSessionManager.participant_interaction_label()
+	else:
+		_condition_badge.text = "Condition %s" % condition
 	_clear_chat_log()
 	_send.pressed.connect(_on_send)
 	_new_chat_button.pressed.connect(_on_new_chat)
@@ -274,18 +318,32 @@ func _send_session_new() -> void:
 func _send_session_event(event_type: String) -> void:
 	if _peer.get_ready_state() != WebSocketPeer.STATE_OPEN:
 		return
+	var payload: Dictionary = {
+		"client": "godot",
+		"participant_id": participant_id,
+		"session_id": session_id,
+		"condition": condition,
+		"order_group": order_group,
+	}
+	if _experiment_run:
+		payload["experiment_mode"] = true
+		payload["profile_id"] = ExperimentSessionManager.active_profile_id()
+		payload["interaction_index"] = ExperimentSessionManager.current_interaction_index
+	else:
+		_apply_profile_payload(payload)
 	var msg: Dictionary = {
 		"v": 1,
 		"type": event_type,
-		"payload": {
-			"client": "godot",
-			"participant_id": participant_id,
-			"session_id": session_id,
-			"condition": condition,
-			"order_group": order_group,
-		},
+		"payload": payload,
 	}
 	_peer.send_text(JSON.stringify(msg))
+
+
+func _flush_ws_outbound() -> void:
+	if _peer.get_ready_state() != WebSocketPeer.STATE_OPEN:
+		return
+	for _i in range(6):
+		_peer.poll()
 
 
 func _session_elapsed_sec() -> int:
@@ -312,6 +370,7 @@ func _send_session_end(reason: String) -> void:
 		},
 	}
 	_peer.send_text(JSON.stringify(msg))
+	_flush_ws_outbound()
 
 
 func _on_send() -> void:
@@ -326,23 +385,33 @@ func _on_send() -> void:
 		return
 	_turn_busy = true
 	_send.disabled = true
+	var turn_payload: Dictionary = {
+		"participant_id": participant_id,
+		"session_id": session_id,
+		"condition": condition,
+		"order_group": order_group,
+		"turn_index": _turn_index,
+		"text": text,
+	}
+	if _experiment_run:
+		turn_payload["experiment_mode"] = true
+		turn_payload["profile_id"] = ExperimentSessionManager.active_profile_id()
+		turn_payload["interaction_index"] = ExperimentSessionManager.current_interaction_index
+		ExperimentSessionManager.append_message("user", text)
+		ExperimentSessionManager.log_run_event("user_message", {"text": text})
+	else:
+		_apply_profile_payload(turn_payload)
 	var msg: Dictionary = {
 		"v": 1,
 		"type": "turn.user_text",
-		"payload": {
-			"participant_id": participant_id,
-			"session_id": session_id,
-			"condition": condition,
-			"order_group": order_group,
-			"turn_index": _turn_index,
-			"text": text
-		},
+		"payload": turn_payload,
 	}
 	_turn_index += 1
 	_peer.send_text(JSON.stringify(msg))
 	_input.clear()
 	_focus_chat_input()
 	_buddy_reply_open = false
+	_assistant_reply_buffer = ""
 	_out.append_text(ExperimentUI.format_user_bubble(text))
 	_start_buddy_thinking()
 
@@ -374,9 +443,20 @@ func _on_restart_experiment() -> void:
 		_set_status("wait for current turn to finish before restart")
 		return
 	_send_session_end("menu")
-	var err := get_tree().change_scene_to_file("res://scenes/menu.tscn")
+	_flush_ws_outbound()
+	if _experiment_run:
+		if not _experiment_returned:
+			_experiment_returned = true
+			_return_to_orchestrator()
+		return
+	var err := get_tree().change_scene_to_file(MAIN_MENU_SCENE)
 	if err != OK:
 		_set_status("could not return to menu: %s" % err)
+
+
+func _return_to_orchestrator() -> void:
+	ExperimentSessionManager.finish_interaction()
+	get_tree().change_scene_to_file(ORCHESTRATOR_SCENE)
 
 
 func _tick_timer(delta: float) -> void:
@@ -391,6 +471,9 @@ func _tick_timer(delta: float) -> void:
 		_send.disabled = true
 		_set_status("session time is over")
 		_send_session_end("timer")
+		if _experiment_run and not _experiment_returned:
+			_experiment_returned = true
+			call_deferred("_return_to_orchestrator")
 
 
 func _notification(what: int) -> void:
@@ -431,9 +514,18 @@ func _on_json_packet(pkt: PackedByteArray) -> void:
 				_set_status("listening: %s" % listen_state)
 		"llm.delta":
 			_stop_buddy_thinking()
-			_append_output(String(payload.get("text", "")))
+			var delta := String(payload.get("text", ""))
+			_assistant_reply_buffer += delta
+			_append_output(delta)
 		"llm.done":
 			_close_buddy_bubble()
+			if _experiment_run and not _assistant_reply_buffer.is_empty():
+				ExperimentSessionManager.append_message("assistant", _assistant_reply_buffer)
+				ExperimentSessionManager.log_run_event(
+					"assistant_message",
+					{"text": _assistant_reply_buffer}
+				)
+				_assistant_reply_buffer = ""
 		"anim.command":
 			var clip_id := String(payload.get("clip_id", "idle"))
 			var blend := float(payload.get("blend_time", 0.2))

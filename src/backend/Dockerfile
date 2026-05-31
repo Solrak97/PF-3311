@@ -11,6 +11,8 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
 COPY app ./app
+COPY profiles ./profiles
+COPY skills ./skills
 COPY scripts ./scripts
 COPY .env.example ./.env.example
 

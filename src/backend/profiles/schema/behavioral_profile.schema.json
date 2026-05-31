@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["profile_id", "samples"],
+  "properties": {
+    "profile_id": { "type": "string" },
+    "modeled_user_alias": { "type": "string" },
+    "compiled_at": { "type": "string" },
+    "style_summary": { "type": "string" },
+    "samples": { "type": "array" }
+  }
+}

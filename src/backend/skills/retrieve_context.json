@@ -1,0 +1,6 @@
+{
+  "id": "retrieve_context",
+  "description": "Retrieve relevant behavioral samples from a profile for the current user message.",
+  "max_snippets": 3,
+  "match_on": "category"
+}

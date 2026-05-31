@@ -16,6 +16,9 @@ from app.pipeline.text_clean import (
     strip_roleplay_for_stream,
     strip_roleplay_markers,
 )
+from app.experiment.chat import build_system_prompt, resolved_profile_id, with_ws_animation_protocol
+from app.profiles.store import ProfileStore
+from app.skills.registry import SkillRegistry
 from app.storage.sqlite_store import SQLiteExperimentStore
 
 logger = logging.getLogger(__name__)
@@ -105,15 +108,36 @@ async def run_text_turn(
     tts: EdgeTtsEngine,
     *,
     store: SQLiteExperimentStore | None = None,
+    profile_store: ProfileStore | None = None,
     participant_id: str = "unknown",
     session_id: str = "default",
     condition: str = "B",
     order_group: str = "A-B",
     turn_index: int = 0,
     model_name: str = "ollama",
+    profile_id: str = "",
+    interaction_index: int = 0,
+    experiment_mode: bool = False,
 ) -> None:
     await send_event(ws, "listening.state", {"state": "processing"})
-    messages: list[dict[str, Any]] = [{"role": "system", "content": SYSTEM_PROMPT}]
+    profile_used = False
+    retrieval_used = False
+    cond = condition.upper()
+    use_experiment_prompt = profile_store is not None and (
+        cond == "B" or profile_id.strip() or experiment_mode
+    )
+    if use_experiment_prompt:
+        system, profile_used, retrieval_used = build_system_prompt(
+            condition=condition,
+            profile_store=profile_store,
+            profile_id=profile_id,
+            user_message=user_text.strip(),
+            skills=SkillRegistry(),
+        )
+        system = with_ws_animation_protocol(system)
+    else:
+        system = SYSTEM_PROMPT
+    messages: list[dict[str, Any]] = [{"role": "system", "content": system}]
     if store is not None:
         prior = store.recent_turns_for_session(session_id=session_id, limit=8)
         logger.info(
@@ -241,10 +265,12 @@ async def run_text_turn(
                     turn_index=turn_index,
                     user_text=user_text,
                     assistant_text=display,
-                    profile_used=condition.upper() == "A",
-                    retrieval_used=False,
+                    profile_used=profile_used,
+                    retrieval_used=retrieval_used,
                     model_name=model_name,
                     audio_error_count=len(audio_errors),
+                    profile_id=resolved_profile_id(condition=condition, profile_id=profile_id),
+                    interaction_index=interaction_index,
                 )
             )
         except Exception:  # noqa: BLE001

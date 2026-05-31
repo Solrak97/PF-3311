@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["profile_id", "consent_confirmed", "samples"],
+  "properties": {
+    "profile_id": { "type": "string" },
+    "modeled_user_alias": { "type": "string" },
+    "created_at": { "type": "string" },
+    "consent_confirmed": { "type": "boolean" },
+    "samples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["prompt_id", "category", "prompt", "response"],
+        "properties": {
+          "prompt_id": { "type": "string" },
+          "category": { "type": "string" },
+          "prompt": { "type": "string" },
+          "response": { "type": "string" },
+          "timestamp": { "type": "string" }
+        }
+      }
+    }
+  }
+}

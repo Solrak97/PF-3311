@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.2"
 
     sqlite_path: str = "./data/experiment.db"
+    profiles_data_dir: str = "./data/profiles"
+    profiles_dir: str = "./profiles"
+    control_profile_file: str = "./profiles/generic_control_agent.yaml"
+    skills_dir: str = "./skills"
+    experiment_interaction_sec: int = 300
 
     edge_tts_voice: str = "en-US-AriaNeural"
     max_tts_chars: int = 2_000

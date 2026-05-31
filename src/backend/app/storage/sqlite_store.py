@@ -36,6 +36,8 @@ class TurnRecord:
     model_name: str
     audio_error_count: int
     created_at: str
+    profile_id: str = ""
+    interaction_index: int = 0
 
 
 class SQLiteExperimentStore:
@@ -103,6 +105,14 @@ class SQLiteExperimentStore:
                 ON sessions(participant_id, started_at);
                 """
             )
+            self._migrate_turns_columns(conn)
+
+    def _migrate_turns_columns(self, conn: sqlite3.Connection) -> None:
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(turns)").fetchall()}
+        if "profile_id" not in cols:
+            conn.execute("ALTER TABLE turns ADD COLUMN profile_id TEXT NOT NULL DEFAULT ''")
+        if "interaction_index" not in cols:
+            conn.execute("ALTER TABLE turns ADD COLUMN interaction_index INTEGER NOT NULL DEFAULT 0")
 
     def record_session_start(
         self,
@@ -130,7 +140,11 @@ class SQLiteExperimentStore:
         duration_sec: int | None = None,
         message_count: int | None = None,
         end_reason: str = "",
+        participant_id: str = "unknown",
+        condition: str = "B",
+        order_group: str = "A-B",
     ) -> None:
+        now = _utc_now_iso()
         with self._connect() as conn:
             turn_count = conn.execute(
                 "SELECT COUNT(*) AS n FROM turns WHERE session_id = ?",
@@ -138,6 +152,19 @@ class SQLiteExperimentStore:
             ).fetchone()
             logged_turns = int(turn_count["n"]) if turn_count else 0
             final_count = logged_turns if message_count is None else max(logged_turns, message_count)
+            exists = conn.execute(
+                "SELECT 1 FROM sessions WHERE session_id = ?",
+                (session_id,),
+            ).fetchone()
+            if not exists:
+                conn.execute(
+                    """
+                    INSERT INTO sessions (
+                        session_id, participant_id, condition, order_group, started_at, message_count
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (session_id, participant_id, condition, order_group, now, final_count),
+                )
             conn.execute(
                 """
                 UPDATE sessions
@@ -147,18 +174,33 @@ class SQLiteExperimentStore:
                     end_reason = COALESCE(NULLIF(?, ''), end_reason)
                 WHERE session_id = ?
                 """,
-                (_utc_now_iso(), duration_sec, final_count, end_reason, session_id),
+                (now, duration_sec, final_count, end_reason, session_id),
             )
 
     def insert_turn(self, record: TurnRecord) -> None:
         with self._connect() as conn:
             conn.execute(
                 """
+                INSERT INTO sessions (
+                    session_id, participant_id, condition, order_group, started_at, message_count
+                ) VALUES (?, ?, ?, ?, ?, 0)
+                ON CONFLICT(session_id) DO NOTHING
+                """,
+                (
+                    record.session_id,
+                    record.participant_id,
+                    record.condition,
+                    record.order_group,
+                    record.created_at,
+                ),
+            )
+            conn.execute(
+                """
                 INSERT INTO turns (
                     participant_id, session_id, condition, order_group, turn_index,
                     user_text, assistant_text, profile_used, retrieval_used, model_name,
-                    audio_error_count, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    audio_error_count, created_at, profile_id, interaction_index
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     record.participant_id,
@@ -173,6 +215,8 @@ class SQLiteExperimentStore:
                     record.model_name,
                     record.audio_error_count,
                     record.created_at,
+                    record.profile_id,
+                    record.interaction_index,
                 ),
             )
             conn.execute(
@@ -273,10 +317,21 @@ class SQLiteExperimentStore:
             row = conn.execute(
                 """
                 SELECT
-                    COUNT(DISTINCT session_id) AS sessions,
-                    COUNT(DISTINCT participant_id) AS participants,
-                    COUNT(*) AS turns
-                FROM turns
+                    (
+                        SELECT COUNT(*) FROM (
+                            SELECT session_id FROM turns
+                            UNION
+                            SELECT session_id FROM sessions
+                        )
+                    ) AS sessions,
+                    (
+                        SELECT COUNT(*) FROM (
+                            SELECT participant_id FROM turns
+                            UNION
+                            SELECT participant_id FROM sessions
+                        )
+                    ) AS participants,
+                    (SELECT COUNT(*) FROM turns) AS turns
                 """
             ).fetchone()
         return dict(row) if row else {"sessions": 0, "participants": 0, "turns": 0}
@@ -375,6 +430,8 @@ class SQLiteExperimentStore:
         retrieval_used: bool,
         model_name: str,
         audio_error_count: int,
+        profile_id: str = "",
+        interaction_index: int = 0,
     ) -> TurnRecord:
         return TurnRecord(
             participant_id=participant_id,
@@ -389,4 +446,6 @@ class SQLiteExperimentStore:
             model_name=model_name,
             audio_error_count=audio_error_count,
             created_at=_utc_now_iso(),
+            profile_id=profile_id,
+            interaction_index=interaction_index,
         )

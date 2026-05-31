@@ -10,12 +10,14 @@ from app.audio.tts import EdgeTtsEngine
 from app.brain.factory import create_brain
 from app.pipeline.turn import run_text_turn, send_event
 from app.dashboard import build_dashboard_router
+from app.experiment.routes import build_experiment_router
+from app.profiles.store import ProfileStore
 from app.storage.sqlite_store import SQLiteExperimentStore
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Familiar Buddy Backend")
+app = FastAPI(title="PF-3311 Backend")
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,6 +30,7 @@ app.add_middleware(
 _brain = create_brain()
 _tts = EdgeTtsEngine()
 _store = SQLiteExperimentStore(settings.sqlite_path)
+_profile_store = ProfileStore(settings.profiles_data_dir)
 
 
 def _session_fields(payload: dict) -> tuple[str, str, str, str]:
@@ -59,6 +62,7 @@ async def _ack_session(
 
 
 app.include_router(build_dashboard_router(_store))
+app.include_router(build_experiment_router(_profile_store, _brain))
 
 
 @app.get("/healthz")
@@ -161,6 +165,9 @@ async def ws_session(websocket: WebSocket) -> None:
                     duration_sec=duration_sec if duration_sec > 0 else None,
                     message_count=message_count if message_count > 0 else None,
                     end_reason=end_reason,
+                    participant_id=participant_id,
+                    condition=condition,
+                    order_group=order_group,
                 )
                 await send_event(
                     websocket,
@@ -189,6 +196,12 @@ async def ws_session(websocket: WebSocket) -> None:
                     turn_index = int(payload.get("turn_index", 0))
                 except (TypeError, ValueError):
                     turn_index = 0
+                profile_id = str(payload.get("profile_id", "")).strip()
+                try:
+                    interaction_index = int(payload.get("interaction_index", 0))
+                except (TypeError, ValueError):
+                    interaction_index = 0
+                experiment_mode = bool(payload.get("experiment_mode", False))
 
                 await run_text_turn(
                     websocket,
@@ -196,12 +209,16 @@ async def ws_session(websocket: WebSocket) -> None:
                     _brain,
                     _tts,
                     store=_store,
+                    profile_store=_profile_store,
                     participant_id=participant_id,
                     session_id=session_id,
                     condition=condition,
                     order_group=order_group,
                     turn_index=turn_index,
                     model_name=settings.resolved_llm_model,
+                    profile_id=profile_id,
+                    interaction_index=interaction_index,
+                    experiment_mode=experiment_mode,
                 )
             else:
                 logger.warning("unknown ws message type: %s", typ)

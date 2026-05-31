@@ -58,6 +58,55 @@ Godot sends `session.end` with elapsed timer seconds when the timer expires, the
 
 LLM context uses **only turns from the current `session_id`** (no carry-over). Each **Start Chat A/B** or **New chat** generates a new `session_id`. Turns with a missing/empty `session_id` are rejected.
 
+## Profiles and skills (experiment)
+
+Committed scaffolding (runtime data is gitignored under `data/profiles/`):
+
+```
+profiles/
+  README.md
+  generic_control_agent.yaml
+  schema/raw_profile.schema.json
+  schema/behavioral_profile.schema.json
+skills/
+  README.md
+  retrieve_context.json
+data/profiles/          # runtime (gitignored)
+  raw/{profile_id}.json
+  behavioral/{profile_id}.json
+  validation/{validator_id}_{timestamp}.json
+```
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/profiles/raw` | Save training samples → compile behavioral profile |
+| POST | `/profiles/interview/start` | Start LLM profile-training interview |
+| POST | `/profiles/interview/turn` | Submit answer / skip → next interviewer question |
+| POST | `/profiles/interview/save` | Persist interview samples as raw + behavioral profile |
+| GET | `/profiles` | List trained profile IDs |
+| GET | `/profiles/behavioral/{profile_id}` | Load compiled profile |
+| POST | `/profiles/validation/generate-sample` | Sample reply using profile (condition A prompt) |
+| POST | `/profiles/validation` | Save validator ratings |
+| POST | `/experiment/chat` | Optional HTTP chat mirror (primary run path is WebSocket) |
+
+### WebSocket experiment fields
+
+On `turn.user_text` (and related session payloads), the Godot experiment run may include:
+
+| Field | Purpose |
+|-------|---------|
+| `experiment_mode: true` | Enable profile-aware prompt path |
+| `profile_id` | Trained behavioral profile for condition A; B logs as `generic_control_agent` |
+| `interaction_index` | 1 or 2 (counterbalanced order) |
+
+Condition **A**: load trained Profile A + skills retrieval stub when `profile_id` is sent.  
+Condition **B**: always load committed `profiles/generic_control_agent.yaml` — no familiarity prompting, no profile-specific retrieval (`retrieval_used=false`).  
+If no profile path applies, the generic spoken Buddy prompt is used (dev fallback).
+
+SQLite `turns` table also stores `profile_id` and `interaction_index` when present.
+
+Config (`app/config.py`): `PROFILES_DATA_DIR`, `SKILLS_DIR`, `EXPERIMENT_INTERACTION_SEC` (default 300).
+
 ## Environment
 
 See [.env.example](.env.example). Primary knobs for shipping:

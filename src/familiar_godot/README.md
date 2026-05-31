@@ -21,16 +21,35 @@ Lighting / background / post-FX: edit `scenes/avatar_environment.tres` (SSAO, gl
 
 **VSync** is on in `project.godot` (`display/window/vsync/vsync_mode=1`). Avatar SubViewport uses MSAA 4× + FXAA.
 
-## Participant setup (menu)
+## Participant setup
 
-Before **Start Chat A** or **Start Chat B**, set on the welcome screen:
+Participant ID is entered when starting an **Experimental Run** session (saved to `user://familiar_participant_id.txt`). Counterbalancing order (**A→B** / **B→A**) is chosen on the run menu.
 
-| Field | Saved to | Purpose |
-|-------|----------|---------|
-| **Participant ID** | `user://familiar_participant_id.txt` | Logged with every turn and session |
-| **Order** (A-B / B-A) | `user://familiar_order_group.txt` | Contrabalance group for analysis |
+Assign **Profile A** under **Experimental Setup → Assign Profiles** for Condition A. **Condition B** always uses the backend control baseline `generic_control_agent`.
 
-Values persist across runs on the same machine. Override participant ID via env `FAMILIAR_PARTICIPANT_ID` if needed.
+## Experiment menu
+
+The app launches directly into the experiment menu. Participant-facing chat during **Experimental Run** shows **Interacción 1** / **Interacción 2** only (never condition A/B labels).
+
+```
+Experimental Setup
+  ├── Assign Profiles (Profile A dropdown; B = generic_control_agent)
+  ├── Train Profile          (LLM interview with full transcript context; saved to raw JSON)
+  └── Evaluate Profile
+Experimental Run
+  ├── Order A → B / B → A
+  └── Session orchestrator → main.tscn (5 min × 2) → questionnaire placeholder → end
+Quit
+```
+
+| Autoload | Role |
+|----------|------|
+| `ExperimentSessionManager` | Run state: participant, profile, order, interaction index, phase |
+| `ExperimentApi` | HTTP client for setup endpoints (`FAMILIAR_BACKEND_HTTP`, mock via `FAMILIAR_MOCK_API=1` or auto-fallback) |
+
+Override participant ID via env `FAMILIAR_PARTICIPANT_ID` if needed.
+
+Local fallbacks: `user://profiles/raw/`, `user://experiment_logs/validation/`, `user://experiment_logs/run/`.
 
 ## Sessions
 
@@ -44,12 +63,14 @@ UI uses a shared warm gray palette via `scripts/experiment_ui.gd` (menu + chat).
 
 1. Start the backend (`src/backend` or Docker).
 2. Open `project.godot` in Godot 4.6 (first open may reimport assets).
-3. Press **F5** (`scenes/menu.tscn`).
+3. Press **F5** (`scenes/experiment/ExperimentMenu.tscn`).
 
 Optional env before launch:
 
 ```powershell
 $env:FAMILIAR_BACKEND_WS = "ws://127.0.0.1:8000/ws/session"
+$env:FAMILIAR_BACKEND_HTTP = "http://127.0.0.1:8000"
+$env:FAMILIAR_MOCK_API = "1"   # optional: force mock HTTP responses
 ```
 
 ## Headless import (CI / fresh clone)

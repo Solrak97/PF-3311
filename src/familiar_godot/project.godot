@@ -11,9 +11,14 @@ config_version=5
 [application]
 
 config/name="PF-3311"
-run/main_scene="res://scenes/menu.tscn"
+run/main_scene="res://scenes/experiment/ExperimentMenu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+ExperimentSessionManager="*res://scripts/experiment/ExperimentSessionManager.gd"
+ExperimentApi="*res://scripts/experiment/ExperimentApi.gd"
 
 [display]
 

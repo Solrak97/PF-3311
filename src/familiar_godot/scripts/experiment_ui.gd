@@ -68,6 +68,10 @@ static func setup_main_screen(nodes: Dictionary) -> void:
 		style_chat_output(output)
 
 
+static func setup_experiment_card(root: Control, title: String) -> Dictionary:
+	return ExperimentScreenHelper.mount(root, title)
+
+
 static func setup_menu_screen(bg: ColorRect, card: PanelContainer, quit_btn: Button, settings_panel: PanelContainer = null) -> void:
 	if bg != null:
 		bg.color = WINDOW_BG

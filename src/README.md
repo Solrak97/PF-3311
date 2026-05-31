@@ -26,7 +26,7 @@ Contexto del estudio PF-3311, diseño experimental y documentación: ver [README
    **Research dashboard:** `http://127.0.0.1:8000/research/dashboard`  
    Session/message logs, summary figures, per-session delete, and wipe-all. Data file: `src/backend/data/experiment.db` (gitignored).
 
-3. **Godot** — open `src/familiar_godot/project.godot`, run from `scenes/menu.tscn` (F5).
+3. **Godot** — open `src/familiar_godot/project.godot`, run from `scenes/experiment/ExperimentMenu.tscn` (F5).
 
    - Set **Participant ID** and **Order** (A-B / B-A) on the menu before each participant.
    - Default WebSocket: `ws://127.0.0.1:8000/ws/session` (override via **Backend Ws** or env `FAMILIAR_BACKEND_WS`).

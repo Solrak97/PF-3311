@@ -13,25 +13,27 @@ This roadmap tracks implementation status for the experimental artifact (`src/`)
 - [x] Logs are stored per participant/session/condition (SQLite turn logs).
 
 ## 2. Experimental Conditions
-- [ ] Implement Condition A: agent with familiarity behavioral profile.
-- [ ] Implement Condition B: same agent with generic behavior.
+- [x] Implement Condition A: agent with familiarity behavioral profile (JSON MVP + prompt injection).
+- [x] Implement Condition B: generic control baseline (`profiles/generic_control_agent.yaml`).
 - [x] Add condition switch: `A` or `B` (menu route to Chat A / Chat B).
 - [x] Add order support: `A -> B` and `B -> A` payload field.
+- [x] Godot experiment run orchestrator (Setup → Interacción 1/2 → questionnaire → end) reusing `main.tscn`.
 - [ ] Ensure same avatar, UI, voice, timing, and task across conditions (formalized and enforced).
 
 ## 3. Behavioral Profile System
-- [ ] Define YAML schema for familiar user profile.
-- [ ] Include fields: tone, formality, expressions, response length, humor, emotional expressiveness, pacing, topics/context facts.
-- [ ] Load YAML profile in backend.
-- [ ] Inject profile into prompt only in Condition A.
-- [ ] Use generic prompt in Condition B.
+- [x] Define JSON schema for familiar user profile (`profiles/schema/`).
+- [x] Include structured fields + style summary from training samples.
+- [x] Load profile in backend (`ProfileStore` + `compile_behavioral`).
+- [x] Inject profile into prompt only in Condition A.
+- [x] Use generic prompt in Condition B.
+- [ ] YAML schema mirror (follow-up).
 
 ## 4. Agentic Skill / Retrieval
-- [ ] Add skill for retrieving familiar user info.
-- [ ] Connect skill to profile data or Memoria.
-- [ ] Allow retrieval of contextual facts during conversation.
+- [x] Skills folder scaffold + registry stub (`skills/retrieve_context.json`).
+- [x] MVP keyword retrieval for condition A samples.
+- [ ] Connect skill to Memoria / vector retrieval.
 - [ ] Prevent explicit identity leakage unless intentionally allowed.
-- [ ] Log retrieval usage.
+- [x] Log retrieval usage flags on experiment turns.
 
 ## 5. Memoria Integration
 - [ ] Store conversation history by participant/session.
@@ -60,7 +62,7 @@ This roadmap tracks implementation status for the experimental artifact (`src/`)
 - [x] Save condition per interaction.
 - [x] Save transcript (user + assistant text per turn).
 - [x] Save agent response metadata (model + audio error count + timestamps).
-- [ ] Save profile/retrieval usage flags from real profile/retrieval modules (currently placeholders).
+- [x] Save profile/retrieval usage flags from experiment profile/retrieval modules (MVP stub).
 
 ## 9. Researcher Operations
 - [x] Research dashboard to inspect sessions and turns.
@@ -69,7 +71,7 @@ This roadmap tracks implementation status for the experimental artifact (`src/`)
 - [ ] One-command bootstrap script for demo day (Windows + optional Linux/macOS variant).
 
 ## Next Recommended Milestone
-1. Implement explicit Condition A/B prompt split.
-2. Add YAML profile loader and schema.
-3. Wire retrieval module and audit logs.
+1. Memoria / vector retrieval behind `skills/` registry.
+2. YAML profile schema mirror and richer behavioral compilation.
+3. Live questionnaire URL integration in Godot orchestrator.
 4. Enforce experiment invariants (voice/settings parity across A/B).
