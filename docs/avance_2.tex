@@ -1,0 +1,302 @@
+```tex
+\documentclass[12pt]{article}
+
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{setspace}
+\usepackage{caption}
+
+\geometry{
+    letterpaper,
+    margin=2.5cm
+}
+
+\setstretch{1.2}
+
+\title{
+    \textbf{Entregable 2: Avance de Agente e Investigación} \\
+    \large PF-3311 Agentes Virtuales Inteligentes
+}
+
+\author{
+    Luis Carlos Quesada Rodríguez
+}
+
+\date{I Ciclo 2026}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+% =========================================================
+\section{Resumen de Cambios desde el Entregable 1}
+
+\subsection{Feedback Recibido}
+
+% TODO
+
+\subsection{Cambios Realizados}
+
+% TODO
+
+\subsection{Justificación de los Cambios}
+
+% TODO
+
+% =========================================================
+\section{Estado Actual del Agente}
+
+\subsection{Descripción General del Prototipo}
+
+% TODO
+
+\subsection{Arquitectura Actual}
+
+% TODO
+
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.9\textwidth]{architecture.png}
+    \caption{Arquitectura actual del sistema.}
+\end{figure}
+
+\subsection{Estado de Implementación}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{p{7cm} p{3cm} p{3cm}}
+\toprule
+\textbf{Componente} & \textbf{Estado} & \textbf{Notas} \\
+\midrule
+Backend LangGraph & En desarrollo & Flujo principal implementado \\
+Integración Gemini & Funcional & Generación conversacional activa \\
+Sistema de perfiles conductuales & En desarrollo & Extracción inicial implementada \\
+Interfaz Godot & Funcional & Chat y flujo experimental básico \\
+STT (Whisper) & Pendiente & Integración futura \\
+TTS (Edge-TTS) & Parcial & Generación de voz básica \\
+Sistema de memoria (Memoria) & Funcional & Recuperación contextual activa \\
+Validación piloto & Pendiente & En diseño \\
+\bottomrule
+\end{tabular}
+\caption{Estado actual de implementación del sistema.}
+\end{table}
+
+\subsection{Capturas del Sistema}
+
+\begin{figure}[H]
+    \centering
+    % \includegraphics[width=0.8\textwidth]{prototype.png}
+    \caption{Estado actual de la interfaz del agente.}
+\end{figure}
+
+% =========================================================
+\section{Diseño Metodológico del Estudio}
+
+\subsection{Tipo de Estudio}
+
+% TODO
+
+\subsection{Justificación del Diseño}
+
+% TODO
+
+\subsection{Participantes}
+
+\subsubsection{Perfil de la Muestra}
+
+% TODO
+
+\subsubsection{Criterios de Inclusión y Exclusión}
+
+% TODO
+
+\subsubsection{Plan de Reclutamiento}
+
+% TODO
+
+\subsection{Diseño Experimental}
+
+% TODO
+
+\subsection{Condiciones Experimentales}
+
+\subsubsection{Condición A}
+
+% TODO
+
+\subsubsection{Condición B}
+
+% TODO
+
+\subsubsection{Justificación de la Comparación}
+
+% TODO
+
+% =========================================================
+\section{Métricas}
+
+\subsection{Métricas Principales}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{p{3cm} p{4cm} p{4cm} p{3cm}}
+\toprule
+\textbf{RQ} & \textbf{Constructo} & \textbf{Métrica} & \textbf{Instrumento} \\
+\midrule
+RQ1 & Familiaridad conductual percibida & Detección implícita de familiaridad & Escala Likert personalizada \\
+RQ2 & Naturalidad y presencia social & Presencia social percibida & Godspeed Questionnaire \\
+RQ3 & Respuesta afectiva & Valencia emocional y cercanía & SAM + Likert \\
+RQ4 & Conocimiento contextual percibido & Percepción de conocimiento previo & Escala adaptada \\
+\bottomrule
+\end{tabular}
+\caption{Relación entre preguntas de investigación y métricas.}
+\end{table}
+
+\subsection{Justificación de las Métricas}
+
+% TODO
+
+% =========================================================
+\section{Instrumentos de Recolección de Datos}
+
+\subsection{Cuestionarios}
+
+\subsubsection{Godspeed Questionnaire Series}
+
+% TODO
+
+\subsubsection{Self-Assessment Manikin (SAM)}
+
+% TODO
+
+\subsubsection{Escalas Likert Personalizadas}
+
+% TODO
+
+\subsection{Entrevista Semi-Estructurada}
+
+% TODO
+
+\subsection{Logs del Sistema}
+
+% TODO
+
+% =========================================================
+\section{Protocolos de Interacción}
+
+\subsection{Escenario 1: Conversación Cotidiana}
+
+\subsubsection{Contexto}
+
+% TODO
+
+\subsubsection{Tarea}
+
+% TODO
+
+\subsubsection{Resultado Esperado}
+
+% TODO
+
+\subsubsection{Duración Estimada}
+
+% TODO
+
+\subsection{Escenario 2: Conversación de Soporte Casual}
+
+\subsubsection{Contexto}
+
+% TODO
+
+\subsubsection{Tarea}
+
+% TODO
+
+\subsubsection{Resultado Esperado}
+
+% TODO
+
+\subsubsection{Duración Estimada}
+
+% TODO
+
+% =========================================================
+\section{Prueba de Concepto (PoC)}
+
+\subsection{Descripción General}
+
+% TODO
+
+\subsection{Componentes Integrados}
+
+\begin{itemize}
+    \item Godot Engine
+    \item Backend basado en LangGraph
+    \item Gemini API
+    \item Sistema de memoria Memoria
+    \item Sistema de perfiles conductuales
+    \item Generación de voz mediante Edge-TTS
+\end{itemize}
+
+\subsection{Limitaciones Actuales}
+
+% TODO
+
+% =========================================================
+\section{Video de Demostración}
+
+\subsection{Contenido del Video}
+
+\begin{itemize}
+    \item Presentación general del agente.
+    \item Demostración de interacción conversacional.
+    \item Ejemplo de condición experimental.
+    \item Flujo general de la PoC.
+\end{itemize}
+
+\subsection{Enlace}
+
+\url{https://youtube.com/}
+
+% =========================================================
+\section{Repositorio y Documentación}
+
+\subsection{Estructura del Repositorio}
+
+\begin{itemize}
+    \item \texttt{/backend}
+    \item \texttt{/godot-client}
+    \item \texttt{/docs}
+    \item \texttt{/profiles}
+    \item \texttt{README.md}
+\end{itemize}
+
+\subsection{Instrucciones de Ejecución}
+
+% TODO
+
+% =========================================================
+\section{Conclusiones y Trabajo Futuro}
+
+% TODO
+
+% =========================================================
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
+```
