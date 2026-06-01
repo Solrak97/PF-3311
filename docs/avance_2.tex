@@ -43,9 +43,6 @@
 
 \maketitle
 
-\tableofcontents
-\newpage
-
 % =========================================================
 \section{Resumen de Cambios desde el Entregable 1}
 
@@ -295,87 +292,225 @@ El reclutamiento se realizará mediante invitación directa dentro del entorno s
 
 
 
+
+\section{Diseño Metodológico del Estudio}
+
+\subsection{Tipo de Estudio}
+
+El estudio se plantea como una evaluación piloto de una prueba de concepto funcional. Su objetivo principal no es realizar una evaluación formal con usuarios a gran escala, sino validar la viabilidad técnica y metodológica del sistema propuesto, así como revisar si los perfiles de familiaridad conductual generan señales suficientemente reconocibles antes de una evaluación formal posterior.
+
+El diseño se divide en dos fases. La primera corresponde a una validación piloto de perfiles conductuales, donde personas familiarizadas con la persona modelada evalúan si el perfil generado presenta similitud conversacional, naturalidad y ausencia de filtración explícita de identidad. La segunda fase corresponde a una evaluación piloto de interacción, donde los participantes interactúan con dos condiciones del agente virtual: una condición con familiaridad conductual y una condición de control con comportamiento conversacional genérico.
+
+Esta elección responde a las restricciones del curso, donde se trabajará con pilotos o evaluaciones exploratorias, ya que una evaluación formal con usuarios reales requeriría autorización del CEC. Por esta razón, el estudio se enfoca en validar el funcionamiento del prototipo, la coherencia del diseño experimental y la pertinencia de las métricas seleccionadas.
+
+\subsection{Participantes}
+
+La evaluación piloto utilizará una muestra pequeña reclutada por conveniencia. Debido a la naturaleza del estudio, los participantes corresponderán principalmente a personas cercanas al entorno social del investigador y de la persona utilizada para construir el perfil conductual, incluyendo amistades, familiares, conocidos y contactos de fácil acceso.
+
+Se espera contar con dos grupos diferenciados de participantes. El primer grupo participará únicamente en la validación piloto de perfiles conductuales. Estas personas evaluarán si el perfil generado resulta reconocible y consistente, pero no participarán posteriormente en la evaluación principal para evitar sesgos derivados de exposición previa.
+
+El segundo grupo participará en la evaluación piloto de interacción con el agente. Se espera contar con aproximadamente entre 6 y 12 participantes para esta fase, permitiendo obtener métricas preliminares y retroalimentación cualitativa sobre la experiencia.
+
+Como criterios de inclusión se consideran:
+
+\begin{itemize}
+    \item ser mayor de edad;
+    \item comprender el idioma español utilizado durante la interacción;
+    \item poseer experiencia básica utilizando sistemas digitales conversacionales;
+    \item mantener algún nivel de familiaridad previa con la persona utilizada para construir el perfil conductual.
+\end{itemize}
+
+Como criterios de exclusión se consideran:
+
+\begin{itemize}
+    \item conocimiento técnico directo sobre la implementación del sistema;
+    \item conocimiento explícito previo sobre los objetivos específicos relacionados con familiaridad conductual;
+    \item haber participado previamente en la etapa de validación piloto de perfiles conductuales, en el caso de la evaluación principal;
+    \item dificultades importantes de comunicación durante la interacción.
+\end{itemize}
+
+El reclutamiento se realizará mediante invitación directa dentro del entorno social y académico cercano al proyecto. Para reducir sesgos de expectativa, las instrucciones presentadas a los participantes serán neutrales y no revelarán explícitamente la existencia de perfiles conductuales ni la identidad representada.
+
 \subsection{Diseño Experimental}
 
-El estudio utilizará un diseño intra-sujetos con contrabalanceo parcial orientado a evaluar el efecto de patrones de familiaridad conductual sobre la percepción del usuario durante interacciones conversacionales breves.
-
-El protocolo experimental estará compuesto por dos etapas diferenciadas:
+El estudio utilizará un diseño intra-sujetos con contrabalanceo parcial. Cada participante de la evaluación principal interactuará con ambas condiciones experimentales:
 
 \begin{itemize}
-    \item una etapa previa de validación piloto de perfiles conductuales;
-    \item una etapa principal de interacción experimental entre participantes y el agente virtual.
+    \item \textbf{Condición A:} agente con patrones de familiaridad conductual.
+    \item \textbf{Condición B:} agente con comportamiento conversacional genérico.
 \end{itemize}
 
+Para reducir posibles efectos de orden, los participantes serán divididos en dos grupos. Un grupo interactuará primero con la Condición A y luego con la Condición B, mientras que el otro grupo seguirá el orden inverso.
 
-\subsubsection{Validación Piloto de Perfiles Conductuales}
+Cada interacción tendrá una duración aproximada de cinco minutos y será seguida por cuestionarios post-interacción. El avatar, la voz, la interfaz, el tiempo de interacción y el tipo de tarea se mantendrán constantes entre condiciones. De esta manera, la variable principal manipulada corresponde al comportamiento conversacional del agente.
 
-Antes de la ejecución principal del experimento, los perfiles conductuales generados serán sometidos a una etapa piloto de validación orientada a verificar la consistencia y recognoscibilidad de los patrones conversacionales modelados.
 
-Esta etapa se fundamenta parcialmente en trabajos relacionados con percepción de familiaridad y \textit{perceived knowledge} en agentes virtuales, particularmente los discutidos por Poletaykina et al. (2025). Sin embargo, en contraste con enfoques centrados únicamente en percepción subjetiva de familiaridad, esta propuesta incorpora además una fase explícita de validación metodológica orientada a verificar que los perfiles conductuales produzcan señales suficientemente consistentes antes de su utilización dentro de la evaluación principal.
+\subsection{Validación Piloto de Perfiles Conductuales} Antes de utilizar un perfil conductual en la evaluación principal, este será sometido a una etapa de validación piloto orientada a verificar que el perfil generado produzca señales suficientemente consistentes de familiaridad conductual y percepción de conocimiento contextual. La inclusión de esta etapa se fundamenta parcialmente en trabajos relacionados con percepción de familiaridad y \textit{perceived knowledge} en agentes virtuales, particularmente los discutidos por Poletaykina et al. (2025). En dicha línea de investigación, la familiaridad es abordada principalmente desde la percepción subjetiva del usuario durante la interacción con agentes inteligentes. En contraste, esta propuesta incorpora adicionalmente una fase explícita de validación metodológica orientada a verificar que los perfiles conductuales generados produzcan señales suficientemente recognoscibles y consistentes antes de ser utilizados como manipulación experimental. Durante esta validación, evaluadores familiarizados con la persona modelada interactuarán brevemente con el agente utilizando la Condición A. Posteriormente, calificarán el perfil mediante escalas Likert de 1 a 7 en las siguientes dimensiones: \begin{itemize} \item similitud de tono conversacional; \item similitud de expresiones y redacción; \item similitud en longitud y estructura de respuestas; \item consistencia conductual; \item percepción general de familiaridad; \item naturalidad conversacional; \item ausencia de filtración explícita de identidad. \end{itemize} Estas dimensiones se agrupan posteriormente en tres indicadores principales: \begin{itemize} \item similitud conversacional promedio; \item naturalidad promedio; \item integridad de identidad promedio. \end{itemize} El perfil únicamente será utilizado dentro de la evaluación principal si alcanza umbrales mínimos predefinidos para estos tres indicadores. En caso contrario, será refinado iterativamente mediante retroalimentación cualitativa y nuevas muestras conversacionales. De esta manera, la validación piloto funciona como un mecanismo de verificación de la manipulación experimental, permitiendo reducir el riesgo de utilizar perfiles insuficientemente consistentes o poco reconocibles dentro de la evaluación principal. La etapa de validación piloto presenta posibles limitaciones asociadas a sesgos de familiaridad y expectativa, debido a que los evaluadores poseen conocimiento previo de la persona utilizada para construir el perfil conductual. Esta familiaridad previa podría influir en la detección subjetiva de similitudes conversacionales o favorecer procesos de interpretación retrospectiva durante la evaluación. Sin embargo, esta decisión metodológica responde también a la naturaleza misma del fenómeno estudiado. Debido a que el objetivo del proyecto consiste en analizar percepción de familiaridad conductual en agentes virtuales, resulta necesario que los evaluadores posean suficiente conocimiento previo de la persona modelada como para reconocer potenciales patrones conversacionales durante la interacción. En este sentido, la validación piloto no busca determinar equivalencia objetiva entre el agente y la persona representada, sino verificar si el perfil conductual genera señales suficientemente consistentes de familiaridad percibida para funcionar como manipulación experimental dentro de la evaluación principal. Para mitigar parcialmente posibles sesgos de expectativa o priming, el protocolo evita revelar explícitamente la naturaleza exacta de la manipulación experimental y mantiene constantes los elementos visuales y técnicos del agente entre condiciones. Asimismo, los participantes involucrados en la validación piloto no participarán posteriormente en la evaluación principal del estudio.
 
-Durante esta fase, un subconjunto independiente de participantes familiarizados con la persona utilizada para construir el perfil conductual interactuará con el agente virtual en sesiones breves de conversación utilizando la Condición A. Posteriormente, los evaluadores completarán un conjunto de escalas Likert de 1 a 7 orientadas específicamente a evaluar calidad y recognoscibilidad del perfil generado.
 
-Las dimensiones evaluadas incluyen:
+
+```tex
+\section{Métricas}
+
+\subsection{Métricas Principales}
+
+Las métricas del estudio se encuentran directamente asociadas a las preguntas de investigación y a los instrumentos utilizados durante la evaluación experimental. La evaluación principal busca medir percepción de familiaridad conductual, naturalidad conversacional, presencia social, respuesta afectiva y percepción de conocimiento contextual por parte del agente virtual.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+
+\begin{tabular}{p{1.5cm} p{4cm} p{4cm} p{4cm}}
+\toprule
+\textbf{RQ} & \textbf{Métrica Específica} & \textbf{Instrumento} & \textbf{Indicador Esperado} \\
+\midrule
+
+RQ1
+& Detección implícita de familiaridad conductual
+& Escalas Likert personalizadas post-interacción
+& Mayor percepción de familiaridad en la Condición A sin referencias explícitas de identidad. \\
+
+RQ2
+& Naturalidad percibida y presencia social
+& Godspeed Questionnaire Series
+& Incremento en percepción de naturalidad, animacidad y presencia social en la Condición A. \\
+
+RQ3
+& Valencia emocional y cercanía percibida
+& Self-Assessment Manikin (SAM) + escalas Likert complementarias
+& Respuestas afectivas más positivas y mayor percepción de cercanía durante la interacción con perfiles conductuales. \\
+
+RQ4
+& Percepción de conocimiento contextual previo
+& Escalas Likert basadas en \textit{perceived knowledge}
+& Mayor percepción de que el agente comprende o conoce información contextual relevante del participante. \\
+
+\bottomrule
+\end{tabular}
+
+\caption{Relación entre preguntas de investigación, métricas e instrumentos de evaluación.}
+
+\end{table}
+
+\subsection{Métricas de Validación de Perfiles}
+
+Además de las métricas asociadas a las preguntas de investigación, el sistema incorpora métricas internas orientadas a validar la calidad de los perfiles conductuales antes de su utilización dentro de la evaluación principal.
+
+Estas métricas funcionan como una capa de validación metodológica de la manipulación experimental y se calculan a partir de escalas Likert de 1 a 7 completadas por evaluadores familiarizados con la persona modelada.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+
+\begin{tabular}{p{5cm} p{5cm} p{3cm}}
+\toprule
+\textbf{Métrica} & \textbf{Descripción} & \textbf{Criterio Mínimo} \\
+\midrule
+
+Similitud conversacional promedio
+& Promedio agregado de similitud de tono, expresiones, longitud de respuesta, consistencia conductual y percepción general de familiaridad.
+& $\geq 4.5$ \\
+
+Naturalidad promedio
+& Evaluación general de naturalidad y coherencia conversacional del perfil generado.
+& $\geq 4.0$ \\
+
+Integridad de identidad promedio
+& Verificación de ausencia de filtración explícita de identidad o impersonación directa.
+& $\geq 5.5$ \\
+
+\bottomrule
+\end{tabular}
+
+\caption{Métricas internas de validación piloto de perfiles conductuales.}
+
+\end{table}
+
+Los perfiles que no alcancen estos umbrales serán refinados iterativamente antes de ser utilizados dentro de la evaluación principal.
+```
+
+
+\section{Instrumentos de Recolección de Datos}
+
+\subsection{Godspeed Questionnaire Series}
+
+El Godspeed Questionnaire Series se utilizará para evaluar dimensiones relacionadas con percepción social del agente, incluyendo naturalidad percibida, animacidad, agradabilidad e inteligencia percibida. En este estudio se utilizará principalmente para apoyar la medición de naturalidad y presencia social asociada a la RQ2.
+
+El cuestionario será administrado después de cada interacción experimental, permitiendo comparar la percepción del participante entre la Condición A y la Condición B.
+
+\subsection{Self-Assessment Manikin (SAM)}
+
+El Self-Assessment Manikin (SAM) será utilizado para medir la respuesta afectiva del participante, particularmente en términos de valencia emocional. Este instrumento se relaciona directamente con la RQ3, ya que permite evaluar cómo se siente el participante después de interactuar con cada condición del agente.
+
+El SAM será administrado después de cada interacción, junto con ítems complementarios de cercanía percibida.
+
+\subsection{Escalas Likert Personalizadas}
+
+Se utilizarán escalas Likert personalizadas para medir familiaridad conductual percibida y conocimiento contextual percibido. Estas escalas permiten capturar dimensiones específicas del estudio que no se encuentran completamente cubiertas por instrumentos estandarizados.
+
+Para la RQ1, los ítems estarán orientados a evaluar si el comportamiento del agente resulta familiar, reconocible o similar a una persona conocida. Para la RQ4, los ítems estarán inspirados en literatura sobre \textit{perceived knowledge} en agentes virtuales, particularmente en trabajos como Poletaykina et al. (2025), con el objetivo de evaluar si el agente parece comprender o conocer aspectos contextuales del usuario.
+
+\subsection{Entrevista Semi-Estructurada}
+
+Al finalizar ambas interacciones, se realizará una entrevista breve para recopilar retroalimentación cualitativa. Esta entrevista permitirá explorar diferencias percibidas entre condiciones, aspectos que resultaron naturales o extraños, y posibles señales de familiaridad detectadas por el participante.
+
+Las preguntas se formularán de manera cuidadosa para evitar revelar prematuramente la hipótesis del estudio durante la interacción principal.
+
+\subsection{Logs del Sistema}
+
+El sistema almacenará logs de conversación asociados a un identificador anónimo de participante. Estos logs permitirán revisar el flujo de interacción, condición experimental, tiempo de sesión, respuestas del agente y eventos relevantes del sistema.
+
+Los logs se utilizarán como apoyo para el análisis cualitativo y para verificar que las condiciones experimentales se ejecutaron correctamente.
+
+\section{Protocolos de Interacción}
+
+\subsection{Escenario 1: Conversación Cotidiana}
+
+\subsubsection{Contexto}
+
+El participante interactúa con el agente virtual en una conversación breve sobre actividades recientes, rutina diaria o eventos cotidianos. El objetivo es generar un contexto natural donde puedan emerger patrones conversacionales, seguimiento de temas y señales de familiaridad conductual.
+
+\subsubsection{Tareas}
 
 \begin{itemize}
-    \item similitud de tono conversacional;
-    \item similitud de expresiones y redacción;
-    \item similitud en longitud y estructura de respuestas;
-    \item consistencia conductual;
-    \item percepción general de familiaridad;
-    \item naturalidad conversacional;
-    \item ausencia de filtración explícita de identidad.
+    \item Saludar al agente e iniciar la conversación.
+    \item Hablar brevemente sobre cómo ha sido su día o actividades recientes.
+    \item Responder a preguntas de seguimiento realizadas por el agente.
+    \item Mantener la conversación durante aproximadamente cinco minutos.
 \end{itemize}
 
-A partir de estas evaluaciones, el sistema calcula métricas agregadas relacionadas con similitud conversacional, naturalidad e integridad de identidad. Los perfiles únicamente serán considerados aptos para la evaluación principal cuando alcancen umbrales mínimos predefinidos de consistencia y recognoscibilidad.
+\subsubsection{Resultado Esperado}
 
-Adicionalmente, el protocolo permitirá recopilar retroalimentación cualitativa y correcciones manuales por parte de los evaluadores, incluyendo observaciones relacionadas con expresiones atípicas, inconsistencias narrativas o patrones conversacionales poco representativos de la persona modelada.
+Se espera que el participante pueda sostener una conversación natural con el agente, permitiendo evaluar naturalidad percibida, presencia social, familiaridad conductual y respuesta afectiva.
 
-Los perfiles que no alcancen niveles suficientes de consistencia o recognoscibilidad serán refinados iterativamente antes de ser utilizados dentro de la evaluación experimental principal.
+\subsubsection{Duración Estimada}
 
+Aproximadamente cinco minutos por condición.
 
+\subsection{Escenario 2: Conversación de Soporte Casual}
 
-\subsubsection{Evaluación Experimental Principal}
+\subsubsection{Contexto}
 
-En la etapa principal, cada participante interactuará con ambas condiciones experimentales:
+El participante interactúa con el agente en una situación cotidiana donde comparte una experiencia ligeramente positiva, negativa o cansada. Este escenario busca observar cómo el agente responde ante contenido emocional moderado y cómo el participante percibe cercanía, apoyo o conocimiento contextual.
+
+\subsubsection{Tareas}
 
 \begin{itemize}
-    \item una condición basada en familiaridad conductual;
-    \item una condición conversacional genérica de control.
+    \item Contarle al agente una situación reciente que haya sido cansada, frustrante, positiva o curiosa.
+    \item Responder a las reacciones o preguntas de seguimiento del agente.
+    \item Continuar la conversación de manera natural.
+    \item Completar los cuestionarios posteriores a la interacción.
 \end{itemize}
 
-Para reducir posibles efectos de orden, los participantes serán divididos en dos grupos. El primer grupo interactuará inicialmente con la Condición A y posteriormente con la Condición B, mientras que el segundo grupo seguirá el orden inverso.
+\subsubsection{Resultado Esperado}
 
-Cada interacción tendrá una duración aproximada de cinco minutos, seguida de cuestionarios y evaluación posterior relacionados con percepción de familiaridad, naturalidad, presencia social y respuesta afectiva.
+Se espera observar si el agente genera respuestas percibidas como naturales, cercanas o contextualmente apropiadas. Este escenario aporta información relevante para las métricas de respuesta afectiva, familiaridad conductual y conocimiento contextual percibido.
 
-\subsection{Condiciones Experimentales}
+\subsubsection{Duración Estimada}
 
-\subsubsection{Condición Experimental: Condición A}
+Aproximadamente cinco minutos por condición.
 
-La condición experimental corresponde a un Agente Virtual Inteligente implementado en Godot, utilizando un avatar antropomórfico genérico y una voz sintética estándar. La familiaridad del agente emerge principalmente a partir de patrones conversacionales asociados a una persona conocida por el participante.
-
-Estos patrones incluyen elementos como tono comunicativo, expresiones recurrentes, estructura de respuesta, mecanismos de seguimiento conversacional y estilo general de interacción. Adicionalmente, el sistema puede incorporar referencias contextuales derivadas del perfil conductual modelado.
-
-Los perfiles utilizados en esta condición serán previamente sometidos a una etapa piloto de validación y refinamiento antes de su incorporación dentro del flujo experimental principal.
-
-\subsubsection{Condición de Control: Condición B}
-
-La condición de control utiliza el mismo sistema, avatar, voz e interfaz conversacional. Sin embargo, el agente emplea comportamiento conversacional genérico y no incorpora patrones de familiaridad conductual ni referencias contextuales asociadas al perfil modelado.
-
-De esta manera, la principal diferencia entre condiciones corresponde específicamente al comportamiento conversacional del agente y al uso de patrones de familiaridad conductual durante la interacción.
-
-\subsubsection{Justificación del Diseño}
-
-La utilización del mismo embodiment, interfaz y entorno conversacional en ambas condiciones busca aislar específicamente el efecto de los patrones conductuales sobre la percepción del usuario.
-
-Asimismo, la incorporación de una etapa previa de validación piloto permite reducir el riesgo de utilizar perfiles conductuales insuficientemente consistentes o reconocibles dentro de la evaluación principal.
-
-De esta manera, el estudio busca analizar si señales de familiaridad, naturalidad, presencia social y conocimiento contextual percibido pueden emerger principalmente a partir del comportamiento conversacional del agente y no de elementos visuales o técnicos externos.
-
-
-
-
-\bibliographystyle{IEEEtran}
-\bibliography{references}
 
 \end{document}
