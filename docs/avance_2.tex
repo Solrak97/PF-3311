@@ -27,6 +27,12 @@
     \large PF-3311 Agentes Virtuales Inteligentes
 }
 
+
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+\sloppy
+
+
 \author{
     Luis Carlos Quesada Rodríguez
 }
@@ -45,61 +51,198 @@
 
 \subsection{Feedback Recibido}
 
-% TODO
+Durante la evaluación del Entregable 1 se indicó que las preguntas RQ1 y RQ2 se encontraban correctamente formuladas y abordaban constructos distintos, destacando especialmente el enfoque de detección implícita de familiaridad conductual. También se señaló que la decisión de mantener el mismo avatar entre condiciones para aislar el efecto del comportamiento era metodológicamente adecuada.
+
+Sin embargo, se indicó que las preguntas RQ3 y RQ4 carecían de instrumentos estandarizados claramente asociados para su medición. Como recomendación, se sugirió utilizar el instrumento SAM (Self-Assessment Manikin) para medir respuestas afectivas y utilizar ítems relacionados con \textit{perceived knowledge} en agentes virtuales para fortalecer la RQ4.
 
 \subsection{Cambios Realizados}
 
-% TODO
+A partir de la retroalimentación recibida, se realizaron ajustes principalmente en la operacionalización de las preguntas de investigación y en el diseño metodológico del estudio.
+
+Las preguntas RQ3 y RQ4 fueron refinadas para alinearlas de manera más clara con constructos medibles y con instrumentos respaldados por literatura previa en HCI y agentes conversacionales. Además, se incorporó explícitamente el uso del instrumento SAM para medir respuesta afectiva y escalas relacionadas con \textit{perceived knowledge} para evaluar percepción de conocimiento contextual previo.
+
+También se refinó el enfoque conceptual del proyecto. La propuesta evolucionó desde una idea más cercana a imitación directa hacia un enfoque centrado en \textit{familiaridad conductual}, entendida como la reproducción parcial de patrones conversacionales reconocibles sin intentar replicar completamente la identidad de una persona.
+
+En términos técnicos, la arquitectura evolucionó hacia un sistema basado en LangGraph, incorporando perfiles conductuales, memoria contextual, mecanismos de refinamiento iterativo y validación piloto de perfiles antes de la ejecución experimental.
 
 \subsection{Justificación de los Cambios}
 
-% TODO
+Los cambios realizados tuvieron como principal objetivo fortalecer el anclaje metodológico y teórico de la propuesta.
+
+La reformulación parcial de las preguntas de investigación permitió establecer relaciones más claras entre constructos, métricas e instrumentos de medición. Asimismo, el cambio hacia un enfoque de familiaridad conductual permitió reducir posibles problemas relacionados con antropomorfismo excesivo o dependencia de similitud visual.
+
+Finalmente, la incorporación de mecanismos de validación y refinamiento busca asegurar que los perfiles conductuales generados produzcan señales suficientemente consistentes de familiaridad antes de realizar la evaluación experimental principal.
+
+
+
+
+
+
 
 % =========================================================
 \section{Estado Actual del Agente}
 
 \subsection{Descripción General del Prototipo}
 
-% TODO
+El estado actual del proyecto corresponde a una prueba de concepto funcional orientada a la evaluación de familiaridad conductual en agentes virtuales inteligentes. El sistema implementa un entorno conversacional basado en Godot, donde un participante interactúa con un agente virtual mediante texto y síntesis de voz.
 
-\subsection{Arquitectura Actual}
+Actualmente, el sistema permite ejecutar sesiones experimentales utilizando dos condiciones diferenciadas:
 
-% TODO
+\begin{itemize}
+\item una condición basada en perfiles conductuales personalizados;
+\item una condición de control basada en un perfil conversacional genérico.
+\end{itemize}
+
+Ambas condiciones utilizan el mismo avatar, voz e interfaz visual con el objetivo de aislar el efecto de los patrones conductuales sobre la percepción del usuario.
+
+La arquitectura del sistema utiliza un backend en Python basado en FastAPI y LangGraph para la orquestación conversacional, generación de respuestas y administración de perfiles conductuales. La generación conversacional se encuentra integrada actualmente mediante modelos locales ejecutados con Ollama, mientras que la síntesis de voz utiliza Edge-TTS.
+
+Además, el sistema incorpora mecanismos de entrenamiento, validación y refinamiento de perfiles conductuales orientados a modelar patrones conversacionales de una persona conocida sin intentar replicar explícitamente su identidad.
+
+\subsection{Arquitectura Actual del Sistema}
+
+La arquitectura actual del sistema sigue un modelo cliente-servidor desacoplado orientado a la ejecución de sesiones experimentales controladas. El cliente, desarrollado en Godot, concentra la experiencia interactiva del participante, incluyendo la interfaz conversacional, la representación visual del agente mediante un avatar VRM, la reproducción de voz sintetizada y la navegación del protocolo experimental.
+
+Por otra parte, el backend implementado en Python utiliza FastAPI y LangGraph para coordinar la lógica conversacional y experimental del sistema. Esta capa es responsable de la generación de respuestas mediante modelos de lenguaje, la administración de perfiles conductuales, la síntesis de voz y el almacenamiento de logs experimentales.
+
+Actualmente, el sistema incorpora múltiples grafos especializados dentro de LangGraph, orientados a distintas tareas del flujo experimental. Entre ellos se incluyen grafos para interacción conversacional, entrenamiento de perfiles conductuales, refinamiento iterativo y validación piloto de perfiles antes de la ejecución experimental principal.
+
+La comunicación entre Godot y el backend se realiza mediante WebSockets para la interacción conversacional en tiempo real y mediante HTTP para operaciones relacionadas con configuración experimental, entrenamiento y validación de perfiles.
+
+\begin{table}[H]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+
+\begin{tabular}{p{4cm} p{9cm}}
+\toprule
+\textbf{Componente} & \textbf{Responsabilidad Principal} \\
+\midrule
+
+Godot
+& Interfaz del participante, representación visual del agente, navegación experimental y reproducción de audio. \\
+
+FastAPI
+& Comunicación cliente-servidor, manejo de sesiones y exposición de rutas experimentales. \\
+
+LangGraph
+& Orquestación de flujos conversacionales, entrenamiento y validación de perfiles conductuales. \\
+
+Ollama
+& Generación conversacional mediante modelos de lenguaje locales. \\
+
+Edge-TTS
+& Síntesis de voz para respuestas del agente. \\
+
+Sistema de perfiles conductuales
+& Construcción y aplicación de patrones conversacionales personalizados. \\
+
+SQLite y almacenamiento local
+& Persistencia de sesiones, logs y perfiles experimentales. \\
+
+\bottomrule
+\end{tabular}
+
+\caption{Resumen de componentes principales del sistema.}
+
+\end{table}
 
 \begin{figure}[H]
     \centering
     % \includegraphics[width=0.9\textwidth]{architecture.png}
-    \caption{Arquitectura actual del sistema.}
+    \caption{Arquitectura general actual del sistema.}
 \end{figure}
 
 \subsection{Estado de Implementación}
 
+La Tabla 2 resume el estado actual de las principales funcionalidades implementadas dentro del prototipo, distinguiendo entre componentes completamente funcionales, parcialmente implementados y elementos aún pendientes dentro del flujo experimental.
+
 \begin{table}[H]
 \centering
-\begin{tabular}{p{7cm} p{3cm} p{3cm}}
+\small
+\renewcommand{\arraystretch}{1.2}
+
+\begin{tabular}{p{6cm} p{2.5cm} p{5cm}}
 \toprule
-\textbf{Componente} & \textbf{Estado} & \textbf{Notas} \\
+\textbf{Funcionalidad} & \textbf{Estado} & \textbf{Observaciones} \\
 \midrule
-Backend LangGraph & En desarrollo & Flujo principal implementado \\
-Integración Gemini & Funcional & Generación conversacional activa \\
-Sistema de perfiles conductuales & En desarrollo & Extracción inicial implementada \\
-Interfaz Godot & Funcional & Chat y flujo experimental básico \\
-STT (Whisper) & Pendiente & Integración futura \\
-TTS (Edge-TTS) & Parcial & Generación de voz básica \\
-Sistema de memoria (Memoria) & Funcional & Recuperación contextual activa \\
-Validación piloto & Pendiente & En diseño \\
+
+Interfaz conversacional en Godot
+& Funcional
+& Flujo experimental y chat implementados. \\
+
+Sesiones experimentales A/B
+& Funcional
+& Contrabalanceo intra-sujetos operativo. \\
+
+Integración LangGraph
+& Funcional
+& Grafos para chat, entrenamiento y validación. \\
+
+Generación conversacional
+& Funcional
+& Integración mediante Ollama. \\
+
+Síntesis de voz (Edge-TTS)
+& Funcional
+& Reproducción de audio integrada en Godot. \\
+
+Avatar VRM y animaciones
+& Funcional
+& Lip-sync y reacciones básicas implementadas. \\
+
+Sistema de perfiles conductuales
+& Funcional
+& Entrenamiento y perfiles YAML operativos. \\
+
+Refinamiento iterativo de perfiles
+& Parcial
+& Flujo backend implementado; integración UI pendiente. \\
+
+Validación piloto de perfiles
+& Funcional
+& Evaluación y métricas iniciales disponibles. \\
+
+Entrada por voz (Whisper/STT)
+& Opcional
+& Integración futura aún no prioritaria para el estudio. \\
+
+Cuestionarios integrados
+& Pendiente
+& Actualmente externos al sistema. \\
+
 \bottomrule
 \end{tabular}
-\caption{Estado actual de implementación del sistema.}
+
+\caption{Estado actual de implementación del prototipo.}
+
 \end{table}
 
-\subsection{Capturas del Sistema}
+\subsection{Retos Actuales de Implementación}
 
-\begin{figure}[H]
-    \centering
-    % \includegraphics[width=0.8\textwidth]{prototype.png}
-    \caption{Estado actual de la interfaz del agente.}
-\end{figure}
+Actualmente, el sistema ya permite generar perfiles conductuales mediante entrevistas conversacionales guiadas por modelos de lenguaje, así como procesos de refinamiento y validación iterativa de dichos perfiles. Experiencias previas realizadas fuera del entorno experimental actual han mostrado resultados satisfactorios en la construcción de perfiles capaces de reproducir patrones conversacionales reconocibles y consistentes.
+
+No obstante, uno de los principales objetivos actuales del proyecto consiste en integrar estos mecanismos dentro de la experiencia interactiva desarrollada en Godot, manteniendo simultáneamente criterios de naturalidad conversacional, usabilidad y control experimental. En particular, el proyecto busca adaptar y mejorar técnicas previamente utilizadas en otros entornos para que puedan funcionar de manera más orgánica dentro del flujo experimental propuesto.
+
+Otro reto importante corresponde al balance entre flexibilidad conversacional y consistencia metodológica. El sistema busca permitir conversaciones suficientemente naturales para capturar estilos narrativos, mecanismos de seguimiento conversacional y patrones de respuesta del usuario modelado, manteniendo al mismo tiempo un nivel de control adecuado para la comparación experimental entre condiciones.
+
+Finalmente, algunos componentes complementarios del sistema continúan en evaluación o refinamiento, incluyendo integración opcional de entrada por voz y mecanismos más robustos de validación de perfiles conductuales antes de la ejecución de estudios piloto.
+
+
+\subsection{Capturas y Diagramas}
+
+Para la versión actual del prototipo se consideran relevantes las siguientes capturas y diagramas:
+
+\begin{itemize}
+\item menú experimental principal;
+\item interfaz conversacional del agente;
+\item selección de orden experimental A/B;
+\item entrenamiento de perfiles conductuales;
+\item validación piloto de perfiles;
+\item arquitectura general del sistema;
+\item ejemplo de perfil conductual estructurado.
+\end{itemize}
+
 
 % =========================================================
 \section{Diseño Metodológico del Estudio}
