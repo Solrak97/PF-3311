@@ -10,7 +10,6 @@ extends Control
 const MAX_PACKETS_PER_FRAME := 8
 const MAX_OUTPUT_CHARS := 12_000
 const MAX_MP3_BYTES := 8 * 1024 * 1024
-const FACE_TEX_PATH := "res://landing/OrangeBot_FBX/OrangeBot_FBX/Textures/Faces.jpg"
 const WS_RECONNECT_DELAY_SEC := 2.0
 const TTS_BUS_NAME := "TTS"
 const TTS_LEVEL_GAIN := 12.0
@@ -193,7 +192,6 @@ func _ready() -> void:
 		if _avatar_ctl.has_method("setup"):
 			_avatar_ctl.call("setup", _buddy)
 			_anim.text = "anim: idle (expressions)"
-	_patch_face_materials_if_orange_bot()
 	if not _player.finished.is_connected(_on_audio_finished):
 		_player.finished.connect(_on_audio_finished)
 	_setup_tts_audio_bus()
@@ -690,48 +688,7 @@ func _resolve_buddy() -> Node3D:
 	if buddy != null:
 		return buddy
 	buddy = find_child("Buddy", true, false) as Node3D
-	if buddy != null:
-		return buddy
-	return get_node_or_null("%OrangeBot") as Node3D
-
-
-func _patch_face_materials_if_orange_bot() -> void:
-	if not is_instance_valid(_buddy):
-		return
-	if _buddy.name != "OrangeBot" and not String(_buddy.scene_file_path).contains("OrangeBot"):
-		return
-	var face_tex := load(FACE_TEX_PATH) as Texture2D
-	if face_tex == null:
-		push_warning("Face texture not found: %s" % FACE_TEX_PATH)
-		return
-	_apply_face_texture_recursive(_buddy, face_tex)
-
-
-func _apply_face_texture_recursive(root: Node, face_tex: Texture2D) -> void:
-	if root is MeshInstance3D:
-		var mi := root as MeshInstance3D
-		var mesh := mi.mesh
-		if mesh != null:
-			for i in range(mesh.get_surface_count()):
-				var mat := mi.get_active_material(i)
-				if mat == null:
-					mat = mesh.surface_get_material(i)
-				if mat == null:
-					continue
-				var mat_name := String(mat.resource_name).to_lower()
-				if not (mat_name.contains("face") or mat_name.contains("screen")):
-					continue
-				var base := mat as BaseMaterial3D
-				var patched := base.duplicate() if base != null else StandardMaterial3D.new()
-				if patched is BaseMaterial3D:
-					var p := patched as BaseMaterial3D
-					p.albedo_texture = face_tex
-					p.emission_enabled = true
-					p.emission_texture = face_tex
-					p.emission_energy_multiplier = 0.5
-				mi.set_surface_override_material(i, patched)
-	for child in root.get_children():
-		_apply_face_texture_recursive(child, face_tex)
+	return buddy
 
 
 func _start_buddy_thinking() -> void:

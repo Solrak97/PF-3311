@@ -3,8 +3,7 @@
 | Path | Use |
 |------|-----|
 | `naivee-friends_Explorers_Published/naivee-friends_Explorers_published.vrm` | **Active avatar** (naivee friends, CubiCot) |
-| `naivee-friends_Explorers_Published/licenses/` | License PDFs (renamed from zip typo `licesnses`) |
-| `OrangeBot_*` | Legacy robot (unused in `main.tscn`; kept for reference) |
+| `naivee-friends_Explorers_Published/licenses/` | License PDFs |
 
 Large archives (`*.zip`, `*.unitypackage`) are gitignored; keep the extracted `.vrm` for the project.
 
