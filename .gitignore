@@ -2,7 +2,9 @@
 .env.*
 !.env.example
 .venv/
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -16,3 +18,17 @@ build/
 src/backend/data/*.db
 src/backend/data/voice_previews/
 src/backend/data/profiles/
+
+# LaTeX build artifacts (docs/)
+docs/*.aux
+docs/*.bbl
+docs/*.blg
+docs/*.fdb_latexmk
+docs/*.fls
+docs/*.log
+docs/*.out
+docs/*.synctex.gz
+docs/*.toc
+docs/*.lof
+docs/*.lot
+# docs/*.pdf
