@@ -1,6 +1,8 @@
 # Prototipo técnico (`src/`)
 
-Contexto del estudio PF-3311, diseño experimental y documentación: ver [README principal](../README.md).
+**Inicio rápido (Docker + Godot):** ver [README principal](../README.md).
+
+Contexto del estudio, diseño experimental y documentación extendida: mismo README y `docs/`.
 
 ## Layout
 
@@ -46,4 +48,4 @@ docker exec -it pf3311-ollama ollama pull llama3.1:latest
 
 Dashboard on the same port: `http://127.0.0.1:8000/research/dashboard`. SQLite persists in Docker volume `backend_data`.
 
-Shipping notes: [`docs/DEPLOY.md`](../docs/DEPLOY.md).
+Lab export and multi-machine setup: [README principal](../README.md) (secciones Docker y export Godot).

@@ -82,7 +82,7 @@ $env:FAMILIAR_MOCK_API = "1"   # optional: force mock HTTP responses
 
 ## Export
 
-**Project → Export** → Windows Desktop (e.g. `PF3311-Client.exe`). Ship with `FAMILIAR_BACKEND_WS` pointing at the lab server. See [`docs/DEPLOY.md`](../../docs/DEPLOY.md).
+**Project → Export** → Windows Desktop (e.g. `PF3311-Client.exe`). Ship with `FAMILIAR_BACKEND_WS` pointing at the lab server. See [README principal](../../README.md) (export + setup de laboratorio).
 
 ## License (naivee friends)
 

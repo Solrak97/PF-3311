@@ -177,7 +177,7 @@ uv run python scripts/preview_edge_voices.py en-US-GuyNeural en-US-AnaNeural
 
 Buddy-friendly `en-US` picks to try: **Ana** (lighter), **Jenny** (chatty), **Guy** / **Eric** / **Christopher** (warm male), **Brian** (upbeat). **Aria** (default) is clearer but more “assistant” than companion.
 
-Full shipping layout: [`docs/DEPLOY.md`](../../docs/DEPLOY.md).
+Docker and lab setup: [README principal](../../README.md).
 
 ## Dependencies
 
