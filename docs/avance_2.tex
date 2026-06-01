@@ -249,194 +249,132 @@ Para la versión actual del prototipo se consideran relevantes las siguientes ca
 
 \subsection{Tipo de Estudio}
 
-% TODO
+El presente trabajo corresponde a una evaluación piloto orientada a validar la viabilidad técnica y metodológica de una prueba de concepto basada en familiaridad conductual dentro de agentes virtuales inteligentes.
 
-\subsection{Justificación del Diseño}
+Debido a las restricciones éticas y metodológicas asociadas a evaluaciones formales con usuarios reales, el estudio se plantea principalmente como una instancia exploratoria y de refinamiento experimental, enfocada en analizar la percepción de familiaridad conductual dentro de interacciones conversacionales breves.
 
-% TODO
+La evaluación busca validar tanto el funcionamiento técnico del prototipo como la consistencia de las señales conductuales generadas por el agente antes de una posible evaluación formal posterior.
+
+
 
 \subsection{Participantes}
 
-\subsubsection{Perfil de la Muestra}
+La evaluación piloto utilizará una muestra pequeña de participantes reclutados mediante conveniencia. Debido a la naturaleza del estudio, los participantes corresponderán principalmente a personas cercanas al entorno social del investigador y de la persona utilizada para la construcción del perfil conductual, incluyendo amistades, conocidos y contactos de fácil acceso para la ejecución de las sesiones piloto.
 
-% TODO
+La selección de participantes busca favorecer que los usuarios posean suficiente familiaridad previa con la persona modelada como para potencialmente reconocer patrones conductuales durante la interacción, sin revelar explícitamente la existencia de perfiles de familiaridad dentro del experimento.
 
-\subsubsection{Criterios de Inclusión y Exclusión}
+Se espera contar con entre 6 y 12 participantes para las sesiones piloto iniciales, permitiendo obtener retroalimentación cualitativa y métricas preliminares relacionadas con percepción de familiaridad, naturalidad y respuesta afectiva.
 
-% TODO
+Adicionalmente, el protocolo incorpora una etapa previa de validación de perfiles conductuales. En esta fase, un subconjunto independiente de participantes evaluará la consistencia y recognoscibilidad de los perfiles generados antes de la ejecución principal del experimento. Estos participantes actuarán únicamente como evaluadores piloto del perfil conductual y no participarán posteriormente en las sesiones experimentales principales, con el objetivo de evitar sesgos derivados de exposición previa al sistema.
 
-\subsubsection{Plan de Reclutamiento}
+Como criterios de inclusión se consideran:
 
-% TODO
+\begin{itemize}
+    \item ser mayor de edad;
+    \item poseer experiencia básica utilizando sistemas conversacionales digitales;
+    \item mantener algún nivel de familiaridad previa con la persona utilizada para construir el perfil conductual;
+    \item comprender el idioma español utilizado durante la interacción.
+\end{itemize}
+
+Como criterios de exclusión se consideran:
+
+\begin{itemize}
+    \item dificultades importantes de comunicación durante la interacción;
+    \item conocimiento técnico directo sobre la implementación específica de las condiciones experimentales;
+    \item conocimiento explícito previo sobre los objetivos específicos relacionados con familiaridad conductual dentro del estudio;
+    \item haber participado previamente en la etapa de validación piloto de perfiles conductuales.
+\end{itemize}
+
+Con el objetivo de reducir posibles sesgos de expectativa o priming, los participantes no serán informados explícitamente sobre la naturaleza exacta de la manipulación experimental ni sobre la existencia de perfiles conductuales modelados durante la interacción. Las instrucciones experimentales serán presentadas de forma neutral, enfocándose únicamente en la interacción conversacional con el agente virtual.
+
+El reclutamiento se realizará mediante invitación directa dentro del entorno social y académico cercano al proyecto.
+
+
+
+
+
+
 
 \subsection{Diseño Experimental}
 
-% TODO
+El estudio utilizará un diseño intra-sujetos con contrabalanceo parcial orientado a evaluar el efecto de patrones de familiaridad conductual sobre la percepción del usuario durante interacciones conversacionales breves.
+
+El protocolo experimental estará compuesto por dos etapas diferenciadas:
+
+\begin{itemize}
+    \item una etapa previa de validación piloto de perfiles conductuales;
+    \item una etapa principal de interacción experimental entre participantes y el agente virtual.
+\end{itemize}
+
+
+\subsubsection{Validación Piloto de Perfiles Conductuales}
+
+Antes de la ejecución principal del experimento, los perfiles conductuales generados serán sometidos a una etapa piloto de validación orientada a verificar la consistencia y recognoscibilidad de los patrones conversacionales modelados.
+
+Esta etapa se fundamenta parcialmente en trabajos relacionados con percepción de familiaridad y \textit{perceived knowledge} en agentes virtuales, particularmente los discutidos por Poletaykina et al. (2025). Sin embargo, en contraste con enfoques centrados únicamente en percepción subjetiva de familiaridad, esta propuesta incorpora además una fase explícita de validación metodológica orientada a verificar que los perfiles conductuales produzcan señales suficientemente consistentes antes de su utilización dentro de la evaluación principal.
+
+Durante esta fase, un subconjunto independiente de participantes familiarizados con la persona utilizada para construir el perfil conductual interactuará con el agente virtual en sesiones breves de conversación utilizando la Condición A. Posteriormente, los evaluadores completarán un conjunto de escalas Likert de 1 a 7 orientadas específicamente a evaluar calidad y recognoscibilidad del perfil generado.
+
+Las dimensiones evaluadas incluyen:
+
+\begin{itemize}
+    \item similitud de tono conversacional;
+    \item similitud de expresiones y redacción;
+    \item similitud en longitud y estructura de respuestas;
+    \item consistencia conductual;
+    \item percepción general de familiaridad;
+    \item naturalidad conversacional;
+    \item ausencia de filtración explícita de identidad.
+\end{itemize}
+
+A partir de estas evaluaciones, el sistema calcula métricas agregadas relacionadas con similitud conversacional, naturalidad e integridad de identidad. Los perfiles únicamente serán considerados aptos para la evaluación principal cuando alcancen umbrales mínimos predefinidos de consistencia y recognoscibilidad.
+
+Adicionalmente, el protocolo permitirá recopilar retroalimentación cualitativa y correcciones manuales por parte de los evaluadores, incluyendo observaciones relacionadas con expresiones atípicas, inconsistencias narrativas o patrones conversacionales poco representativos de la persona modelada.
+
+Los perfiles que no alcancen niveles suficientes de consistencia o recognoscibilidad serán refinados iterativamente antes de ser utilizados dentro de la evaluación experimental principal.
+
+
+
+\subsubsection{Evaluación Experimental Principal}
+
+En la etapa principal, cada participante interactuará con ambas condiciones experimentales:
+
+\begin{itemize}
+    \item una condición basada en familiaridad conductual;
+    \item una condición conversacional genérica de control.
+\end{itemize}
+
+Para reducir posibles efectos de orden, los participantes serán divididos en dos grupos. El primer grupo interactuará inicialmente con la Condición A y posteriormente con la Condición B, mientras que el segundo grupo seguirá el orden inverso.
+
+Cada interacción tendrá una duración aproximada de cinco minutos, seguida de cuestionarios y evaluación posterior relacionados con percepción de familiaridad, naturalidad, presencia social y respuesta afectiva.
 
 \subsection{Condiciones Experimentales}
 
-\subsubsection{Condición A}
+\subsubsection{Condición Experimental: Condición A}
 
-% TODO
+La condición experimental corresponde a un Agente Virtual Inteligente implementado en Godot, utilizando un avatar antropomórfico genérico y una voz sintética estándar. La familiaridad del agente emerge principalmente a partir de patrones conversacionales asociados a una persona conocida por el participante.
 
-\subsubsection{Condición B}
+Estos patrones incluyen elementos como tono comunicativo, expresiones recurrentes, estructura de respuesta, mecanismos de seguimiento conversacional y estilo general de interacción. Adicionalmente, el sistema puede incorporar referencias contextuales derivadas del perfil conductual modelado.
 
-% TODO
+Los perfiles utilizados en esta condición serán previamente sometidos a una etapa piloto de validación y refinamiento antes de su incorporación dentro del flujo experimental principal.
 
-\subsubsection{Justificación de la Comparación}
+\subsubsection{Condición de Control: Condición B}
 
-% TODO
+La condición de control utiliza el mismo sistema, avatar, voz e interfaz conversacional. Sin embargo, el agente emplea comportamiento conversacional genérico y no incorpora patrones de familiaridad conductual ni referencias contextuales asociadas al perfil modelado.
 
-% =========================================================
-\section{Métricas}
+De esta manera, la principal diferencia entre condiciones corresponde específicamente al comportamiento conversacional del agente y al uso de patrones de familiaridad conductual durante la interacción.
 
-\subsection{Métricas Principales}
+\subsubsection{Justificación del Diseño}
 
-\begin{table}[H]
-\centering
-\small
-\begin{tabular}{p{3cm} p{4cm} p{4cm} p{3cm}}
-\toprule
-\textbf{RQ} & \textbf{Constructo} & \textbf{Métrica} & \textbf{Instrumento} \\
-\midrule
-RQ1 & Familiaridad conductual percibida & Detección implícita de familiaridad & Escala Likert personalizada \\
-RQ2 & Naturalidad y presencia social & Presencia social percibida & Godspeed Questionnaire \\
-RQ3 & Respuesta afectiva & Valencia emocional y cercanía & SAM + Likert \\
-RQ4 & Conocimiento contextual percibido & Percepción de conocimiento previo & Escala adaptada \\
-\bottomrule
-\end{tabular}
-\caption{Relación entre preguntas de investigación y métricas.}
-\end{table}
+La utilización del mismo embodiment, interfaz y entorno conversacional en ambas condiciones busca aislar específicamente el efecto de los patrones conductuales sobre la percepción del usuario.
 
-\subsection{Justificación de las Métricas}
+Asimismo, la incorporación de una etapa previa de validación piloto permite reducir el riesgo de utilizar perfiles conductuales insuficientemente consistentes o reconocibles dentro de la evaluación principal.
 
-% TODO
+De esta manera, el estudio busca analizar si señales de familiaridad, naturalidad, presencia social y conocimiento contextual percibido pueden emerger principalmente a partir del comportamiento conversacional del agente y no de elementos visuales o técnicos externos.
 
-% =========================================================
-\section{Instrumentos de Recolección de Datos}
 
-\subsection{Cuestionarios}
 
-\subsubsection{Godspeed Questionnaire Series}
 
-% TODO
-
-\subsubsection{Self-Assessment Manikin (SAM)}
-
-% TODO
-
-\subsubsection{Escalas Likert Personalizadas}
-
-% TODO
-
-\subsection{Entrevista Semi-Estructurada}
-
-% TODO
-
-\subsection{Logs del Sistema}
-
-% TODO
-
-% =========================================================
-\section{Protocolos de Interacción}
-
-\subsection{Escenario 1: Conversación Cotidiana}
-
-\subsubsection{Contexto}
-
-% TODO
-
-\subsubsection{Tarea}
-
-% TODO
-
-\subsubsection{Resultado Esperado}
-
-% TODO
-
-\subsubsection{Duración Estimada}
-
-% TODO
-
-\subsection{Escenario 2: Conversación de Soporte Casual}
-
-\subsubsection{Contexto}
-
-% TODO
-
-\subsubsection{Tarea}
-
-% TODO
-
-\subsubsection{Resultado Esperado}
-
-% TODO
-
-\subsubsection{Duración Estimada}
-
-% TODO
-
-% =========================================================
-\section{Prueba de Concepto (PoC)}
-
-\subsection{Descripción General}
-
-% TODO
-
-\subsection{Componentes Integrados}
-
-\begin{itemize}
-    \item Godot Engine
-    \item Backend basado en LangGraph
-    \item Gemini API
-    \item Sistema de memoria Memoria
-    \item Sistema de perfiles conductuales
-    \item Generación de voz mediante Edge-TTS
-\end{itemize}
-
-\subsection{Limitaciones Actuales}
-
-% TODO
-
-% =========================================================
-\section{Video de Demostración}
-
-\subsection{Contenido del Video}
-
-\begin{itemize}
-    \item Presentación general del agente.
-    \item Demostración de interacción conversacional.
-    \item Ejemplo de condición experimental.
-    \item Flujo general de la PoC.
-\end{itemize}
-
-\subsection{Enlace}
-
-\url{https://youtube.com/}
-
-% =========================================================
-\section{Repositorio y Documentación}
-
-\subsection{Estructura del Repositorio}
-
-\begin{itemize}
-    \item \texttt{/backend}
-    \item \texttt{/godot-client}
-    \item \texttt{/docs}
-    \item \texttt{/profiles}
-    \item \texttt{README.md}
-\end{itemize}
-
-\subsection{Instrucciones de Ejecución}
-
-% TODO
-
-% =========================================================
-\section{Conclusiones y Trabajo Futuro}
-
-% TODO
-
-% =========================================================
 \bibliographystyle{IEEEtran}
 \bibliography{references}
 
