@@ -12,7 +12,13 @@ from app.agents.refinement_graph import (
     run_refinement_message,
     run_refinement_start,
 )
-from app.agents.training_graph import run_training_answer, run_training_finalize, run_training_finish, run_training_start
+from app.agents.training_graph import (
+    run_training_answer,
+    run_training_finalize,
+    run_training_finish,
+    run_training_start,
+    run_training_verdict,
+)
 from app.agents.validation_graph import (
     run_validation_finalize,
     run_validation_generate,
@@ -86,6 +92,12 @@ class TrainingAnswerPayload(BaseModel):
 
 class TrainingFinalizePayload(BaseModel):
     profile_id: str
+
+
+class TrainingVerdictPayload(BaseModel):
+    profile_id: str
+    verdict: str
+    user_message: str = ""
 
 
 class RefinementStartPayload(BaseModel):
@@ -187,6 +199,21 @@ def build_experiment_router(
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.post("/profiles/training/verdict")
+    async def training_verdict(body: TrainingVerdictPayload) -> dict[str, Any]:
+        if not body.profile_id.strip():
+            raise HTTPException(status_code=400, detail="missing_profile_id")
+        try:
+            return await run_training_verdict(
+                _brain,
+                profile_store,
+                profile_id=body.profile_id.strip(),
+                verdict=body.verdict.strip(),
+                user_message=body.user_message.strip(),
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/profiles/training/finish")
     async def training_finish(body: TrainingFinalizePayload) -> dict[str, Any]:
         if not body.profile_id.strip():
@@ -195,7 +222,7 @@ def build_experiment_router(
             return await run_training_finish(_brain, profile_store, profile_id=body.profile_id.strip())
         except ValueError as exc:
             detail = str(exc)
-            code = 400 if detail in {"not_enough_samples", "training_session_not_found"} else 400
+            code = 400 if detail in {"not_enough_cycles", "not_enough_samples", "training_session_not_found", "finish_blocked_awaiting_verdict"} else 400
             raise HTTPException(status_code=code, detail=detail) from exc
 
     @router.post("/profiles/training/finalize")
@@ -308,6 +335,21 @@ def build_experiment_router(
         except ValueError as exc:
             detail = str(exc)
             raise HTTPException(status_code=400, detail=detail) from exc
+
+    @router.post("/profiles/interview/verdict")
+    async def interview_verdict(body: TrainingVerdictPayload) -> dict[str, Any]:
+        if not body.profile_id.strip():
+            raise HTTPException(status_code=400, detail="missing_profile_id")
+        try:
+            return await run_training_verdict(
+                _brain,
+                profile_store,
+                profile_id=body.profile_id.strip(),
+                verdict=body.verdict.strip(),
+                user_message=body.user_message.strip(),
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @router.post("/profiles/interview/finish")
     async def interview_finish(body: TrainingFinalizePayload) -> dict[str, Any]:

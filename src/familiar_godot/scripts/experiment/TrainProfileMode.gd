@@ -12,6 +12,7 @@ var _input: TextEdit
 var _send: Button
 var _save: Button
 var _skip: Button
+var _accept: Button
 var _finish: Button
 var _start: Button
 
@@ -24,8 +25,14 @@ var _interview_busy: bool = false
 var _interview_complete: bool = false
 var _prompt_index: int = 0
 var _total_prompts: int = 0
-var _min_samples: int = 3
-var _turn_mode: String = "interview"
+var _min_samples: int = 2
+var _min_cycles: int = 2
+var _cycle_count: int = 0
+var _cycle_index: int = 1
+var _probe_progress: String = "0/3"
+var _cycle_label: String = ""
+var _awaiting_verdict: bool = false
+var _turn_mode: String = "probe"
 var _samples: Array = []
 var _conversation_history: Array = []
 
@@ -37,9 +44,9 @@ func _ready() -> void:
 	var hint := Label.new()
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.text = (
-		"Open conversation — no fixed question count. The agent collects how you naturally talk, "
-		+ "and sometimes tries answering as you would so you can correct it. "
-		+ "Press Finish interview when you're satisfied, then Save profile."
+		"Calibration cycles: a few questions, then the agent imitates how you talk. "
+		+ "Press Suena bien when the imitation fits, or send a correction to refine it. "
+		+ "Complete at least 2 cycles, then Finish interview and Save profile."
 	)
 	content.add_child(hint)
 	_profile_id = ExperimentScreenHelper.add_labeled_line(content, "Profile ID", "e.g. profile-001")
@@ -84,7 +91,7 @@ func _ready() -> void:
 	input_col.add_theme_constant_override("separation", 8)
 	input_margin.add_child(input_col)
 	_input = TextEdit.new()
-	_input.placeholder_text = "Type your answer… (Shift+Enter for a new line, Enter to send)"
+	_input.placeholder_text = "Type your answer or correction… (Enter to send)"
 	_input.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	_input.scroll_fit_content_height = false
 	_input.custom_minimum_size = Vector2(0, INPUT_MIN_LINES * INPUT_LINE_HEIGHT)
@@ -101,6 +108,7 @@ func _ready() -> void:
 	input_row.add_child(_send)
 	_start = ExperimentScreenHelper.add_button(content, "Start interview", _on_start)
 	_skip = ExperimentScreenHelper.add_button(content, "Skip", _on_skip)
+	_accept = ExperimentScreenHelper.add_button(content, "Suena bien", _on_accept)
 	_finish = ExperimentScreenHelper.add_button(content, "Finish interview", _on_finish)
 	_save = ExperimentScreenHelper.add_button(content, "Save profile", _on_save)
 	ExperimentScreenHelper.add_button(content, "Back", func() -> void:
@@ -170,8 +178,12 @@ func _set_interview_controls(active: bool) -> void:
 	_interview_active = active
 	_input.editable = active and not _interview_busy
 	_send.disabled = not active or _interview_busy
-	_skip.disabled = not active or _interview_busy or _interview_complete
-	_finish.disabled = not active or _interview_busy or _interview_complete or _samples.size() < _min_samples
+	_skip.disabled = not active or _interview_busy or _interview_complete or _awaiting_verdict
+	_accept.disabled = not active or _interview_busy or _interview_complete or not _awaiting_verdict
+	_finish.disabled = (
+		not active or _interview_busy or _interview_complete
+		or _cycle_count < _min_cycles or _awaiting_verdict
+	)
 	_start.disabled = active and not _interview_complete
 	_save.disabled = not _interview_complete or _interview_busy
 	_profile_id.editable = not active
@@ -200,6 +212,12 @@ func _on_send() -> void:
 	if not _interview_active or _interview_busy or _interview_complete:
 		return
 	var text := _input.text.strip_edges()
+	if _awaiting_verdict:
+		if text.is_empty():
+			_status.text = "Describe what you would change, or press Suena bien."
+			return
+		_submit_verdict("refine", text)
+		return
 	if text.is_empty():
 		_status.text = "Write an answer or use Skip."
 		return
@@ -207,9 +225,15 @@ func _on_send() -> void:
 
 
 func _on_skip() -> void:
-	if not _interview_active or _interview_busy or _interview_complete:
+	if not _interview_active or _interview_busy or _interview_complete or _awaiting_verdict:
 		return
 	_submit_turn("", true)
+
+
+func _on_accept() -> void:
+	if not _interview_active or _interview_busy or _interview_complete or not _awaiting_verdict:
+		return
+	_submit_verdict("accept", "")
 
 
 func _history_append(role: String, content: String) -> void:
@@ -239,11 +263,29 @@ func _submit_turn(user_message: String, skip: bool) -> void:
 	})
 
 
+func _submit_verdict(verdict: String, user_message: String) -> void:
+	if not user_message.is_empty():
+		_append_user(user_message)
+		_history_append("user", user_message)
+	_input.clear()
+	_scroll_input_to_bottom()
+	_interview_busy = true
+	_send.disabled = true
+	_accept.disabled = true
+	_skip.disabled = true
+	_status.text = "Updating imitation…"
+	ExperimentApi.interview_verdict(
+		_profile_id.text.strip_edges(),
+		verdict,
+		user_message,
+	)
+
+
 func _on_finish() -> void:
 	if not _interview_active or _interview_busy or _interview_complete:
 		return
-	if _samples.size() < _min_samples:
-		_status.text = "Need at least %d answers before finishing." % _min_samples
+	if _cycle_count < _min_cycles:
+		_status.text = "Complete at least %d calibration cycles before finishing." % _min_cycles
 		return
 	_interview_busy = true
 	_finish.disabled = true
@@ -275,8 +317,14 @@ func _on_save() -> void:
 func _apply_interview_state(data: Dictionary) -> void:
 	_prompt_index = int(data.get("prompt_index", data.get("sample_count", _prompt_index)))
 	_total_prompts = int(data.get("total_prompts", 0))
-	_min_samples = int(data.get("min_samples_to_finish", 3))
-	_turn_mode = str(data.get("turn_mode", "interview"))
+	_min_samples = int(data.get("min_samples_to_finish", data.get("min_cycles_to_finish", 2)))
+	_min_cycles = int(data.get("min_cycles_to_finish", _min_samples))
+	_cycle_count = int(data.get("cycle_count", 0))
+	_cycle_index = int(data.get("cycle_index", 1))
+	_probe_progress = str(data.get("probe_progress", _probe_progress))
+	_cycle_label = str(data.get("cycle_label", ""))
+	_awaiting_verdict = bool(data.get("awaiting_verdict", data.get("awaiting_mirror_feedback", false)))
+	_turn_mode = str(data.get("turn_mode", "probe"))
 	_interview_complete = bool(data.get("complete", false))
 	var incoming = data.get("samples", null)
 	if incoming is Array:
@@ -289,14 +337,18 @@ func _apply_interview_state(data: Dictionary) -> void:
 		_append_assistant(message, _turn_mode)
 		if not (incoming_history is Array):
 			_history_append("assistant", message)
-	var mirror_hint := ""
-	if _turn_mode == "mirror":
-		mirror_hint = " — imitación: responde si suena como tú"
-	_progress.text = "%d sample(s) collected (min %d to finish)%s" % [
-		_samples.size(),
-		_min_samples,
-		mirror_hint,
+	var mode_hint := ""
+	if _awaiting_verdict:
+		mode_hint = " — revisa la imitación: Suena bien o envía corrección"
+	elif _turn_mode == "probe":
+		mode_hint = " — responde con naturalidad"
+	_progress.text = "Ciclo %d — %s — Pregunta %s%s" % [
+		_cycle_index,
+		_cycle_label if not _cycle_label.is_empty() else "calibración",
+		_probe_progress,
+		mode_hint,
 	]
+	_progress.text += " (%d/%d ciclos completados)" % [_cycle_count, _min_cycles]
 	if _interview_complete:
 		_progress.text += " — ready to save"
 		_status.text = "Interview complete. Press Save profile."
@@ -309,8 +361,11 @@ func _append_user(text: String) -> void:
 	_scroll_chat_to_bottom()
 
 
-func _append_assistant(text: String, turn_mode: String = "interview") -> void:
-	_chat.append_text(ExperimentUI.format_assistant_bubble(text, turn_mode))
+func _append_assistant(text: String, turn_mode: String = "probe") -> void:
+	var bubble_mode := turn_mode
+	if turn_mode in ["mirror", "refine"]:
+		bubble_mode = "mirror"
+	_chat.append_text(ExperimentUI.format_assistant_bubble(text, bubble_mode))
 	_scroll_chat_to_bottom()
 
 
@@ -341,7 +396,15 @@ func _on_api_finished(action: String, success: bool, data: Variant, error: Strin
 				_set_interview_controls(_interview_active)
 				return
 			_apply_interview_state(data)
-			_status.text = "Interview complete." if _interview_complete else "Answer recorded."
+			_status.text = "Review the imitation." if _awaiting_verdict else "Answer recorded."
+		"interview_verdict":
+			_interview_busy = false
+			if not success or not (data is Dictionary):
+				_status.text = "Verdict failed (%s)." % error
+				_set_interview_controls(_interview_active)
+				return
+			_apply_interview_state(data)
+			_status.text = "Imitation accepted." if not _awaiting_verdict else "Try again or accept."
 		"interview_finish":
 			_interview_busy = false
 			if not success or not (data is Dictionary):

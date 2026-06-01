@@ -30,6 +30,19 @@ class BehavioralProfileState(TypedDict, total=False):
     samples_since_mirror: int
     awaiting_mirror_feedback: bool
     last_mirror_attempt: str
+    cycle_index: int
+    cycle_phase: str
+    cycle_signal_target: str
+    cycle_label: str
+    probe_questions_asked: int
+    probe_questions_planned: int
+    refine_round: int
+    awaiting_verdict: bool
+    last_imitation: str
+    current_cycle_data: dict[str, Any]
+    cycles_completed: list[dict[str, Any]]
+    signals_covered: dict[str, bool]
+    calibration_cycles: bool
     sample_saved: bool
     passed: bool
     validation_summary: dict[str, Any]
@@ -60,4 +73,17 @@ def default_training_state(profile_id: str, modeled_user_alias: str = "") -> Beh
         "samples_since_mirror": 0,
         "awaiting_mirror_feedback": False,
         "last_mirror_attempt": "",
+        "cycle_index": 0,
+        "cycle_phase": "probe",
+        "cycle_signal_target": "",
+        "cycle_label": "",
+        "probe_questions_asked": 0,
+        "probe_questions_planned": 3,
+        "refine_round": 0,
+        "awaiting_verdict": False,
+        "last_imitation": "",
+        "current_cycle_data": {"probe": [], "imitation_attempts": []},
+        "cycles_completed": [],
+        "signals_covered": {},
+        "calibration_cycles": True,
     }

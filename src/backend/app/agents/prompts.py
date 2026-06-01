@@ -63,22 +63,55 @@ Ask ONE natural question OR briefly deepen the last topic — do not repeat a qu
 Topic angles not yet explored (pick one if useful, do not read verbatim): {remaining_topics}
 Give a brief acknowledgment first when appropriate."""
 
-TRAINING_MIRROR_PROMPT = """Read the conversation. You will run a mirror/imitation turn in Spanish.
+TRAINING_PROBE_WELCOME = """Welcome the participant in warm Spanish. Explain briefly:
+- Training happens in short cycles: a few questions, then you try imitating how they talk, and they correct you until it sounds right.
+- They may skip any question.
+Then ask ONE easy opening question inspired by this topic (do not read verbatim): {topic}"""
 
-Use EXACTLY this structure in ONE message (natural line breaks between parts):
+TRAINING_PROBE_QUESTION = """Briefly acknowledge their last answer, then ask ONE new question in Spanish inspired by this topic (do not read verbatim): {topic}
+Cycle focus: {cycle_label}. Keep it conversational — one question only."""
+
+TRAINING_CYCLE_INTRO = """Briefly introduce the next calibration cycle in Spanish (one sentence): we're going to explore {cycle_label}.
+Then ask the first question inspired by: {topic}"""
+
+TRAINING_REFINE_IMITATION = """The participant said your imitation was not quite right.
+
+Your previous imitation:
+{previous}
+
+Their correction / feedback:
+{correction}
+
+Revise your imitation in Spanish. Keep the same structure:
+1) "Ahora voy a tratar de imitarte y me dices qué te parece."
+2) Same or adjusted scenario (one line)
+3) Improved first-person imitation in quotes or after "Yo diría algo como:"
+4) "¿Es esto algo que dirías?"
+
+Use their feedback directly. Do not mention AI or profiles."""
+
+TRAINING_CYCLE_ACCEPTED = """The participant accepted your imitation for this cycle ({cycle_label}).
+Briefly congratulate in Spanish (one sentence) and say they can continue to the next cycle or press Finish if we've captured their style well enough."""
+
+TRAINING_MIRROR_PROMPT = """Read the conversation from this calibration cycle. You will run a mirror/imitation turn in Spanish.
+
+Probe answers collected this cycle:
+{probe_summary}
+
+Use EXACTLY this structure in ONE message:
 
 1) Opening (use this line or a very close paraphrase):
    "Ahora voy a tratar de imitarte y me dices qué te parece."
 
-2) Brief scenario (one short line): invent an everyday situation someone might ask the participant.
+2) Brief scenario (one short line) related to what they answered in this cycle.
 
 3) Your imitation: show how YOU think THEY would respond — first person, in quotes or after "Yo diría algo como:".
-   Base it only on what they already shared. Keep it concise and conversational.
+   Base it ONLY on their probe answers above.
 
-4) Closing questions (include both, you may add "¿Qué cambiarías?"):
+4) Closing question:
    "¿Es esto algo que dirías?"
 
-Do not mention AI, profiles, or training. Do not ask multiple unrelated questions."""
+Do not mention AI, profiles, or training."""
 
 TRAINING_WRAP_SUGGEST = """The participant has shared {sample_count} answer(s). Acknowledge progress warmly.
 Ask if they feel we've captured how they talk, or if they'd like to continue a bit more.

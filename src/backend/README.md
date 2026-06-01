@@ -83,9 +83,10 @@ data/profiles/          # runtime (gitignored)
 | Method | Path | Purpose |
 |--------|------|---------|
 | POST | `/profiles/raw` | Save training samples → compile behavioral profile |
-| POST | `/profiles/interview/start` | Start open profile-training conversation |
-| POST | `/profiles/interview/turn` | Submit answer / skip → next turn (questions or mirror imitation) |
-| POST | `/profiles/interview/finish` | Participant satisfied — unlock save (min 3 samples) |
+| POST | `/profiles/interview/start` | Start calibration-cycle profile training |
+| POST | `/profiles/interview/turn` | Answer a probe question (2–3 per cycle) |
+| POST | `/profiles/interview/verdict` | Accept imitation (`accept`) or send correction (`refine` + message) |
+| POST | `/profiles/interview/finish` | Participant satisfied — unlock save (min 2 cycles) |
 | POST | `/profiles/interview/save` | Extract YAML profile from samples and persist |
 | GET | `/profiles` | List trained profile IDs |
 | GET | `/profiles/behavioral/{profile_id}` | Load compiled profile |

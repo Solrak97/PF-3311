@@ -70,6 +70,10 @@ func interview_finish(profile_id: String) -> void:
 	training_finish(profile_id, "interview_finish")
 
 
+func interview_verdict(profile_id: String, verdict: String, user_message: String = "") -> void:
+	training_verdict(profile_id, verdict, user_message, "interview_verdict")
+
+
 func training_start(profile_id: String, modeled_user_alias: String, action: String = "training_start") -> void:
 	_post_json(
 		"/profiles/training/start",
@@ -96,6 +100,23 @@ func training_finalize(profile_id: String, action: String = "training_finalize")
 
 func training_finish(profile_id: String, action: String = "training_finish") -> void:
 	_post_json("/profiles/training/finish", {"profile_id": profile_id}, action)
+
+
+func training_verdict(
+	profile_id: String,
+	verdict: String,
+	user_message: String = "",
+	action: String = "training_verdict"
+) -> void:
+	_post_json(
+		"/profiles/training/verdict",
+		{
+			"profile_id": profile_id,
+			"verdict": verdict,
+			"user_message": user_message,
+		},
+		action
+	)
 
 
 func validation_start(profile_id: String) -> void:

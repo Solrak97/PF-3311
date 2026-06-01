@@ -9,34 +9,33 @@ from app.agents.brain_adapter import complete_chat
 from app.agents.profile_state import BehavioralProfileState, default_training_state
 from app.agents.prompts import (
     PROFILE_EXTRACTION_PROMPT,
+    TRAINING_CYCLE_INTRO,
     TRAINING_FINISH_CLOSING,
     TRAINING_MIRROR_PROMPT,
-    TRAINING_OPEN_CONTINUE,
-    TRAINING_OPEN_WELCOME,
-    TRAINING_WRAP_SUGGEST,
+    TRAINING_PROBE_QUESTION,
+    TRAINING_PROBE_WELCOME,
+    TRAINING_REFINE_IMITATION,
 )
-from app.agents.training_prompts import CORE_TRAINING_PROMPTS
+from app.agents.training_cycles import (
+    CYCLE_PLANS,
+    MIN_CYCLES_TO_FINISH,
+    MAX_REFINE_ROUNDS,
+    PROBES_PER_CYCLE,
+    cycle_plan,
+    cycle_probe_ids,
+    prompt_by_id,
+)
 from app.experiment.interview import build_interview_messages, normalize_history
 from app.profiles.builder import compile_behavioral
 from app.profiles.store import ProfileStore
 from app.profiles.yaml_profile import default_profile_template, parse_profile_yaml
 
-INTERVIEW_SYSTEM_OPEN = """You are running an open behavioral profile training conversation in Spanish.
-There is no fixed question count — follow the conversation naturally until the participant is satisfied.
-Collect how they naturally talk: tone, phrases, reactions, humor, advice style.
-Do not mention cloning, profiling, or AI training. Allow skips. Stay warm and human.
-Ask one thing at a time."""
+INTERVIEW_SYSTEM = """You run a behavioral profile calibration interview in Spanish.
+Each cycle: 2–3 short questions, then you imitate how the participant talks and they correct you.
+Do not mention cloning, profiling, or AI training. Allow skips. One message at a time."""
 
 MIRROR_SYSTEM = """You calibrate imitation of the participant's conversational style in Spanish.
-Mirror turns MUST follow this flow:
-1) Preamble: "Ahora voy a tratar de imitarte y me dices qué te parece."
-2) Short scenario + first-person imitation of how they would answer.
-3) Follow-up: "¿Es esto algo que dirías?" (optionally ask what they would change).
-Stay warm and natural. Never mention AI or profiling."""
-
-MIN_SAMPLES_TO_FINISH = 3
-MIRROR_EVERY_N_SAMPLES = 2
-WRAP_SUGGEST_EVERY_N_SAMPLES = 5
+Follow the mirror structure exactly. Never mention AI or profiling."""
 
 
 def _utc_now() -> str:
@@ -50,31 +49,19 @@ def _last_assistant(transcript: list[dict[str, Any]]) -> str:
     return ""
 
 
-def _remaining_topics(state: BehavioralProfileState) -> list[dict[str, str]]:
-    explored = set(state.get("topics_explored") or [])
-    return [p for p in CORE_TRAINING_PROMPTS if p.get("id") not in explored]
+def _current_plan(state: BehavioralProfileState) -> dict[str, Any]:
+    return cycle_plan(int(state.get("cycle_index", 0)))
 
 
-def _remaining_topic_labels(state: BehavioralProfileState) -> list[str]:
-    remaining = _remaining_topics(state)
-    if not remaining:
-        return [p.get("text", "") for p in CORE_TRAINING_PROMPTS if p.get("text")]
-    return [p.get("text", "") for p in remaining if p.get("text")]
+def _probe_ids(state: BehavioralProfileState) -> list[str]:
+    return cycle_probe_ids(_current_plan(state))
 
 
-def _pick_topic(state: BehavioralProfileState) -> dict[str, str]:
-    remaining = _remaining_topics(state)
-    if remaining:
-        return remaining[0]
-    return CORE_TRAINING_PROMPTS[len(state.get("raw_samples") or []) % len(CORE_TRAINING_PROMPTS)]
-
-
-def _mark_topic_explored(state: BehavioralProfileState, topic: dict[str, str]) -> BehavioralProfileState:
-    explored = list(state.get("topics_explored") or [])
-    topic_id = str(topic.get("id", "")).strip()
-    if topic_id and topic_id not in explored:
-        explored.append(topic_id)
-    return {**state, "topics_explored": explored}
+def _current_cycle_data(state: BehavioralProfileState) -> dict[str, Any]:
+    data = state.get("current_cycle_data")
+    if isinstance(data, dict):
+        return data
+    return {"probe": [], "imitation_attempts": []}
 
 
 def initialize_training_session(state: BehavioralProfileState) -> BehavioralProfileState:
@@ -82,26 +69,44 @@ def initialize_training_session(state: BehavioralProfileState) -> BehavioralProf
     alias = state.get("modeled_user_alias")
     if alias:
         base["modeled_user_alias"] = alias
-    base["total_prompts"] = 0
-    base["open_ended"] = True
-    base["topics_explored"] = []
-    base["samples_since_mirror"] = 0
-    base["turn_mode"] = "interview"
-    base["status"] = "collecting"
-    base["complete"] = False
+    base.update(
+        {
+            "cycle_index": 0,
+            "cycle_phase": "probe",
+            "cycle_signal_target": "",
+            "cycle_label": "",
+            "probe_questions_asked": 0,
+            "probe_questions_planned": PROBES_PER_CYCLE,
+            "refine_round": 0,
+            "awaiting_verdict": False,
+            "last_imitation": "",
+            "current_cycle_data": {"probe": [], "imitation_attempts": []},
+            "cycles_completed": [],
+            "signals_covered": {},
+            "turn_mode": "probe",
+            "status": "collecting",
+            "complete": False,
+            "open_ended": False,
+            "total_prompts": PROBES_PER_CYCLE,
+        }
+    )
+    plan = _current_plan(base)
+    base["cycle_signal_target"] = str(plan.get("target", ""))
+    base["cycle_label"] = str(plan.get("label", ""))
     return base
 
 
-async def generate_training_message(
+async def _generate_message(
     brain: Any,
     state: BehavioralProfileState,
     *,
     mode: str,
     steering: str,
+    system: str | None = None,
 ) -> BehavioralProfileState:
-    system = MIRROR_SYSTEM if mode == "mirror" else INTERVIEW_SYSTEM_OPEN
+    sys_prompt = system or (MIRROR_SYSTEM if mode in {"mirror", "refine"} else INTERVIEW_SYSTEM)
     messages = build_interview_messages(
-        system=system,
+        system=sys_prompt,
         conversation_history=state.get("interview_transcript") or [],
         steering=steering,
     )
@@ -115,112 +120,226 @@ async def generate_training_message(
         "interview_transcript": transcript,
         "turn_mode": mode,
     }
-    if mode == "mirror":
-        updates["awaiting_mirror_feedback"] = True
-        updates["last_mirror_attempt"] = message
-    else:
-        updates["awaiting_mirror_feedback"] = False
+    if mode in {"mirror", "refine"}:
+        updates["last_imitation"] = message
+        updates["awaiting_verdict"] = True
+        updates["cycle_phase"] = "imitate" if mode == "mirror" else "refine"
     return updates
 
 
-def save_user_turn(
+def _probe_summary(state: BehavioralProfileState) -> str:
+    probes = _current_cycle_data(state).get("probe") or []
+    lines: list[str] = []
+    for item in probes:
+        if not isinstance(item, dict):
+            continue
+        prompt = str(item.get("prompt", "")).strip()
+        response = str(item.get("response", "")).strip()
+        if response and response != "[skipped]":
+            lines.append(f"P: {prompt}\nR: {response}")
+    return "\n\n".join(lines) or "(no answers yet)"
+
+
+async def _ask_probe_question(brain: Any, state: BehavioralProfileState) -> BehavioralProfileState:
+    plan = _current_plan(state)
+    probe_ids = _probe_ids(state)
+    asked = int(state.get("probe_questions_asked", 0))
+    topic = prompt_by_id(probe_ids[asked]) if asked < len(probe_ids) else prompt_by_id(probe_ids[-1])
+    topic_text = topic.get("text", "")
+    if asked == 0 and not normalize_history(state.get("interview_transcript") or []):
+        steering = TRAINING_PROBE_WELCOME.format(topic=topic_text)
+    elif asked == 0 and int(state.get("cycle_index", 0)) > 0:
+        steering = TRAINING_CYCLE_INTRO.format(
+            cycle_label=plan.get("label", ""),
+            topic=topic_text,
+        )
+    else:
+        steering = TRAINING_PROBE_QUESTION.format(
+            topic=topic_text,
+            cycle_label=plan.get("label", ""),
+        )
+    result = await _generate_message(brain, state, mode="probe", steering=steering)
+    return {
+        **result,
+        "cycle_phase": "probe",
+        "awaiting_verdict": False,
+        "turn_mode": "probe",
+        "probe_questions_planned": len(probe_ids),
+        "cycle_label": str(plan.get("label", "")),
+        "cycle_signal_target": str(plan.get("target", "")),
+    }
+
+
+async def _emit_imitation(brain: Any, state: BehavioralProfileState) -> BehavioralProfileState:
+    steering = TRAINING_MIRROR_PROMPT.format(probe_summary=_probe_summary(state))
+    return await _generate_message(brain, state, mode="mirror", steering=steering)
+
+
+async def _emit_refined_imitation(
+    brain: Any,
+    state: BehavioralProfileState,
+    *,
+    correction: str,
+) -> BehavioralProfileState:
+    steering = TRAINING_REFINE_IMITATION.format(
+        previous=str(state.get("last_imitation") or ""),
+        correction=correction.strip(),
+    )
+    refine_round = int(state.get("refine_round", 0)) + 1
+    result = await _generate_message(brain, state, mode="refine", steering=steering)
+    cycle_data = dict(_current_cycle_data(state))
+    attempts = list(cycle_data.get("imitation_attempts") or [])
+    attempts.append(
+        {
+            "text": str(state.get("last_imitation") or ""),
+            "user_feedback": correction.strip(),
+            "verdict": "refine",
+            "round": refine_round,
+        }
+    )
+    cycle_data["imitation_attempts"] = attempts
+    return {**result, "refine_round": refine_round, "current_cycle_data": cycle_data}
+
+
+def _record_probe_answer(
     state: BehavioralProfileState,
     *,
     user_message: str,
     skip: bool,
-    was_mirror_feedback: bool,
 ) -> BehavioralProfileState:
     transcript = list(state.get("interview_transcript") or [])
     samples = list(state.get("raw_samples") or [])
-    sample_saved = False
-    samples_since_mirror = int(state.get("samples_since_mirror", 0))
+    cycle_data = dict(_current_cycle_data(state))
+    probes = list(cycle_data.get("probe") or [])
+    asked = int(state.get("probe_questions_asked", 0))
+    probe_ids = _probe_ids(state)
+    prompt_meta = prompt_by_id(probe_ids[min(asked, len(probe_ids) - 1)])
+    asked_text = _last_assistant(transcript) or prompt_meta.get("text", "")
 
     if skip:
         transcript.append({"role": "user", "content": "[skipped]"})
-        return {
-            **state,
-            "interview_transcript": transcript,
-            "raw_samples": samples,
-            "sample_saved": False,
-            "samples_since_mirror": samples_since_mirror,
-            "awaiting_mirror_feedback": False if was_mirror_feedback else state.get("awaiting_mirror_feedback"),
-        }
-
-    if user_message.strip():
+        probes.append(
+            {
+                "prompt_id": prompt_meta.get("id", ""),
+                "prompt": asked_text,
+                "response": "[skipped]",
+                "timestamp": _utc_now(),
+            }
+        )
+    elif user_message.strip():
         text = user_message.strip()
         transcript.append({"role": "user", "content": text})
-        asked = _last_assistant(transcript[:-1]) or ""
-        if was_mirror_feedback:
-            samples.append(
-                {
-                    "prompt_id": "mirror_calibration",
-                    "category": "mirror_calibration",
-                    "prompt": asked,
-                    "response": text,
-                    "mirror_attempt": str(state.get("last_mirror_attempt") or asked),
-                    "timestamp": _utc_now(),
-                    "is_follow_up": False,
-                }
-            )
-            sample_saved = True
-        else:
-            topic = _pick_topic(state)
-            samples.append(
-                {
-                    "prompt_id": topic.get("id", f"turn_{len(samples)}"),
-                    "category": topic.get("category", "open"),
-                    "prompt": asked or topic.get("text", ""),
-                    "response": text,
-                    "timestamp": _utc_now(),
-                    "is_follow_up": False,
-                }
-            )
-            state = _mark_topic_explored(state, topic)
-            sample_saved = True
-            samples_since_mirror += 1
+        probes.append(
+            {
+                "prompt_id": prompt_meta.get("id", ""),
+                "category": prompt_meta.get("category", "open"),
+                "prompt": asked_text,
+                "response": text,
+                "timestamp": _utc_now(),
+            }
+        )
+        samples.append(
+            {
+                "prompt_id": prompt_meta.get("id", ""),
+                "category": prompt_meta.get("category", "open"),
+                "prompt": asked_text,
+                "response": text,
+                "timestamp": _utc_now(),
+                "cycle_index": int(state.get("cycle_index", 0)),
+            }
+        )
 
+    cycle_data["probe"] = probes
     return {
         **state,
         "interview_transcript": transcript,
         "raw_samples": samples,
-        "sample_saved": sample_saved,
-        "samples_since_mirror": samples_since_mirror,
-        "awaiting_mirror_feedback": False if was_mirror_feedback else state.get("awaiting_mirror_feedback"),
+        "current_cycle_data": cycle_data,
+        "probe_questions_asked": asked + 1,
+        "sample_saved": bool(not skip and user_message.strip()),
     }
 
 
-def _should_mirror(state: BehavioralProfileState) -> bool:
-    if state.get("complete") or state.get("awaiting_mirror_feedback"):
-        return False
-    return int(state.get("samples_since_mirror", 0)) >= MIRROR_EVERY_N_SAMPLES
+def _accept_cycle(state: BehavioralProfileState) -> BehavioralProfileState:
+    cycle_data = dict(_current_cycle_data(state))
+    accepted = str(state.get("last_imitation") or "")
+    cycle_data["accepted_imitation"] = accepted
+    attempts = list(cycle_data.get("imitation_attempts") or [])
+    attempts.append({"text": accepted, "verdict": "accept", "round": int(state.get("refine_round", 0))})
+    cycle_data["imitation_attempts"] = attempts
 
+    plan = _current_plan(state)
+    target = str(plan.get("target", ""))
+    signals = dict(state.get("signals_covered") or {})
+    if target:
+        signals[target] = True
 
-def _should_suggest_wrap(state: BehavioralProfileState) -> bool:
-    if state.get("complete"):
-        return False
-    count = len(state.get("raw_samples") or [])
-    return count >= MIN_SAMPLES_TO_FINISH and count % WRAP_SUGGEST_EVERY_N_SAMPLES == 0
+    completed = list(state.get("cycles_completed") or [])
+    completed.append(
+        {
+            "cycle_id": int(state.get("cycle_index", 0)) + 1,
+            "signal_target": target,
+            "label": str(plan.get("label", "")),
+            "probe": cycle_data.get("probe") or [],
+            "imitation_attempts": cycle_data.get("imitation_attempts") or [],
+            "accepted_imitation": accepted,
+        }
+    )
 
-
-async def generate_next_turn(brain: Any, state: BehavioralProfileState) -> BehavioralProfileState:
-    if _should_mirror(state):
-        steering = TRAINING_MIRROR_PROMPT
-        result = await generate_training_message(brain, state, mode="mirror", steering=steering)
-        return {**result, "samples_since_mirror": 0}
-
-    if _should_suggest_wrap(state):
-        count = len(state.get("raw_samples") or [])
-        steering = TRAINING_WRAP_SUGGEST.format(sample_count=count)
-        return await generate_training_message(brain, state, mode="wrap_suggest", steering=steering)
-
-    remaining = _remaining_topic_labels(state)
-    if not normalize_history(state.get("interview_transcript") or []):
-        steering = TRAINING_OPEN_WELCOME
-    else:
-        steering = TRAINING_OPEN_CONTINUE.format(
-            remaining_topics="; ".join(remaining[:8]) or "everyday life, opinions, reactions, advice, humor",
+    samples = list(state.get("raw_samples") or [])
+    if accepted:
+        samples.append(
+            {
+                "prompt_id": "mirror_calibration",
+                "category": "mirror_calibration",
+                "prompt": _probe_summary(state),
+                "response": accepted,
+                "mirror_attempt": accepted,
+                "verdict": "accept",
+                "cycle_index": int(state.get("cycle_index", 0)),
+                "timestamp": _utc_now(),
+            }
         )
-    return await generate_training_message(brain, state, mode="interview", steering=steering)
+
+    return {
+        **state,
+        "raw_samples": samples,
+        "cycles_completed": completed,
+        "signals_covered": signals,
+        "awaiting_verdict": False,
+        "cycle_phase": "cycle_complete",
+        "refine_round": 0,
+        "last_imitation": "",
+        "current_cycle_data": {"probe": [], "imitation_attempts": []},
+        "cycle_index": int(state.get("cycle_index", 0)) + 1,
+    }
+
+
+async def _advance_after_cycle_accept(brain: Any, state: BehavioralProfileState) -> BehavioralProfileState:
+    cycle_index = int(state.get("cycle_index", 0))
+    if cycle_index >= len(CYCLE_PLANS):
+        return await _generate_message(
+            brain,
+            {**state, "cycle_phase": "cycle_complete", "turn_mode": "wrap_suggest"},
+            mode="wrap_suggest",
+            steering=(
+                "The participant accepted the last calibration cycle. Congratulate briefly in Spanish. "
+                "Tell them they can press Finish interview to save the profile, or continue if they want."
+            ),
+        )
+
+    plan = _current_plan(state)
+    state = {
+        **state,
+        "cycle_phase": "probe",
+        "probe_questions_asked": 0,
+        "probe_questions_planned": len(_probe_ids(state)),
+        "cycle_signal_target": str(plan.get("target", "")),
+        "cycle_label": str(plan.get("label", "")),
+        "turn_mode": "probe",
+        "awaiting_verdict": False,
+    }
+    return await _ask_probe_question(brain, state)
 
 
 def finalize_raw_samples(state: BehavioralProfileState) -> BehavioralProfileState:
@@ -228,14 +347,23 @@ def finalize_raw_samples(state: BehavioralProfileState) -> BehavioralProfileStat
 
 
 async def extract_behavioral_profile(brain: Any, state: BehavioralProfileState) -> BehavioralProfileState:
+    cycles = state.get("cycles_completed") or []
+    cycle_text = "\n\n".join(
+        f"Cycle {c.get('cycle_id')}: {c.get('label')}\nAccepted: {c.get('accepted_imitation', '')}"
+        for c in cycles
+        if isinstance(c, dict)
+    )
     samples_text = "\n\n".join(
         f"P: {s.get('prompt', '')}\nR: {s.get('response', '')}"
-        + (f"\nMirror attempt: {s.get('mirror_attempt', '')}" if s.get("mirror_attempt") else "")
+        + (f"\nMirror: {s.get('mirror_attempt', '')}" if s.get("mirror_attempt") else "")
         for s in (state.get("raw_samples") or [])
     )
     messages = [
         {"role": "system", "content": "You output valid YAML behavioral profiles only."},
-        {"role": "user", "content": PROFILE_EXTRACTION_PROMPT.format(samples=samples_text)},
+        {
+            "role": "user",
+            "content": PROFILE_EXTRACTION_PROMPT.format(samples=samples_text + "\n\n" + cycle_text),
+        },
     ]
     raw_yaml = await complete_chat(brain, messages)
     errors = list(state.get("errors") or [])
@@ -265,8 +393,9 @@ def save_behavioral_profile(store: ProfileStore, state: BehavioralProfileState) 
         "created_at": _utc_now(),
         "consent_confirmed": True,
         "samples": state.get("raw_samples") or [],
+        "cycles_completed": state.get("cycles_completed") or [],
         "interview_transcript": state.get("interview_transcript") or [],
-        "open_ended": True,
+        "calibration_cycles": True,
     }
     store.save_raw(raw_payload)
     profile = state.get("behavioral_profile")
@@ -302,7 +431,7 @@ async def run_training_start(
     state = initialize_training_session(
         {"profile_id": profile_id, "modeled_user_alias": modeled_user_alias or None}
     )
-    state = await generate_next_turn(brain, state)
+    state = await _ask_probe_question(brain, state)
     store.save_session(profile_id, "training", dict(state))
     return _training_api_response(state)
 
@@ -320,9 +449,65 @@ async def run_training_answer(
         raise ValueError("training_session_not_found")
     if loaded.get("complete"):
         raise ValueError("training_already_complete")
-    was_mirror = bool(loaded.get("awaiting_mirror_feedback"))
-    state = save_user_turn(loaded, user_message=user_message, skip=skip, was_mirror_feedback=was_mirror)
-    state = await generate_next_turn(brain, state)
+    if loaded.get("awaiting_verdict"):
+        raise ValueError("awaiting_verdict_use_training_verdict")
+    if str(loaded.get("cycle_phase", "probe")) != "probe":
+        raise ValueError("invalid_cycle_phase_for_answer")
+
+    state = _record_probe_answer(loaded, user_message=user_message, skip=skip)
+    planned = int(state.get("probe_questions_planned", PROBES_PER_CYCLE))
+    asked = int(state.get("probe_questions_asked", 0))
+
+    if asked < planned:
+        state = await _ask_probe_question(brain, state)
+    else:
+        state = await _emit_imitation(brain, state)
+
+    store.save_session(profile_id, "training", dict(state))
+    return _training_api_response(state)
+
+
+async def run_training_verdict(
+    brain: Any,
+    store: ProfileStore,
+    *,
+    profile_id: str,
+    verdict: str,
+    user_message: str = "",
+) -> dict[str, Any]:
+    loaded = store.load_session(profile_id, "training")
+    if not loaded:
+        raise ValueError("training_session_not_found")
+    if loaded.get("complete"):
+        raise ValueError("training_already_complete")
+    if not loaded.get("awaiting_verdict"):
+        raise ValueError("not_awaiting_verdict")
+
+    normalized = verdict.strip().lower()
+    if normalized == "accept":
+        transcript = list(loaded.get("interview_transcript") or [])
+        transcript.append({"role": "user", "content": "[accepted imitation]"})
+        state = _accept_cycle({**loaded, "interview_transcript": transcript})
+        state = await _advance_after_cycle_accept(brain, state)
+    elif normalized in {"refine", "reject", "needs_refinement"}:
+        correction = user_message.strip()
+        if not correction:
+            raise ValueError("correction_required")
+        transcript = list(loaded.get("interview_transcript") or [])
+        transcript.append({"role": "user", "content": correction})
+        refine_round = int(loaded.get("refine_round", 0))
+        if refine_round >= MAX_REFINE_ROUNDS:
+            state = _accept_cycle({**loaded, "interview_transcript": transcript})
+            state = await _advance_after_cycle_accept(brain, state)
+        else:
+            state = await _emit_refined_imitation(
+                brain,
+                {**loaded, "interview_transcript": transcript},
+                correction=correction,
+            )
+    else:
+        raise ValueError("invalid_verdict")
+
     store.save_session(profile_id, "training", dict(state))
     return _training_api_response(state)
 
@@ -336,16 +521,19 @@ async def run_training_finish(
     loaded = store.load_session(profile_id, "training")
     if not loaded:
         raise ValueError("training_session_not_found")
-    samples = loaded.get("raw_samples") or []
-    if len(samples) < MIN_SAMPLES_TO_FINISH:
-        raise ValueError("not_enough_samples")
+    if loaded.get("awaiting_verdict"):
+        raise ValueError("finish_blocked_awaiting_verdict")
+    cycles = loaded.get("cycles_completed") or []
+    if len(cycles) < MIN_CYCLES_TO_FINISH:
+        raise ValueError("not_enough_cycles")
     state: BehavioralProfileState = {**loaded, "complete": True, "status": "ready_to_finalize"}
-    state = await generate_training_message(
+    state = await _generate_message(
         brain,
         state,
         mode="finish",
         steering=TRAINING_FINISH_CLOSING,
     )
+    state["awaiting_verdict"] = False
     store.save_session(profile_id, "training", dict(state))
     return _training_api_response(state)
 
@@ -359,7 +547,7 @@ async def run_training_finalize(
     loaded = store.load_session(profile_id, "training")
     if not loaded:
         raise ValueError("training_session_not_found")
-    if not loaded.get("complete") and len(loaded.get("raw_samples") or []) < MIN_SAMPLES_TO_FINISH:
+    if not loaded.get("complete") and len(loaded.get("cycles_completed") or []) < MIN_CYCLES_TO_FINISH:
         raise ValueError("training_not_ready")
     graph = _build_finalize_graph(brain, store)
     state = await graph.ainvoke(loaded)
@@ -370,34 +558,51 @@ async def run_training_finalize(
         "status": state.get("status"),
         "behavioral_profile": state.get("behavioral_profile"),
         "sample_count": len(state.get("raw_samples") or []),
+        "cycles_completed": len(state.get("cycles_completed") or []),
     }
 
 
 def _training_api_response(state: BehavioralProfileState) -> dict[str, Any]:
     samples = list(state.get("raw_samples") or [])
+    cycles = list(state.get("cycles_completed") or [])
+    asked = int(state.get("probe_questions_asked", 0))
+    planned = int(state.get("probe_questions_planned", PROBES_PER_CYCLE))
     return {
         "message": state.get("message", ""),
-        "prompt_index": len(samples),
-        "total_prompts": 0,
-        "open_ended": True,
+        "prompt_index": asked,
+        "total_prompts": planned,
+        "open_ended": False,
+        "calibration_cycles": True,
         "complete": bool(state.get("complete", False)),
         "samples": samples,
         "sample_count": len(samples),
-        "min_samples_to_finish": MIN_SAMPLES_TO_FINISH,
+        "cycles_completed": cycles,
+        "cycle_count": len(cycles),
+        "min_cycles_to_finish": MIN_CYCLES_TO_FINISH,
+        "min_samples_to_finish": MIN_CYCLES_TO_FINISH,
         "sample_saved": bool(state.get("sample_saved", False)),
         "conversation_history": list(state.get("interview_transcript") or []),
-        "turn_mode": state.get("turn_mode", "interview"),
-        "awaiting_mirror_feedback": bool(state.get("awaiting_mirror_feedback", False)),
+        "turn_mode": state.get("turn_mode", "probe"),
+        "cycle_phase": state.get("cycle_phase", "probe"),
+        "cycle_index": int(state.get("cycle_index", 0)) + 1,
+        "cycle_label": state.get("cycle_label", ""),
+        "probe_progress": f"{min(asked, planned)}/{planned}",
+        "awaiting_verdict": bool(state.get("awaiting_verdict", False)),
+        "awaiting_mirror_feedback": bool(state.get("awaiting_verdict", False)),
+        "refine_round": int(state.get("refine_round", 0)),
         "status": state.get("status", "collecting"),
     }
 
 
-# Kept for smoke tests that import graph builders.
 def _build_answer_graph(brain: Any):
     graph = StateGraph(BehavioralProfileState)
 
     async def next_node(s: BehavioralProfileState) -> BehavioralProfileState:
-        return await generate_next_turn(brain, s)
+        if s.get("awaiting_verdict"):
+            return s
+        if str(s.get("cycle_phase")) == "probe":
+            return await _ask_probe_question(brain, s)
+        return await _emit_imitation(brain, s)
 
     graph.add_node("next", next_node)
     graph.add_edge(START, "next")

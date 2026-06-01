@@ -7,7 +7,13 @@ from app.agents.refinement_graph import (
     run_refinement_message,
     run_refinement_start,
 )
-from app.agents.training_graph import run_training_answer, run_training_finalize, run_training_finish, run_training_start
+from app.agents.training_graph import (
+    run_training_answer,
+    run_training_finalize,
+    run_training_finish,
+    run_training_start,
+    run_training_verdict,
+)
 from app.agents.validation_graph import (
     run_validation_finalize,
     run_validation_generate,
@@ -21,6 +27,7 @@ __all__ = [
     "run_training_start",
     "run_training_answer",
     "run_training_finish",
+    "run_training_verdict",
     "run_training_finalize",
     "run_refinement_start",
     "run_refinement_message",
