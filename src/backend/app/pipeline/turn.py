@@ -6,6 +6,7 @@ from typing import Any
 
 from fastapi import WebSocket
 
+from app.audio.delivery import store_turn_audio
 from app.audio.tts import EdgeTtsEngine
 from app.brain.ollama import OllamaBrain
 from app.config import settings
@@ -18,6 +19,7 @@ from app.pipeline.text_clean import (
 )
 from app.agents.chat_graph import prepare_chat_messages
 from app.experiment.chat import resolved_profile_id
+from app.experiment.scenario_prompt import CONVERSATION_OPEN_CUE
 from app.profiles.store import ProfileStore
 from app.storage.sqlite_store import SQLiteExperimentStore
 
@@ -27,7 +29,8 @@ JSON_BLOCK = re.compile(r"<JSON>\s*(\{.*?\})\s*</JSON>\s*$", re.DOTALL)
 JSON_TAG = "<JSON>"
 META_START = re.compile(r"\n\s*(?:<JSON|\{\s*\"animations\")")
 
-SYSTEM_PROMPT = """You are Buddy, a friendly embodied assistant the user talks to in a 3D scene.
+SYSTEM_PROMPT = """You are Buddy, a friendly embodied assistant (a woman) the user talks to in a 3D scene.
+Your name is always Buddy; if the participant asks your name, say Buddy. In Spanish, use feminine grammatical gender.
 Keep answers concise and conversational (this will be spoken aloud). Prefer short paragraphs.
 Use only the conversation history provided in this chat. Do not claim to remember other sessions or past visits.
 
@@ -98,6 +101,14 @@ def _visible_delta(full: str, sent_visible_len: int) -> tuple[str, int]:
 
 
 async def send_event(ws: WebSocket, typ: str, payload: dict[str, Any]) -> None:
+    if typ == "turn.end":
+        urls = payload.get("tts_audio_urls")
+        n_urls = len(urls) if isinstance(urls, list) else 0
+        logger.info(
+            "ws send turn.end tts_chunk_count=%s tts_audio_urls=%s",
+            payload.get("tts_chunk_count"),
+            n_urls,
+        )
     await ws.send_text(json.dumps({"v": 1, "type": typ, "payload": payload}, ensure_ascii=False))
 
 
@@ -118,10 +129,13 @@ async def run_text_turn(
     profile_id: str = "",
     interaction_index: int = 0,
     experiment_mode: bool = False,
+    scenario_id: str | None = None,
+    conversation_open: bool = False,
 ) -> None:
     await send_event(ws, "listening.state", {"state": "processing"})
     profile_used = False
     retrieval_used = False
+    resolved_scenario = ""
     cond = condition.upper()
     use_experiment_prompt = profile_store is not None and (
         cond == "B" or profile_id.strip() or experiment_mode
@@ -136,13 +150,24 @@ async def run_text_turn(
                 condition,
                 len(prior),
             )
-        messages, profile_used, retrieval_used = await prepare_chat_messages(
+        messages, profile_used, retrieval_used, resolved_scenario = await prepare_chat_messages(
             profile_store,
             condition=condition,
             profile_id=profile_id,
             user_message=user_text.strip(),
             session_turns=prior,
             include_ws_animation_protocol=True,
+            scenario_id=scenario_id,
+            conversation_open=conversation_open,
+        )
+        logger.info(
+            "experiment_turn participant=%s session=%s interaction=%s condition=%s profile=%s scenario=%s",
+            participant_id,
+            session_id,
+            interaction_index,
+            condition,
+            profile_id,
+            resolved_scenario,
         )
     else:
         system = SYSTEM_PROMPT
@@ -167,7 +192,10 @@ async def run_text_turn(
                             "content": strip_roleplay_markers(prev_assistant),
                         }
                     )
-        messages.append({"role": "user", "content": user_text.strip()})
+        if conversation_open:
+            messages.append({"role": "user", "content": CONVERSATION_OPEN_CUE})
+        else:
+            messages.append({"role": "user", "content": user_text.strip()})
     full = ""
     sent_visible_len = 0
     try:
@@ -212,8 +240,10 @@ async def run_text_turn(
     raw_tts_len = len(tts_text.strip())
     tts_truncated = raw_tts_len > settings.max_tts_chars
     tts_chunk_count = 0
+    tts_audio_urls: list[str] = []
     if tts_text:
         try:
+            # MP3 only — WAV base64 exceeded the 1MB WebSocket frame limit and killed audio.
             segments = await tts.synthesize_mp3_segments(tts_text)
         except Exception as exc:  # noqa: BLE001
             logger.exception("tts failed")
@@ -225,22 +255,20 @@ async def run_text_turn(
         if total == 0:
             audio_errors.append("no_tts_segments")
             logger.warning("tts generated no segments (len=%s)", raw_tts_len)
-        for index, mp3 in enumerate(segments):
+        for index, audio_chunk in enumerate(segments):
             try:
-                if not mp3:
+                if not audio_chunk:
                     raise ValueError("empty audio segment")
-                await send_event(
-                    ws,
-                    "tts.chunk_meta",
-                    {
-                        "format": "mp3",
-                        "index": index,
-                        "total": total,
-                        "final": index == total - 1,
-                        "bytes": len(mp3),
-                    },
+                url = store_turn_audio(session_id, turn_index, index, audio_chunk)
+                tts_audio_urls.append(url)
+                logger.info(
+                    "tts audio session=%s part=%s/%s bytes=%s url=%s",
+                    session_id,
+                    index + 1,
+                    total,
+                    len(audio_chunk),
+                    url,
                 )
-                await ws.send_bytes(mp3)
             except Exception as exc:  # noqa: BLE001
                 logger.exception("tts chunk %s failed", index)
                 audio_errors.append(str(exc))
@@ -251,6 +279,14 @@ async def run_text_turn(
                 )
             await asyncio.sleep(0)
 
+    logger.info(
+        "turn complete session=%s tts_chunks=%s tts_text_len=%s audio_errors=%s urls=%s",
+        session_id,
+        tts_chunk_count,
+        raw_tts_len,
+        len(audio_errors),
+        len(tts_audio_urls),
+    )
     await send_event(
         ws,
         "turn.end",
@@ -259,6 +295,7 @@ async def run_text_turn(
             "tts_truncated": tts_truncated,
             "tts_text_len": raw_tts_len,
             "tts_chunk_count": tts_chunk_count,
+            "tts_audio_urls": tts_audio_urls,
         },
     )
 
@@ -271,7 +308,7 @@ async def run_text_turn(
                     condition=condition,
                     order_group=order_group,
                     turn_index=turn_index,
-                    user_text=user_text,
+                    user_text="" if conversation_open else user_text,
                     assistant_text=display,
                     profile_used=profile_used,
                     retrieval_used=retrieval_used,
@@ -279,6 +316,7 @@ async def run_text_turn(
                     audio_error_count=len(audio_errors),
                     profile_id=resolved_profile_id(condition=condition, profile_id=profile_id),
                     interaction_index=interaction_index,
+                    scenario_id=resolved_scenario if use_experiment_prompt else "",
                 )
             )
         except Exception:  # noqa: BLE001

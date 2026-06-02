@@ -91,7 +91,7 @@ static func setup_menu_screen(bg: ColorRect, card: PanelContainer, quit_btn: But
 		settings_panel.add_theme_stylebox_override("panel", viewport_panel())
 	if quit_btn != null:
 		style_menu_button(quit_btn)
-		quit_btn.text = "Quit"
+		quit_btn.text = "Salir"
 
 
 static func build_theme() -> Theme:
@@ -150,15 +150,15 @@ static func style_secondary_button(btn: Button) -> void:
 
 
 static func style_new_chat_button(btn: Button) -> void:
-	_apply_compact_button(btn, SURFACE, TEXT, "＋  New chat", Vector2(132, 40))
+	_apply_compact_button(btn, SURFACE, TEXT, "＋  Nuevo chat", Vector2(132, 40))
 
 
 static func style_menu_button(btn: Button) -> void:
-	_apply_compact_button(btn, SURFACE, TEXT, "☰  Menu", Vector2(108, 40))
+	_apply_compact_button(btn, SURFACE, TEXT, "☰  Menú", Vector2(108, 40))
 
 
 static func style_send_button(btn: Button) -> void:
-	_apply_compact_button(btn, ACCENT, Color(1, 1, 1, 1), "➤  Send", Vector2(128, 48))
+	_apply_compact_button(btn, ACCENT, Color(1, 1, 1, 1), "➤  Enviar", Vector2(128, 48))
 	var hover := _panel(ACCENT_HOVER, 12, Color.TRANSPARENT, 10)
 	var press := _panel(ACCENT_PRESS, 12, Color.TRANSPARENT, 10)
 	btn.add_theme_stylebox_override("hover", hover)
@@ -190,9 +190,9 @@ static func style_timer(label: Label) -> void:
 	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 
-static func style_chat_log(log: ScrollContainer) -> void:
-	log.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	log.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+static func style_chat_log(chat_scroll: ScrollContainer) -> void:
+	chat_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	chat_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 
 
 static func style_chat_output(output: RichTextLabel) -> void:
@@ -214,15 +214,15 @@ static func assistant_label_for_kind(kind: String, override_label: String = "") 
 		return override_label
 	match kind:
 		"mirror":
-			return "Imitation try"
+			return "Intento de imitación"
 		"profile":
-			return "Profile"
+			return "Perfil"
 		"buddy":
 			return "Buddy"
 		"finish", "interview":
-			return "Interviewer"
+			return "Entrevistador"
 		_:
-			return "Assistant"
+			return "Asistente"
 
 
 static func assistant_colors_for_kind(kind: String) -> Dictionary:
@@ -235,7 +235,7 @@ static func assistant_colors_for_kind(kind: String) -> Dictionary:
 
 static func make_user_bubble(text: String, max_width: float) -> Control:
 	return _make_bubble_row(
-		_make_bubble_panel("You", text, BUBBLE_USER_BG, BUBBLE_LABEL_MUTED, max_width, true),
+		_make_bubble_panel("Tú", text, BUBBLE_USER_BG, BUBBLE_LABEL_MUTED, max_width, true),
 		true
 	)
 

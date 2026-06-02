@@ -20,7 +20,7 @@ copy .env.example .env
 Requires [Ollama](https://ollama.com/) running locally with your chosen model pulled (e.g. `ollama pull llama3.2`).
 
 ```bash
-uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 --reload-exclude "data/*" --reload-exclude "*.db"
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 Or from `src/backend/scripts/`:
@@ -29,7 +29,7 @@ Or from `src/backend/scripts/`:
 .\run_dev.ps1
 ```
 
-**WebSocket drops during dev?** `--reload` restarts the server when files change. Each turn writes to `data/experiment.db`, which used to trigger a restart and close open WS connections. The excludes above fix that. For a stable session, run without reload: `uv run uvicorn app.main:app --host 127.0.0.1 --port 8000`.
+Restart the server manually after code changes. We do not use `--reload`: each chat turn writes `data/experiment.db`, which used to restart uvicorn mid-session and drop WebSocket + TTS.
 
 Research dashboard (same backend process / Docker container as the WebSocket API):
 

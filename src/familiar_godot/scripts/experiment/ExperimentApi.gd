@@ -177,11 +177,12 @@ func _on_request_completed(
 	body: PackedByteArray
 ) -> void:
 	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300:
-		if not mock_mode:
-			mock_mode = true
-			_emit_mock(_pending_action, _pending_body)
-			return
-		request_finished.emit(_pending_action, false, {}, "http_%s" % response_code)
+		var detail := body.get_string_from_utf8().strip_edges()
+		if detail.is_empty():
+			detail = "http_%s" % response_code
+		else:
+			detail = "http_%s: %s" % [response_code, detail]
+		request_finished.emit(_pending_action, false, {}, detail)
 		return
 	var parsed: Variant = JSON.parse_string(body.get_string_from_utf8())
 	if parsed == null:

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.experiment.scenario_prompt import compose_experiment_system_prompt
+from app.experiment.scenarios import get_scenario, resolve_scenario_id
 from app.profiles.control import CONTROL_PROFILE_ID, build_control_system_prompt, load_control_profile
 from app.profiles.store import ProfileStore
 from app.profiles.yaml_profile import build_condition_a_system, build_condition_b_system
@@ -9,9 +11,9 @@ from app.skills.registry import SkillRegistry
 
 GENERIC_SYSTEM = build_condition_b_system()
 
-PROFILE_SYSTEM_PREFIX = """You are Buddy, a friendly embodied assistant in a 3D scene.
-Match the conversational style described below while staying natural. Do not reveal that you imitate a specific person.
-Never use roleplay formatting: no *actions* or [directions]. Write only spoken words.
+PROFILE_STYLE_PREFIX = """Match the conversational style described below while staying natural.
+Do not reveal that you imitate a specific person or that a behavioral profile is in use.
+Reference samples are style examples only — not a prior conversation with this participant.
 
 Behavioral guidance:
 """
@@ -33,7 +35,7 @@ def resolved_profile_id(*, condition: str, profile_id: str) -> str:
     return profile_id.strip()
 
 
-def build_system_prompt(
+def build_profile_style_prompt(
     *,
     condition: str,
     profile_store: ProfileStore,
@@ -41,6 +43,7 @@ def build_system_prompt(
     user_message: str,
     skills: SkillRegistry,
 ) -> tuple[str, bool, bool]:
+    """Return profile/style section only (no scenario or experiment constraints)."""
     cond = condition.upper()
     if cond == "B":
         try:
@@ -54,7 +57,9 @@ def build_system_prompt(
 
     yaml_profile = profile_store.load_behavioral_yaml(profile_id)
     if yaml_profile and isinstance(yaml_profile, dict) and yaml_profile.get("style"):
-        behavioral = profile_store.load_behavioral(profile_id) or {"samples": (profile_store.load_raw(profile_id) or {}).get("samples", [])}
+        behavioral = profile_store.load_behavioral(profile_id) or {
+            "samples": (profile_store.load_raw(profile_id) or {}).get("samples", [])
+        }
         snippets_raw = skills.retrieve_context(behavioral, user_message)
         snippets = [str(s.get("response", "")) for s in snippets_raw if s.get("response")]
         return build_condition_a_system(yaml_profile, snippets), True, bool(snippets)
@@ -68,12 +73,35 @@ def build_system_prompt(
 
         profile = compile_behavioral(raw)
     snippets = skills.retrieve_context(profile, user_message)
-    prompt = PROFILE_SYSTEM_PREFIX + str(profile.get("style_summary", ""))
+    prompt = PROFILE_STYLE_PREFIX + str(profile.get("style_summary", ""))
     if snippets:
         prompt += "\n\nContexto recuperado:\n"
         for sn in snippets:
             prompt += f"- {sn.get('response', '')}\n"
     return prompt, True, bool(snippets)
+
+
+def build_system_prompt(
+    *,
+    condition: str,
+    profile_store: ProfileStore,
+    profile_id: str,
+    user_message: str,
+    skills: SkillRegistry,
+    scenario_id: str | None = None,
+) -> tuple[str, bool, bool, str]:
+    """Compose scenario + profile + constraints; returns (system, profile_used, retrieval_used, scenario_id)."""
+    resolved_scenario = resolve_scenario_id(scenario_id)
+    scenario = get_scenario(resolved_scenario)
+    style, profile_used, retrieval_used = build_profile_style_prompt(
+        condition=condition,
+        profile_store=profile_store,
+        profile_id=profile_id,
+        user_message=user_message,
+        skills=skills,
+    )
+    system = compose_experiment_system_prompt(scenario=scenario, profile_style=style)
+    return system, profile_used, retrieval_used, resolved_scenario
 
 
 async def run_experiment_chat(
@@ -84,6 +112,8 @@ async def run_experiment_chat(
     condition: str,
     profile_id: str,
     conversation_history: list[dict[str, Any]],
+    scenario_id: str | None = None,
+    conversation_open: bool = False,
 ) -> tuple[str, dict[str, Any]]:
     from app.agents.chat_graph import run_chat_agent
 
@@ -94,4 +124,6 @@ async def run_experiment_chat(
         condition=condition,
         profile_id=profile_id,
         conversation_history=conversation_history,
+        scenario_id=scenario_id,
+        conversation_open=conversation_open,
     )

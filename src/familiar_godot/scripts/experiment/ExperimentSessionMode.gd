@@ -13,7 +13,7 @@ func _ready() -> void:
 		ExperimentSessionManager.Phase.SETUP:
 			_show_setup()
 		ExperimentSessionManager.Phase.QUESTIONNAIRE:
-			_show_questionnaire()
+			get_tree().change_scene_to_file(ExperimentSessionManager.QUESTIONNAIRE_SCENE)
 		ExperimentSessionManager.Phase.DONE:
 			_show_end()
 		ExperimentSessionManager.Phase.CHAT:
@@ -31,9 +31,9 @@ func _mount(title: String) -> void:
 
 
 func _show_setup() -> void:
-	_mount("Experimental Session")
+	_mount("Sesión experimental")
 	ExperimentSessionManager.load_profile_config()
-	var participant := ExperimentScreenHelper.add_labeled_line(_content, "Participant ID", "e.g. P001")
+	var participant := ExperimentScreenHelper.add_labeled_line(_content, "ID del participante", "ej. P001")
 	var saved_pid := ParticipantSettings.load_participant_id()
 	if not saved_pid.is_empty():
 		participant.text = saved_pid
@@ -41,7 +41,7 @@ func _show_setup() -> void:
 		participant.text = ExperimentSessionManager.participant_id
 	var profiles := Label.new()
 	profiles.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	profiles.text = "Profile A: %s\nControl (Condition B): %s\nOrder: %s" % [
+	profiles.text = "Perfil A: %s\nControl (condición B): %s\nOrden: %s" % [
 		_display_profile(ExperimentSessionManager.profile_a_id),
 		ParticipantSettings.CONTROL_PROFILE_ID,
 		"-".join(ExperimentSessionManager.order),
@@ -50,18 +50,18 @@ func _show_setup() -> void:
 	ExperimentScreenHelper.add_button(_content, "Iniciar sesión", func() -> void:
 		var pid := participant.text.strip_edges()
 		if pid.is_empty():
-			_status.text = "Participant ID is required."
+			_status.text = "El ID del participante es obligatorio."
 			return
 		ParticipantSettings.save_participant_id(pid)
 		if not ParticipantSettings.profile_a_configured():
-			_status.text = "Assign Profile A under Experimental Setup first."
+			_status.text = "Asigna el Perfil A en Configuración experimental primero."
 			return
 		ExperimentSessionManager.configure_run(pid, ExperimentSessionManager.order)
 		ExperimentSessionManager.log_run_event("session_start")
 		_start_interaction(1)
 	)
 	ExperimentScreenHelper.add_button(_content, "Salir de la sesión", _confirm_exit_early)
-	ExperimentScreenHelper.add_button(_content, "Back", func() -> void:
+	ExperimentScreenHelper.add_button(_content, "Volver", func() -> void:
 		ExperimentSessionManager.reset_run()
 		ExperimentScreenHelper.go_to(RUN_MENU)
 	)
@@ -75,25 +75,6 @@ func _start_interaction(index: int) -> void:
 
 func _launch_chat() -> void:
 	get_tree().change_scene_to_file(MAIN_SCENE)
-
-
-func _show_questionnaire() -> void:
-	_mount("Pausa entre interacciones")
-	var msg := Label.new()
-	msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	msg.text = (
-		"Interacción %d completada.\n\n"
-		% ExperimentSessionManager.current_interaction_index
-		+ "Complete los cuestionarios antes de continuar con la siguiente interacción."
-	)
-	_content.add_child(msg)
-	ExperimentScreenHelper.add_button(_content, "Abrir cuestionarios", func() -> void:
-		_status.text = "Placeholder: abra los cuestionarios externos asignados por el investigador."
-	)
-	ExperimentScreenHelper.add_button(_content, "Continuar a Interacción 2", func() -> void:
-		_start_interaction(2)
-	)
-	ExperimentScreenHelper.add_button(_content, "Salir de la sesión", _confirm_exit_early)
 
 
 func _confirm_exit_early() -> void:
@@ -130,4 +111,4 @@ func _show_end() -> void:
 
 
 func _display_profile(profile_id: String) -> String:
-	return profile_id if not profile_id.is_empty() else "(not set — use Assign Profiles)"
+	return profile_id if not profile_id.is_empty() else "(sin asignar — usa Asignar perfiles)"

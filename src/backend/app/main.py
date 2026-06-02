@@ -2,10 +2,12 @@ import json
 import logging
 from typing import Any
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 
 from app.config import settings
+from app.audio.delivery import pop_turn_audio
 from app.audio.tts import EdgeTtsEngine
 from app.brain.factory import create_brain
 from app.pipeline.turn import run_text_turn, send_event
@@ -63,6 +65,15 @@ async def _ack_session(
 
 app.include_router(build_dashboard_router(_store, _profile_store))
 app.include_router(build_experiment_router(_profile_store, _brain))
+
+
+@app.get("/audio/turn/{token}")
+async def get_turn_audio(token: str) -> Response:
+    mp3 = pop_turn_audio(token)
+    if not mp3:
+        raise HTTPException(status_code=404, detail="audio not found or expired")
+    logger.info("audio GET token=%s bytes=%s", token[:48], len(mp3))
+    return Response(content=mp3, media_type="audio/mpeg")
 
 
 @app.get("/healthz")
@@ -174,9 +185,11 @@ async def ws_session(websocket: WebSocket) -> None:
                     "session.end_ack",
                     {"session_id": session_id},
                 )
-            elif typ == "turn.user_text":
+            elif typ in ("turn.user_text", "turn.conversation_open"):
+                conversation_open = typ == "turn.conversation_open"
+                logger.info("ws in %s session=%s", typ, str(payload.get("session_id", "")))
                 text = str(payload.get("text", ""))
-                if not text.strip():
+                if not conversation_open and not text.strip():
                     await send_event(websocket, "turn.end", {"error": "empty_text"})
                     continue
                 participant_id = str(payload.get("participant_id", "unknown"))
@@ -202,6 +215,7 @@ async def ws_session(websocket: WebSocket) -> None:
                 except (TypeError, ValueError):
                     interaction_index = 0
                 experiment_mode = bool(payload.get("experiment_mode", False))
+                scenario_id = str(payload.get("scenario_id", "")).strip() or None
 
                 await run_text_turn(
                     websocket,
@@ -219,6 +233,8 @@ async def ws_session(websocket: WebSocket) -> None:
                     profile_id=profile_id,
                     interaction_index=interaction_index,
                     experiment_mode=experiment_mode,
+                    scenario_id=scenario_id,
+                    conversation_open=conversation_open,
                 )
             else:
                 logger.warning("unknown ws message type: %s", typ)

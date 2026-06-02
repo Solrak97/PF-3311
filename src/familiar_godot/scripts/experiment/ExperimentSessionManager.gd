@@ -5,6 +5,8 @@ enum Phase { IDLE, SETUP, CHAT, QUESTIONNAIRE, DONE }
 const INTERACTION_SEC := 300
 const CHAT_SCENE := "res://scenes/main.tscn"
 const ORCHESTRATOR_SCENE := "res://scenes/experiment/ExperimentSessionMode.tscn"
+const QUESTIONNAIRE_SCENE := "res://scenes/experiment/QuestionnairePlaceholder.tscn"
+const DEFAULT_SCENARIO_ID := "daily_conversation"
 
 var is_run_active: bool = false
 var phase: Phase = Phase.IDLE
@@ -22,6 +24,9 @@ var early_exit: bool = false
 var early_exit_reason: String = ""
 
 var conversation_history: Array[Dictionary] = []
+var scenario_id_by_interaction: Dictionary = {1: DEFAULT_SCENARIO_ID, 2: DEFAULT_SCENARIO_ID}
+## 1 = cuestionario tras interacción 1; 2 = cuestionario final tras interacción 2
+var questionnaire_after_interaction: int = 0
 
 signal interaction_finished(interaction_index: int)
 signal run_finished()
@@ -41,11 +46,21 @@ func reset_run() -> void:
 	early_exit = false
 	early_exit_reason = ""
 	conversation_history.clear()
+	scenario_id_by_interaction = {1: DEFAULT_SCENARIO_ID, 2: DEFAULT_SCENARIO_ID}
+	questionnaire_after_interaction = 0
 
 
 func load_profile_config() -> void:
 	profile_a_id = ParticipantSettings.load_profile_a_id()
 	profile_b_id = ParticipantSettings.CONTROL_PROFILE_ID
+	scenario_id_by_interaction[1] = ParticipantSettings.load_scenario_for_interaction(1)
+	scenario_id_by_interaction[2] = ParticipantSettings.load_scenario_for_interaction(2)
+
+
+func scenario_id_for_interaction(index: int = 0) -> String:
+	var idx := index if index > 0 else current_interaction_index
+	var sid := str(scenario_id_by_interaction.get(idx, DEFAULT_SCENARIO_ID)).strip_edges()
+	return sid if sid in ParticipantSettings.VALID_SCENARIO_IDS else DEFAULT_SCENARIO_ID
 
 
 func profile_for_condition(cond: String) -> String:
@@ -82,13 +97,16 @@ func begin_interaction(index: int) -> void:
 
 func finish_interaction() -> void:
 	_log_run_event("interaction_end", {"interaction_index": current_interaction_index})
-	if current_interaction_index >= 2:
-		phase = Phase.DONE
-		is_run_active = false
-		run_finished.emit()
-	else:
-		phase = Phase.QUESTIONNAIRE
+	questionnaire_after_interaction = current_interaction_index
+	phase = Phase.QUESTIONNAIRE
 	interaction_finished.emit(current_interaction_index)
+
+
+func complete_final_questionnaire() -> void:
+	_log_run_event("questionnaire_final_complete", {"interaction_index": 2})
+	phase = Phase.DONE
+	is_run_active = false
+	run_finished.emit()
 
 
 func exit_run_early(reason: String = "participant_request") -> void:
@@ -152,6 +170,7 @@ func _log_run_event(event: String, extra: Dictionary = {}) -> void:
 		"interaction_index": current_interaction_index,
 		"condition": current_condition,
 		"profile_id": active_profile_id(),
+		"scenario_id": scenario_id_for_interaction(),
 	}
 	for key in extra:
 		entry[key] = extra[key]

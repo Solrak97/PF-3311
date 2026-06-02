@@ -28,7 +28,7 @@ def main() -> None:
 
     store.save_behavioral(compile_behavioral(raw))
 
-    b_prompt, b_used, b_ret = build_system_prompt(
+    b_prompt, b_used, b_ret, _b_scenario = build_system_prompt(
         condition="B",
         profile_store=store,
         profile_id="trained-a",
@@ -36,10 +36,12 @@ def main() -> None:
         skills=SkillRegistry(),
     )
     assert b_used and not b_ret
-    assert "control baseline" in b_prompt.lower()
+    assert _b_scenario == "daily_conversation"
+    assert "Current scenario" in b_prompt
+    assert "Experimental constraints" in b_prompt
     assert "que tal amigo" not in b_prompt
 
-    a_prompt, a_used, _a_ret = build_system_prompt(
+    a_prompt, a_used, _a_ret, a_scenario = build_system_prompt(
         condition="A",
         profile_store=store,
         profile_id="trained-a",
@@ -47,7 +49,9 @@ def main() -> None:
         skills=SkillRegistry(),
     )
     assert a_used
-    assert "imitate" in a_prompt.lower() or "Match" in a_prompt
+    assert a_scenario == "daily_conversation"
+    assert "Current scenario" in a_prompt
+    assert "Behavioral style" in a_prompt
 
     assert resolved_profile_id(condition="B", profile_id="anything") == CONTROL_PROFILE_ID
     print("control profile smoke ok")

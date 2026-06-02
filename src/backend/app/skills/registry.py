@@ -40,6 +40,15 @@ class SkillRegistry:
     def get_skill(self, skill_id: str) -> dict[str, Any]:
         return self._skills.get(skill_id, {})
 
+    @staticmethod
+    def _sample_dicts(profile: dict[str, Any]) -> list[dict[str, Any]]:
+        raw = profile.get("samples") or []
+        if isinstance(raw, list):
+            return [item for item in raw if isinstance(item, dict)]
+        if isinstance(raw, dict):
+            return [item for item in raw.values() if isinstance(item, dict)]
+        return []
+
     def retrieve_context(
         self,
         profile: dict[str, Any],
@@ -49,18 +58,18 @@ class SkillRegistry:
     ) -> list[dict[str, Any]]:
         skill = self._skills.get("retrieve_context", {})
         limit = max_snippets or int(skill.get("max_snippets", 3))
-        samples = profile.get("samples") or []
-        if not isinstance(samples, list):
+        samples = self._sample_dicts(profile)
+        if not samples:
             return []
-        query = user_message.lower()
+        query = user_message.lower().strip()
+        if not query:
+            return samples[:limit]
         scored: list[tuple[int, dict[str, Any]]] = []
         for item in samples:
-            if not isinstance(item, dict):
-                continue
             text = f"{item.get('prompt', '')} {item.get('response', '')}".lower()
             score = sum(1 for word in query.split() if len(word) > 3 and word in text)
             scored.append((score, item))
         scored.sort(key=lambda x: x[0], reverse=True)
-        if scored and scored[0][0] > 0:
-            return [s[1] for s in scored[:limit]]
-        return [s for _, s in samples[:limit] if isinstance(s, dict)]
+        if scored[0][0] > 0:
+            return [item for _, item in scored[:limit]]
+        return samples[:limit]

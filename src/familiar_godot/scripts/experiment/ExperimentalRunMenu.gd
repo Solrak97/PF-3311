@@ -5,19 +5,19 @@ const EXP_MENU := "res://scenes/experiment/ExperimentMenu.tscn"
 
 
 func _ready() -> void:
-	var ui := ExperimentUI.setup_experiment_card(self, "Experimental Run")
+	var ui := ExperimentUI.setup_experiment_card(self, "Ejecutar experimento")
 	var content: VBoxContainer = ui["content"]
 	var hint := Label.new()
-	hint.text = "Choose counterbalancing order for Interacción 1 and 2."
+	hint.text = "Elija el orden del contrabalanceo para la Interacción 1 y la Interacción 2."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(hint)
-	ExperimentScreenHelper.add_button(content, "Order A → B", func() -> void:
+	ExperimentScreenHelper.add_button(content, "Orden A → B", func() -> void:
 		_prepare_run(["A", "B"])
 	)
-	ExperimentScreenHelper.add_button(content, "Order B → A", func() -> void:
+	ExperimentScreenHelper.add_button(content, "Orden B → A", func() -> void:
 		_prepare_run(["B", "A"])
 	)
-	ExperimentScreenHelper.add_button(content, "Back", func() -> void:
+	ExperimentScreenHelper.add_button(content, "Volver", func() -> void:
 		ExperimentScreenHelper.go_to(EXP_MENU)
 	)
 

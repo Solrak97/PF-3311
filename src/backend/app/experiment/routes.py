@@ -19,6 +19,7 @@ from app.agents.training_graph import (
     run_training_start,
     run_training_verdict,
 )
+from app.experiment.scenarios import list_scenarios
 from app.agents.validation_graph import (
     run_validation_finalize,
     run_validation_generate,
@@ -60,7 +61,9 @@ class ExperimentChatPayload(BaseModel):
     interaction_index: int = 1
     condition: str = "B"
     profile_id: str = ""
-    message: str
+    scenario_id: str = ""
+    message: str = ""
+    conversation_open: bool = False
     conversation_history: list[dict[str, Any]] = Field(default_factory=list)
 
 
@@ -427,9 +430,13 @@ def build_experiment_router(
                 )
         return {"ok": True, "saved": saved.get("created_at", "")}
 
+    @router.get("/experiment/scenarios")
+    async def experiment_scenarios() -> dict[str, Any]:
+        return {"scenarios": list_scenarios()}
+
     @router.post("/experiment/chat")
     async def experiment_chat(body: ExperimentChatPayload) -> dict[str, Any]:
-        if not body.message.strip():
+        if not body.conversation_open and not body.message.strip():
             raise HTTPException(status_code=400, detail="empty_message")
         text, meta = await run_experiment_chat(
             _brain,
@@ -438,6 +445,8 @@ def build_experiment_router(
             condition=body.condition,
             profile_id=body.profile_id,
             conversation_history=body.conversation_history,
+            scenario_id=body.scenario_id.strip() or None,
+            conversation_open=body.conversation_open,
         )
         return {
             "text": text,

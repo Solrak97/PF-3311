@@ -7,6 +7,10 @@ const PROFILE_A_PATH := "user://familiar_profile_a_id.txt"
 const PROFILE_B_PATH := "user://familiar_profile_b_id.txt"
 const CONTROL_PROFILE_ID := "generic_control_agent"
 const VALID_ORDERS := ["A-B", "B-A"]
+const SCENARIO_I1_PATH := "user://familiar_scenario_interaction_1.txt"
+const SCENARIO_I2_PATH := "user://familiar_scenario_interaction_2.txt"
+const DEFAULT_SCENARIO_ID := "daily_conversation"
+const VALID_SCENARIO_IDS := ["daily_conversation", "casual_support"]
 
 
 static func load_participant_id() -> String:
@@ -55,6 +59,20 @@ static func profiles_configured() -> bool:
 
 static func profile_a_configured() -> bool:
 	return not load_profile_a_id().is_empty()
+
+
+static func load_scenario_for_interaction(interaction_index: int) -> String:
+	var path := SCENARIO_I1_PATH if interaction_index == 1 else SCENARIO_I2_PATH
+	var raw := _read_text(path)
+	return raw if raw in VALID_SCENARIO_IDS else DEFAULT_SCENARIO_ID
+
+
+static func save_scenario_for_interaction(interaction_index: int, scenario_id: String) -> void:
+	var normalized := scenario_id.strip_edges()
+	if normalized not in VALID_SCENARIO_IDS:
+		normalized = DEFAULT_SCENARIO_ID
+	var path := SCENARIO_I1_PATH if interaction_index == 1 else SCENARIO_I2_PATH
+	_write_text(path, normalized)
 
 
 static func _read_text(path: String) -> String:

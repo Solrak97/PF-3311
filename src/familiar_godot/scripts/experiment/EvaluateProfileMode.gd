@@ -7,13 +7,13 @@ const INPUT_MIN_LINES := 2
 const INPUT_LINE_HEIGHT := 22
 
 const RATING_LABELS: Dictionary = {
-	"tone_similarity": "Tone similarity",
-	"phrasing_similarity": "Phrasing similarity",
-	"response_length_similarity": "Length similarity",
-	"behavioral_consistency": "Behavioral consistency",
-	"reminds_me_of_person": "Reminds me of the person",
-	"naturalness": "Naturalness",
-	"identity_leakage_absent": "Identity safety (no leakage)",
+	"tone_similarity": "Similitud de tono",
+	"phrasing_similarity": "Similitud de formulación",
+	"response_length_similarity": "Similitud de longitud",
+	"behavioral_consistency": "Consistencia conductual",
+	"reminds_me_of_person": "Me recuerda a la persona",
+	"naturalness": "Naturalidad",
+	"identity_leakage_absent": "Sin filtración de identidad",
 }
 
 var _profile_select: OptionButton
@@ -31,15 +31,18 @@ var _chat_busy: bool = false
 var _pending_user_message: String = ""
 var _loaded: bool = false
 var _local_ids: Array[String] = []
+var _pending_validation_start: bool = false
+var _sync_local_queue: Array[String] = []
+var _syncing_local: bool = false
 
 
 func _ready() -> void:
-	var ui := ExperimentUI.setup_experiment_card(self, "Evaluate Profile")
+	var ui := ExperimentUI.setup_experiment_card(self, "Evaluar perfil")
 	_status = ui["status"]
 	var content: VBoxContainer = ui["content"]
-	_profile_select = ExperimentScreenHelper.add_labeled_option(content, "Profile")
-	ExperimentScreenHelper.add_button(content, "Refresh profile list", _refresh_profile_list)
-	ExperimentScreenHelper.add_button(content, "Load behavioral profile", _on_load)
+	_profile_select = ExperimentScreenHelper.add_labeled_option(content, "Perfil")
+	ExperimentScreenHelper.add_button(content, "Actualizar lista de perfiles", _refresh_profile_list)
+	ExperimentScreenHelper.add_button(content, "Cargar perfil conductual", _on_load)
 	var summary_panel := PanelContainer.new()
 	summary_panel.add_theme_stylebox_override("panel", ExperimentUI.viewport_panel())
 	content.add_child(summary_panel)
@@ -59,7 +62,7 @@ func _ready() -> void:
 	_summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_summary_scroll.add_child(_summary)
 	var chat_label := Label.new()
-	chat_label.text = "Sample chat (condition A profile)"
+	chat_label.text = "Chat de prueba (perfil condición A)"
 	content.add_child(chat_label)
 	_chat = ChatBubbleLog.new()
 	_chat.custom_minimum_size = Vector2(0, CHAT_MIN_HEIGHT)
@@ -78,7 +81,7 @@ func _ready() -> void:
 	input_col.add_theme_constant_override("separation", 8)
 	input_margin.add_child(input_col)
 	_input = TextEdit.new()
-	_input.placeholder_text = "Message the profile… (Enter to send, Shift+Enter for new line)"
+	_input.placeholder_text = "Escribe al perfil… (Enter envía, Mayús+Enter nueva línea)"
 	_input.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	_input.custom_minimum_size = Vector2(0, INPUT_MIN_LINES * INPUT_LINE_HEIGHT)
 	_input.gui_input.connect(_on_input_gui_input)
@@ -88,15 +91,15 @@ func _ready() -> void:
 	input_row.alignment = BoxContainer.ALIGNMENT_END
 	input_col.add_child(input_row)
 	_send = Button.new()
-	_send.text = "Send"
+	_send.text = "Enviar"
 	_send.pressed.connect(_on_send)
 	input_row.add_child(_send)
-	_clear_chat = ExperimentScreenHelper.add_button(content, "Clear chat", _on_clear_chat)
+	_clear_chat = ExperimentScreenHelper.add_button(content, "Limpiar chat", _on_clear_chat)
 	for key in ExperimentPrompts.RATING_KEYS:
 		content.add_child(_make_slider_row(key))
-	ExperimentScreenHelper.add_button(content, "Add rating", _on_add_rating)
-	ExperimentScreenHelper.add_button(content, "Finish evaluation", _on_finish)
-	ExperimentScreenHelper.add_button(content, "Back", func() -> void:
+	ExperimentScreenHelper.add_button(content, "Añadir valoración", _on_add_rating)
+	ExperimentScreenHelper.add_button(content, "Finalizar evaluación", _on_finish)
+	ExperimentScreenHelper.add_button(content, "Volver", func() -> void:
 		ExperimentScreenHelper.go_to(SETUP_MENU)
 	)
 	if not ExperimentApi.request_finished.is_connected(_on_api_finished):
@@ -128,7 +131,7 @@ func _refresh_profile_list() -> void:
 	_reset_chat()
 	_local_ids = ProfileCatalog.list_local_raw_profile_ids()
 	ProfileCatalog.populate_option(_profile_select, _local_ids)
-	_status.text = "Loading profiles from backend…"
+	_status.text = "Cargando perfiles del servidor…"
 	ExperimentApi.list_profiles()
 
 
@@ -179,16 +182,42 @@ func _make_slider_row(key: String) -> HBoxContainer:
 func _on_load() -> void:
 	var pid := _selected_profile_id()
 	if pid.is_empty():
-		_status.text = "Select a profile from the list."
+		_status.text = "Selecciona un perfil de la lista."
 		return
-	_status.text = "Loading profile…"
+	_pending_validation_start = true
+	_loaded = false
+	_set_chat_controls(false)
+	_status.text = "Cargando perfil…"
 	ExperimentApi.get_behavioral_profile(pid)
-	ExperimentApi.validation_start(pid)
 
 
 func _on_clear_chat() -> void:
 	_reset_chat()
-	_status.text = "Chat cleared — send a message to continue evaluating."
+	if _loaded:
+		_request_conversation_open()
+	else:
+		_status.text = "Chat limpiado — carga un perfil para evaluar."
+
+
+func _request_conversation_open() -> void:
+	if not _loaded or _chat_busy:
+		return
+	if not _conversation_history.is_empty():
+		return
+	_chat_busy = true
+	_set_chat_controls(true)
+	_status.text = "Buddy va a iniciar la conversación…"
+	var pid := _selected_profile_id()
+	ExperimentApi.post_experiment_chat({
+		"participant_id": "evaluator",
+		"session_id": "evaluate-%s" % pid,
+		"interaction_index": 1,
+		"condition": "A",
+		"profile_id": pid,
+		"scenario_id": ParticipantSettings.DEFAULT_SCENARIO_ID,
+		"conversation_open": true,
+		"conversation_history": [],
+	})
 
 
 func _on_send() -> void:
@@ -196,7 +225,7 @@ func _on_send() -> void:
 		return
 	var text := _input.text.strip_edges()
 	if text.is_empty():
-		_status.text = "Write a message to chat with the profile."
+		_status.text = "Escribe un mensaje para chatear con el perfil."
 		return
 	var pid := _selected_profile_id()
 	_append_user(text)
@@ -204,13 +233,14 @@ func _on_send() -> void:
 	_pending_user_message = text
 	_chat_busy = true
 	_set_chat_controls(true)
-	_status.text = "Agent thinking…"
+	_status.text = "El agente está pensando…"
 	ExperimentApi.post_experiment_chat({
 		"participant_id": "evaluator",
 		"session_id": "evaluate-%s" % pid,
 		"interaction_index": 1,
 		"condition": "A",
 		"profile_id": pid,
+		"scenario_id": ParticipantSettings.DEFAULT_SCENARIO_ID,
 		"message": text,
 		"conversation_history": _conversation_history,
 	})
@@ -262,7 +292,7 @@ func _collect_ratings() -> Dictionary:
 
 func _on_add_rating() -> void:
 	if _assistant_message_count() == 0:
-		_status.text = "Chat with the profile before adding a rating."
+		_status.text = "Chatea con el perfil antes de añadir una valoración."
 		return
 	var scores := _collect_ratings()
 	var last_user := ""
@@ -292,13 +322,13 @@ func _on_add_rating() -> void:
 		"agent_response": last_agent,
 		"scores": scores,
 	})
-	_status.text = "Rating %d recorded from sample chat." % _ratings.size()
+	_status.text = "Valoración %d registrada del chat de prueba." % _ratings.size()
 
 
 func _on_finish() -> void:
 	var pid := _selected_profile_id()
 	if pid.is_empty() or _ratings.is_empty():
-		_status.text = "Add at least one rating before finishing."
+		_status.text = "Añade al menos una valoración antes de finalizar."
 		return
 	var payload := {
 		"profile_id": pid,
@@ -324,13 +354,13 @@ func _evaluate_thresholds() -> String:
 	var natural := float(scores.get("naturalness", 0))
 	var identity := float(scores.get("identity_leakage_absent", 0))
 	var parts: PackedStringArray = []
-	parts.append("Similarity avg: %.1f (need ≥ 4.5)" % sim_avg)
-	parts.append("Naturalness: %.1f (need ≥ 4.0)" % natural)
-	parts.append("Identity safety: %.1f (need ≥ 5.5)" % identity)
+	parts.append("Media de similitud: %.1f (se requiere ≥ 4.5)" % sim_avg)
+	parts.append("Naturalidad: %.1f (se requiere ≥ 4.0)" % natural)
+	parts.append("Seguridad de identidad: %.1f (se requiere ≥ 5.5)" % identity)
 	if sim_avg >= 4.5 and natural >= 4.0 and identity >= 5.5:
-		parts.append("Thresholds passed.")
+		parts.append("Umbrales cumplidos.")
 	else:
-		parts.append("Some thresholds not met.")
+		parts.append("Algunos umbrales no se cumplieron.")
 	return "\n".join(parts)
 
 
@@ -371,43 +401,112 @@ func _scroll_chat_to_bottom_deferred() -> void:
 		bar.value = bar.max_value
 
 
+func _start_sync_local_profiles(remote: Array) -> void:
+	var missing := ProfileCatalog.ids_missing_from_remote(remote, _local_ids)
+	if missing.is_empty():
+		return
+	_sync_local_queue = missing
+	_syncing_local = true
+	_status.text = "Subiendo %d perfil(es) local(es) al servidor…" % missing.size()
+	_sync_next_local_profile()
+
+
+func _sync_next_local_profile() -> void:
+	if _sync_local_queue.is_empty():
+		_syncing_local = false
+		_status.text = "Perfiles locales sincronizados. Actualizando lista…"
+		ExperimentApi.list_profiles()
+		return
+	var pid: String = _sync_local_queue.pop_front()
+	var payload := ProfileCatalog.load_local_raw_profile(pid)
+	if payload.is_empty():
+		call_deferred("_sync_next_local_profile")
+		return
+	if not bool(payload.get("consent_confirmed", false)):
+		payload["consent_confirmed"] = true
+	ExperimentApi.post_raw_profile(payload)
+
+
 func _on_api_finished(action: String, success: bool, data: Variant, error: String) -> void:
 	match action:
 		"list_profiles":
+			if _syncing_local:
+				return
 			var remote: Array = []
 			if success and data is Dictionary:
 				var raw_ids = data.get("profile_ids", [])
 				if raw_ids is Array:
 					remote = raw_ids
+			var missing := ProfileCatalog.ids_missing_from_remote(remote, _local_ids)
+			if not missing.is_empty() and success:
+				_start_sync_local_profiles(remote)
+				var merged := ProfileCatalog.merge_profile_ids(remote, _local_ids)
+				_apply_profile_options(merged)
+				return
 			var merged := ProfileCatalog.merge_profile_ids(remote, _local_ids)
 			_apply_profile_options(merged)
-			if merged.is_empty():
-				_status.text = "No trained profiles found. Use Train Profile first."
+			if not success:
+				if merged.is_empty():
+					_status.text = "Servidor no disponible (%s). No hay perfiles locales." % error
+				else:
+					_status.text = (
+						"Servidor no disponible (%s). Mostrando %d perfil(es) local(es); la carga puede fallar hasta que el servidor esté activo."
+						% [error, merged.size()]
+					)
+			elif merged.is_empty():
+				_status.text = "No hay perfiles entrenados. Usa «Entrenar perfil» primero."
 			else:
-				_status.text = "%d profile(s) available. Select one and load." % merged.size()
+				_status.text = "%d perfil(es) disponible(s). Selecciona uno y cárgalo." % merged.size()
+		"post_raw":
+			if _syncing_local:
+				call_deferred("_sync_next_local_profile")
+				return
+			if _pending_validation_start:
+				var pid := _selected_profile_id()
+				if not success:
+					_pending_validation_start = false
+					_status.text = "No se pudo subir el perfil local (%s)." % error
+					return
+				_status.text = "Perfil subido. Cargando…"
+				ExperimentApi.get_behavioral_profile(pid)
+				return
 		"get_behavioral":
 			if not success or not (data is Dictionary):
-				_status.text = "Could not load profile (%s)." % error
+				_pending_validation_start = false
+				var pid := _selected_profile_id()
+				var local := ProfileCatalog.load_local_raw_profile(pid)
+				if not local.is_empty():
+					_status.text = "Perfil no está en el servidor — subiendo copia local…"
+					if not bool(local.get("consent_confirmed", false)):
+						local["consent_confirmed"] = true
+					_pending_validation_start = true
+					ExperimentApi.post_raw_profile(local)
+					return
+				_status.text = "No se pudo cargar el perfil (%s)." % error
 				return
 			_loaded = true
-			_summary.text = String(data.get("style_summary", "(no summary)"))
+			_summary.text = String(data.get("style_summary", "(sin resumen)"))
 			if data.get("yaml_profile") is Dictionary:
 				var yaml := data.get("yaml_profile") as Dictionary
 				if yaml.get("style") is Dictionary:
-					_summary.text += "\n\n[YAML profile loaded]"
+					_summary.text += "\n\n[Perfil YAML cargado]"
 			_reset_chat()
 			call_deferred("_sync_layout_widths")
-			_status.text = "Profile loaded — send a message in the sample chat below."
+			if _pending_validation_start:
+				_pending_validation_start = false
+				ExperimentApi.validation_start(_selected_profile_id())
+			_status.text = "Perfil cargado — Buddy iniciará la conversación."
+			_request_conversation_open()
 		"experiment_chat":
 			_chat_busy = false
 			_set_chat_controls(_loaded)
 			if not success or not (data is Dictionary):
-				_status.text = "Chat failed (%s)." % error
+				_status.text = "Falló el chat (%s)." % error
 				_pending_user_message = ""
 				return
 			var reply := str(data.get("text", "")).strip_edges()
 			if reply.is_empty():
-				_status.text = "Empty reply from agent."
+				_status.text = "Respuesta vacía del agente."
 				_pending_user_message = ""
 				return
 			if not _pending_user_message.is_empty():
@@ -415,16 +514,21 @@ func _on_api_finished(action: String, success: bool, data: Variant, error: Strin
 				_pending_user_message = ""
 			_append_assistant(reply)
 			_history_append("assistant", reply)
-			_status.text = "Reply received — continue chatting or add a rating."
+			_status.text = "Respuesta recibida — sigue chateando o añade una valoración."
 		"post_validation":
 			if success:
-				_status.text = _status.text + "\nValidation submitted."
+				_status.text = _status.text + "\nValidación enviada."
 			else:
-				_status.text = _status.text + "\nBackend submit failed (%s). Local copy saved." % error
+				_status.text = _status.text + "\nFalló el envío al servidor (%s). Copia local guardada." % error
 		"validation_finalize":
 			if success and data is Dictionary:
 				var passed := bool(data.get("passed", false))
-				_status.text = _status.text + "\nValidation %s." % ("passed" if passed else "did not pass thresholds")
+				_status.text = _status.text + "\nValidación %s." % (
+					"aprobada" if passed else "no cumple los umbrales"
+				)
+		"validation_start":
+			if not success:
+				_status.text = "Falló la sesión de validación (%s)." % error
 		"validation_rating":
 			if not success:
-				_status.text = "Validation rating failed (%s)." % error
+				_status.text = "Falló el registro de valoración (%s)." % error

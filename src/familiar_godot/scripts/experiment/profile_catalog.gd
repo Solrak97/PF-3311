@@ -2,7 +2,7 @@ class_name ProfileCatalog
 extends RefCounted
 
 const LOCAL_RAW_DIR := "user://profiles/raw"
-const EMPTY_LABEL := "(no profiles — train one first)"
+const EMPTY_LABEL := "(sin perfiles — entrena uno primero)"
 
 
 static func list_local_raw_profile_ids() -> Array[String]:
@@ -17,6 +17,35 @@ static func list_local_raw_profile_ids() -> Array[String]:
 			ids.append(file_name.get_basename())
 	ids.sort()
 	return ids
+
+
+static func load_local_raw_profile(profile_id: String) -> Dictionary:
+	var pid := profile_id.strip_edges()
+	if pid.is_empty():
+		return {}
+	var path := "%s/%s.json" % [LOCAL_RAW_DIR, pid]
+	if not FileAccess.file_exists(path):
+		return {}
+	var f := FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return {}
+	var parsed: Variant = JSON.parse_string(f.get_as_text())
+	if parsed is Dictionary:
+		return parsed
+	return {}
+
+
+static func ids_missing_from_remote(remote: Array, local: Array[String]) -> Array[String]:
+	var on_server: Dictionary = {}
+	for item in remote:
+		var id := str(item).strip_edges()
+		if not id.is_empty():
+			on_server[id] = true
+	var missing: Array[String] = []
+	for id in local:
+		if not on_server.has(id):
+			missing.append(id)
+	return missing
 
 
 static func merge_profile_ids(remote: Array, local: Array[String]) -> Array[String]:

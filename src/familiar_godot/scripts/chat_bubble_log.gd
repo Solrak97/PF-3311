@@ -38,6 +38,11 @@ func clear_log() -> void:
 	_scroll_to_bottom()
 
 
+func is_empty() -> bool:
+	_ensure_list()
+	return _list.get_child_count() == 0 and _streaming_body == null
+
+
 func append_user(text: String) -> void:
 	_ensure_list()
 	_finish_streaming()

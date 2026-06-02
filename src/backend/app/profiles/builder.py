@@ -22,7 +22,9 @@ def compile_behavioral(raw: dict[str, Any]) -> dict[str, Any]:
             excerpts.append(f"P: {prompt}\nR: {response}")
     style = (
         "Responde de forma conversacional en español, con el tono y ritmo sugeridos por "
-        "las muestras del perfil. No reveles identidad explícita ni digas que imitas a alguien."
+        "las muestras del perfil. No reveles identidad explícita ni digas que imitas a alguien. "
+        "Las muestras son solo referencia de estilo; no actúes como si esa charla ya hubiera "
+        "ocurrido con el participante actual."
     )
     if excerpts:
         style += "\n\nMuestras de referencia:\n" + "\n\n".join(excerpts)

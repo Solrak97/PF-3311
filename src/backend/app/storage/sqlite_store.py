@@ -38,6 +38,7 @@ class TurnRecord:
     created_at: str
     profile_id: str = ""
     interaction_index: int = 0
+    scenario_id: str = ""
 
 
 class SQLiteExperimentStore:
@@ -113,6 +114,8 @@ class SQLiteExperimentStore:
             conn.execute("ALTER TABLE turns ADD COLUMN profile_id TEXT NOT NULL DEFAULT ''")
         if "interaction_index" not in cols:
             conn.execute("ALTER TABLE turns ADD COLUMN interaction_index INTEGER NOT NULL DEFAULT 0")
+        if "scenario_id" not in cols:
+            conn.execute("ALTER TABLE turns ADD COLUMN scenario_id TEXT NOT NULL DEFAULT ''")
 
     def record_session_start(
         self,
@@ -199,8 +202,8 @@ class SQLiteExperimentStore:
                 INSERT INTO turns (
                     participant_id, session_id, condition, order_group, turn_index,
                     user_text, assistant_text, profile_used, retrieval_used, model_name,
-                    audio_error_count, created_at, profile_id, interaction_index
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    audio_error_count, created_at, profile_id, interaction_index, scenario_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     record.participant_id,
@@ -217,6 +220,7 @@ class SQLiteExperimentStore:
                     record.created_at,
                     record.profile_id,
                     record.interaction_index,
+                    record.scenario_id,
                 ),
             )
             conn.execute(
@@ -432,6 +436,7 @@ class SQLiteExperimentStore:
         audio_error_count: int,
         profile_id: str = "",
         interaction_index: int = 0,
+        scenario_id: str = "",
     ) -> TurnRecord:
         return TurnRecord(
             participant_id=participant_id,
@@ -448,4 +453,5 @@ class SQLiteExperimentStore:
             created_at=_utc_now_iso(),
             profile_id=profile_id,
             interaction_index=interaction_index,
+            scenario_id=scenario_id,
         )

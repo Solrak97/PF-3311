@@ -24,6 +24,8 @@ class InterviewAgentState(TypedDict, total=False):
 class ChatAgentState(TypedDict, total=False):
     condition: str
     profile_id: str
+    scenario_id: str
+    conversation_open: bool
     user_message: str
     conversation_history: list[dict[str, Any]]
     session_turns: list[dict[str, Any]]

@@ -22,7 +22,7 @@ Contexto del estudio, diseño experimental y documentación extendida: mismo REA
    ```bash
    uv sync
    copy .env.example .env
-   uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 --reload-exclude "data/*" --reload-exclude "*.db"
+   uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
    ```
 
    **Research dashboard:** `http://127.0.0.1:8000/research/dashboard`  

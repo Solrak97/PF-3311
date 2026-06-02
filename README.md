@@ -112,7 +112,7 @@ ollama serve
 cd src\backend
 uv sync
 copy .env.example .env
-uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 --reload-exclude "data/*" --reload-exclude "*.db"
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 Dashboard: http://127.0.0.1:8000/research/dashboard
@@ -230,7 +230,7 @@ PF-3311/
 | Sin voz | Edge-TTS necesita internet; revisa logs del backend |
 | Respuestas `[MOCK]` | Backend caído o `FAMILIAR_MOCK_API=1`; el cliente hace fallback automático |
 | `healthz` falla en Docker | `docker compose ps`; espera a que Ollama termine el `pull` |
-| WebSocket se corta en dev | Usa `--reload-exclude` como en `src/README.md` o corre sin `--reload` |
+| WebSocket se corta en dev | No uses `--reload`; reinicia el backend a mano (`scripts/run_dev.ps1`) |
 | Modelo no encontrado | `docker exec -it pf3311-ollama ollama pull llama3.1:latest` (o el tag de `docker-compose.yml`) |
 
 ---
