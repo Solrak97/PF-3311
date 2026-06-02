@@ -2,6 +2,8 @@
 
 **Inicio rápido (Docker + Godot):** ver [README principal](../README.md).
 
+**Demo en video:** [YouTube](https://youtu.be/jj2V7gkvOVU)
+
 Contexto del estudio, diseño experimental y documentación extendida: mismo README y `docs/`.
 
 ## Layout

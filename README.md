@@ -8,6 +8,13 @@
 | **Código** | PF-3311 |
 | **Investigador** | Luis Carlos Quesada Rodríguez |
 | **Estado** | Prototipo funcional (investigación + PoC) |
+| **Demo** | [Vídeo en YouTube](https://youtu.be/jj2V7gkvOVU) |
+
+---
+
+## Demo
+
+Grabación del prototipo en funcionamiento (avatar Buddy, chat, voz y flujo experimental): **[https://youtu.be/jj2V7gkvOVU](https://youtu.be/jj2V7gkvOVU)**
 
 ---
 
@@ -201,6 +208,7 @@ PF-3311/
 
 | Documento | Contenido |
 |-----------|-----------|
+| [Demo (YouTube)](https://youtu.be/jj2V7gkvOVU) | Vídeo del prototipo en uso |
 | [`docs/proposal.tex`](docs/proposal.tex) | Marco teórico y arquitectura objetivo |
 | [`docs/protocolo_evaluacion.tex`](docs/protocolo_evaluacion.tex) | Diseño A/B, métricas del estudio |
 | [`docs/protocolo_de_evaluacion.pdf`](docs/protocolo_de_evaluacion.pdf) | Protocolo (PDF) |
