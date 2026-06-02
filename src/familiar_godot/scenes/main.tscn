@@ -1,9 +1,10 @@
-[gd_scene load_steps=4 format=3 uid="uid://u4iteqpe6emn"]
+[gd_scene load_steps=5 format=3 uid="uid://u4iteqpe6emn"]
 
 [ext_resource type="Script" uid="uid://c5hm45yadexqh" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" uid="uid://dtxu5gvrq3hrd" path="res://scripts/avatar_controller.gd" id="3_avatar"]
 [ext_resource type="Script" uid="uid://dm8jnth6u2tpc" path="res://scripts/avatar_presenter.gd" id="4_presenter"]
 [ext_resource type="PackedScene" uid="uid://cf3uv0bbi3n7d" path="res://scenes/avatar_stage.tscn" id="5_stage"]
+[ext_resource type="Script" path="res://scripts/chat_bubble_log.gd" id="6_chat_log"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -179,14 +180,14 @@ theme_override_constants/margin_bottom = 14
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Output" type="RichTextLabel" parent="Margin/VBox/ChatPanel/ChatPad/ChatVBox"]
+[node name="Output" type="ScrollContainer" parent="Margin/VBox/ChatPanel/ChatPad/ChatVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 custom_minimum_size = Vector2(0, 100)
-bbcode_enabled = true
-scroll_following = true
-fit_content = false
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 2
+script = ExtResource("6_chat_log")
 
 [node name="InputRow" type="HBoxContainer" parent="Margin/VBox/ChatPanel/ChatPad/ChatVBox"]
 layout_mode = 2

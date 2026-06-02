@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     skills_dir: str = "./skills"
     experiment_interaction_sec: int = 300
 
-    edge_tts_voice: str = "en-US-AriaNeural"
+    edge_tts_voice: str = "es-MX-DaliaNeural"
     max_tts_chars: int = 2_000
     tts_chunk_chars: int = 240
 

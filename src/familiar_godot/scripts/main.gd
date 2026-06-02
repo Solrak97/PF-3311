@@ -8,7 +8,6 @@ extends Control
 @export var session_duration_sec: int = 600
 
 const MAX_PACKETS_PER_FRAME := 8
-const MAX_OUTPUT_CHARS := 12_000
 const MAX_MP3_BYTES := 8 * 1024 * 1024
 const WS_RECONNECT_DELAY_SEC := 2.0
 const TTS_BUS_NAME := "TTS"
@@ -44,7 +43,7 @@ var _buddy_reply_open: bool = false
 @onready var _condition_pill: PanelContainer = %TopRow/ConditionPill
 @onready var _top_row: HBoxContainer = %TopRow
 @onready var _pill_sep: VSeparator = %TopRow/ConditionPill/PillMargin/PillPad/PillSep
-@onready var _out: RichTextLabel = %Output
+@onready var _out: ChatBubbleLog = %Output
 @onready var _anim: Label = %AnimLabel
 @onready var _player: AudioStreamPlayer = %AudioStreamPlayer
 @onready var _avatar_ctl: Node = $AvatarController
@@ -418,12 +417,12 @@ func _on_send() -> void:
 	_focus_chat_input()
 	_buddy_reply_open = false
 	_assistant_reply_buffer = ""
-	_out.append_text(ExperimentUI.format_user_bubble(text))
+	_out.append_user(text)
 	_start_buddy_thinking()
 
 
 func _clear_chat_log() -> void:
-	_out.text = ExperimentUI.chat_placeholder()
+	_out.clear_log()
 
 
 func _on_new_chat() -> void:
@@ -615,17 +614,15 @@ func _append_output(text: String) -> void:
 	if text.is_empty():
 		return
 	if not _buddy_reply_open:
-		_out.append_text(ExperimentUI.format_assistant_open())
+		_out.begin_assistant("Buddy", "buddy")
 		_buddy_reply_open = true
-	_out.append_text(ExperimentUI.escape_bbcode(text))
-	if _out.text.length() > MAX_OUTPUT_CHARS:
-		_out.text = _out.text.substr(-MAX_OUTPUT_CHARS)
+	_out.append_assistant_delta(text)
 
 
 func _close_buddy_bubble() -> void:
 	if not _buddy_reply_open:
 		return
-	_out.append_text(ExperimentUI.format_assistant_close())
+	_out.finish_assistant()
 	_buddy_reply_open = false
 
 

@@ -11,7 +11,7 @@ services:
       LLM_API_KEY: ""
       OLLAMA_BASE_URL: http://ollama:11434
       OLLAMA_MODEL: llama3.1:latest
-      EDGE_TTS_VOICE: en-US-AriaNeural
+      EDGE_TTS_VOICE: es-MX-DaliaNeural
       SQLITE_PATH: /app/data/experiment.db
       MAX_TTS_CHARS: 2000
       TTS_CHUNK_CHARS: 240

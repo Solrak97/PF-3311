@@ -6,8 +6,7 @@ var _profile_id: LineEdit
 var _alias: LineEdit
 var _status: Label
 var _progress: Label
-var _chat_scroll: ScrollContainer
-var _chat: RichTextLabel
+var _chat: ChatBubbleLog
 var _input: TextEdit
 var _send: Button
 var _save: Button
@@ -65,19 +64,9 @@ func _ready() -> void:
 	chat_margin.add_theme_constant_override("margin_right", 12)
 	chat_margin.add_theme_constant_override("margin_bottom", 10)
 	chat_panel.add_child(chat_margin)
-	_chat_scroll = ScrollContainer.new()
-	_chat_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_chat_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_chat_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	chat_margin.add_child(_chat_scroll)
-	_chat = RichTextLabel.new()
-	_chat.bbcode_enabled = true
-	_chat.fit_content = true
-	_chat.scroll_active = false
-	_chat.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_chat.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	ExperimentUI.style_chat_output(_chat)
-	_chat_scroll.add_child(_chat)
+	_chat = ChatBubbleLog.new()
+	_chat.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	chat_margin.add_child(_chat)
 	var input_panel := PanelContainer.new()
 	input_panel.add_theme_stylebox_override("panel", ExperimentUI.viewport_panel())
 	content.add_child(input_panel)
@@ -126,9 +115,9 @@ func _notification(what: int) -> void:
 
 
 func _sync_chat_width() -> void:
-	if _chat_scroll == null or _chat == null:
+	if _chat == null:
 		return
-	_chat.custom_minimum_size.x = maxf(_chat_scroll.size.x - 8.0, 320.0)
+	_chat._sync_bubble_widths()
 
 
 func _on_input_gui_input(event: InputEvent) -> void:
@@ -150,10 +139,10 @@ func _scroll_chat_to_bottom() -> void:
 
 
 func _scroll_chat_to_bottom_deferred() -> void:
-	if _chat_scroll == null:
+	if _chat == null:
 		return
 	await get_tree().process_frame
-	var bar := _chat_scroll.get_v_scroll_bar()
+	var bar := _chat.get_v_scroll_bar()
 	if bar != null:
 		bar.value = bar.max_value
 
@@ -195,7 +184,7 @@ func _on_start() -> void:
 	if pid.is_empty():
 		_status.text = "Profile ID is required."
 		return
-	_chat.clear()
+	_chat.clear_log()
 	_samples.clear()
 	_conversation_history.clear()
 	_prompt_index = 0
@@ -357,7 +346,7 @@ func _apply_interview_state(data: Dictionary) -> void:
 
 
 func _append_user(text: String) -> void:
-	_chat.append_text(ExperimentUI.format_user_bubble(text))
+	_chat.append_user(text)
 	_scroll_chat_to_bottom()
 
 
@@ -365,7 +354,7 @@ func _append_assistant(text: String, turn_mode: String = "probe") -> void:
 	var bubble_mode := turn_mode
 	if turn_mode in ["mirror", "refine"]:
 		bubble_mode = "mirror"
-	_chat.append_text(ExperimentUI.format_assistant_bubble(text, bubble_mode))
+	_chat.append_assistant(text, bubble_mode)
 	_scroll_chat_to_bottom()
 
 

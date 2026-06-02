@@ -20,8 +20,7 @@ var _profile_select: OptionButton
 var _status: Label
 var _summary_scroll: ScrollContainer
 var _summary: Label
-var _chat_scroll: ScrollContainer
-var _chat: RichTextLabel
+var _chat: ChatBubbleLog
 var _input: TextEdit
 var _send: Button
 var _clear_chat: Button
@@ -62,18 +61,10 @@ func _ready() -> void:
 	var chat_label := Label.new()
 	chat_label.text = "Sample chat (condition A profile)"
 	content.add_child(chat_label)
-	_chat_scroll = ScrollContainer.new()
-	_chat_scroll.custom_minimum_size = Vector2(0, CHAT_MIN_HEIGHT)
-	_chat_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_chat_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	content.add_child(_chat_scroll)
-	_chat = RichTextLabel.new()
-	_chat.bbcode_enabled = true
-	_chat.fit_content = true
-	_chat.scroll_active = true
-	_chat.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_chat.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_chat_scroll.add_child(_chat)
+	_chat = ChatBubbleLog.new()
+	_chat.custom_minimum_size = Vector2(0, CHAT_MIN_HEIGHT)
+	_chat.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(_chat)
 	var input_panel := PanelContainer.new()
 	input_panel.add_theme_stylebox_override("panel", ExperimentUI.viewport_panel())
 	content.add_child(input_panel)
@@ -123,8 +114,8 @@ func _notification(what: int) -> void:
 func _sync_layout_widths() -> void:
 	if _summary_scroll != null and _summary != null:
 		_summary.custom_minimum_size.x = maxf(_summary_scroll.size.x - 8.0, 320.0)
-	if _chat_scroll != null and _chat != null:
-		_chat.custom_minimum_size.x = maxf(_chat_scroll.size.x - 8.0, 320.0)
+	if _chat != null:
+		_chat._sync_bubble_widths()
 
 
 func _selected_profile_id() -> String:
@@ -148,7 +139,7 @@ func _apply_profile_options(profile_ids: Array[String]) -> void:
 func _reset_chat() -> void:
 	_conversation_history.clear()
 	_pending_user_message = ""
-	_chat.clear()
+	_chat.clear_log()
 	_input.clear()
 	_chat_busy = false
 	_set_chat_controls(_loaded)
@@ -358,14 +349,12 @@ func _save_local_validation(payload: Dictionary) -> void:
 
 
 func _append_user(text: String) -> void:
-	_chat.append_text(ExperimentUI.format_user_bubble(text))
+	_chat.append_user(text)
 	_scroll_chat_to_bottom()
 
 
 func _append_assistant(text: String) -> void:
-	_chat.append_text(ExperimentUI.format_assistant_open())
-	_chat.append_text(ExperimentUI.escape_bbcode(text))
-	_chat.append_text(ExperimentUI.format_assistant_close())
+	_chat.append_assistant(text, "profile")
 	_scroll_chat_to_bottom()
 
 
@@ -374,10 +363,10 @@ func _scroll_chat_to_bottom() -> void:
 
 
 func _scroll_chat_to_bottom_deferred() -> void:
-	if _chat_scroll == null:
+	if _chat == null:
 		return
 	await get_tree().process_frame
-	var bar := _chat_scroll.get_v_scroll_bar()
+	var bar := _chat.get_v_scroll_bar()
 	if bar != null:
 		bar.value = bar.max_value
 

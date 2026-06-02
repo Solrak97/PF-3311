@@ -16,27 +16,31 @@ from app.skills.registry import SkillRegistry
 logger = logging.getLogger(__name__)
 
 
-def _resolve_profile_context(state: ChatAgentState) -> ChatAgentState:
-    profile_store: ProfileStore = state["_profile_store"]
-    skills: SkillRegistry = state["_skills"]
-    condition = str(state.get("condition", "B"))
-    profile_id = str(state.get("profile_id", ""))
-    user_message = str(state.get("user_message", "")).strip()
-    system, profile_used, retrieval_used = build_system_prompt(
-        condition=condition,
-        profile_store=profile_store,
-        profile_id=profile_id,
-        user_message=user_message,
-        skills=skills,
-    )
-    if state.get("include_ws_animation_protocol"):
-        system = with_ws_animation_protocol(system)
-    return {
-        **state,
-        "system_prompt": system,
-        "profile_used": profile_used,
-        "retrieval_used": retrieval_used,
-    }
+def _make_resolve_profile_context(
+    profile_store: ProfileStore,
+    skills: SkillRegistry,
+):
+    def _resolve_profile_context(state: ChatAgentState) -> ChatAgentState:
+        condition = str(state.get("condition", "B"))
+        profile_id = str(state.get("profile_id", ""))
+        user_message = str(state.get("user_message", "")).strip()
+        system, profile_used, retrieval_used = build_system_prompt(
+            condition=condition,
+            profile_store=profile_store,
+            profile_id=profile_id,
+            user_message=user_message,
+            skills=skills,
+        )
+        if state.get("include_ws_animation_protocol"):
+            system = with_ws_animation_protocol(system)
+        return {
+            **state,
+            "system_prompt": system,
+            "profile_used": profile_used,
+            "retrieval_used": retrieval_used,
+        }
+
+    return _resolve_profile_context
 
 
 def _assemble_llm_messages(state: ChatAgentState) -> ChatAgentState:
@@ -75,9 +79,15 @@ def _assemble_llm_messages(state: ChatAgentState) -> ChatAgentState:
     return {**state, "llm_messages": messages}
 
 
-def _build_context_graph():
+def _build_context_graph(
+    profile_store: ProfileStore,
+    skills: SkillRegistry,
+):
     graph = StateGraph(ChatAgentState)
-    graph.add_node("resolve_profile_context", _resolve_profile_context)
+    graph.add_node(
+        "resolve_profile_context",
+        _make_resolve_profile_context(profile_store, skills),
+    )
     graph.add_node("assemble_llm_messages", _assemble_llm_messages)
     graph.add_edge(START, "resolve_profile_context")
     graph.add_edge("resolve_profile_context", "assemble_llm_messages")
@@ -85,8 +95,12 @@ def _build_context_graph():
     return graph.compile()
 
 
-def _build_chat_graph(brain: Any):
-    context_graph = _build_context_graph()
+def _build_chat_graph(
+    brain: Any,
+    profile_store: ProfileStore,
+    skills: SkillRegistry,
+):
+    context_graph = _build_context_graph(profile_store, skills)
     full = StateGraph(ChatAgentState)
 
     async def run_context(state: ChatAgentState) -> ChatAgentState:
@@ -113,6 +127,25 @@ def _build_chat_graph(brain: Any):
     return full.compile()
 
 
+def _chat_invoke_state(
+    *,
+    condition: str,
+    profile_id: str,
+    user_message: str,
+    conversation_history: list[dict[str, Any]] | None,
+    session_turns: list[dict[str, Any]] | None,
+    include_ws_animation_protocol: bool,
+) -> ChatAgentState:
+    return {
+        "condition": condition,
+        "profile_id": profile_id,
+        "user_message": user_message,
+        "conversation_history": conversation_history or [],
+        "session_turns": session_turns or [],
+        "include_ws_animation_protocol": include_ws_animation_protocol,
+    }
+
+
 async def prepare_chat_messages(
     profile_store: ProfileStore,
     *,
@@ -124,18 +157,17 @@ async def prepare_chat_messages(
     include_ws_animation_protocol: bool = False,
     skills: SkillRegistry | None = None,
 ) -> tuple[list[dict[str, Any]], bool, bool]:
-    graph = _build_context_graph()
+    registry = skills or SkillRegistry()
+    graph = _build_context_graph(profile_store, registry)
     result = await graph.ainvoke(
-        {
-            "_profile_store": profile_store,
-            "_skills": skills or SkillRegistry(),
-            "condition": condition,
-            "profile_id": profile_id,
-            "user_message": user_message,
-            "conversation_history": conversation_history or [],
-            "session_turns": session_turns or [],
-            "include_ws_animation_protocol": include_ws_animation_protocol,
-        }
+        _chat_invoke_state(
+            condition=condition,
+            profile_id=profile_id,
+            user_message=user_message,
+            conversation_history=conversation_history,
+            session_turns=session_turns,
+            include_ws_animation_protocol=include_ws_animation_protocol,
+        )
     )
     return (
         list(result.get("llm_messages") or []),
@@ -156,18 +188,17 @@ async def run_chat_agent(
     include_ws_animation_protocol: bool = False,
     skills: SkillRegistry | None = None,
 ) -> tuple[str, dict[str, Any]]:
-    graph = _build_chat_graph(brain)
+    registry = skills or SkillRegistry()
+    graph = _build_chat_graph(brain, profile_store, registry)
     result = await graph.ainvoke(
-        {
-            "_profile_store": profile_store,
-            "_skills": skills or SkillRegistry(),
-            "condition": condition,
-            "profile_id": profile_id,
-            "user_message": message.strip(),
-            "conversation_history": conversation_history or [],
-            "session_turns": session_turns or [],
-            "include_ws_animation_protocol": include_ws_animation_protocol,
-        }
+        _chat_invoke_state(
+            condition=condition,
+            profile_id=profile_id,
+            user_message=message.strip(),
+            conversation_history=conversation_history,
+            session_turns=session_turns,
+            include_ws_animation_protocol=include_ws_animation_protocol,
+        )
     )
     meta = {
         "condition": condition.upper(),

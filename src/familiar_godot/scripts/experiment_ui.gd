@@ -11,11 +11,15 @@ const ACCENT_HOVER := Color(0.95, 0.55, 0.32, 1.0)
 const ACCENT_PRESS := Color(0.82, 0.44, 0.24, 1.0)
 const ACCENT_B := Color(0.45, 0.58, 0.85, 1.0)
 const BUBBLE_USER_BG := Color(1.0, 0.93, 0.88, 1.0)
-const BUBBLE_ASSISTANT_BG := Color(1.0, 1.0, 1.0, 1.0)
+const BUBBLE_ASSISTANT_BG := Color(0.96, 0.97, 0.99, 1.0)
 const BUBBLE_MIRROR_BG := Color(0.94, 0.91, 0.98, 1.0)
 const BUBBLE_LABEL_MUTED := Color(0.54, 0.56, 0.62, 1.0)
 const BUBBLE_MIRROR_LABEL := Color(0.36, 0.29, 0.48, 1.0)
-const BUBBLE_PAD := "12,10,12,10"
+const BUBBLE_RADIUS := 16
+const BUBBLE_GAP := 12
+const BUBBLE_MAX_WIDTH_RATIO := 0.72
+const BUBBLE_MARGIN_H := 14
+const BUBBLE_MARGIN_V := 10
 const PILL_PAD_H := 16
 const PILL_PAD_V := 10
 
@@ -42,7 +46,7 @@ static func setup_main_screen(nodes: Dictionary) -> void:
 	var new_chat_button: Button = nodes.get("new_chat_button")
 	var menu_button: Button = nodes.get("menu_button")
 	var send_button: Button = nodes.get("send_button")
-	var output: RichTextLabel = nodes.get("output")
+	var output: ScrollContainer = nodes.get("output")
 	var condition: String = String(nodes.get("condition", "A"))
 
 	if bg != null:
@@ -71,7 +75,7 @@ static func setup_main_screen(nodes: Dictionary) -> void:
 	if send_button != null:
 		style_send_button(send_button)
 	if output != null:
-		style_chat_output(output)
+		style_chat_log(output)
 
 
 static func setup_experiment_card(root: Control, title: String) -> Dictionary:
@@ -186,6 +190,11 @@ static func style_timer(label: Label) -> void:
 	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 
+static func style_chat_log(log: ScrollContainer) -> void:
+	log.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	log.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+
+
 static func style_chat_output(output: RichTextLabel) -> void:
 	output.add_theme_constant_override("line_separation", 6)
 	output.scroll_active = true
@@ -200,52 +209,129 @@ static func escape_bbcode(text: String) -> String:
 	return _escape(text)
 
 
-static func format_user_bubble(text: String) -> String:
-	var esc := _escape(text)
-	var bg := _color_hex(BUBBLE_USER_BG)
-	var fg := _color_hex(TEXT)
-	var muted := _color_hex(BUBBLE_LABEL_MUTED)
-	var header := "[color=%s][font_size=12]You[/font_size][/color]\n" % muted
-	var body := "[color=%s][font_size=15]%s[/font_size][/color]" % [fg, esc]
-	return (
-		"\n[right][table=2][cell expand=1][/cell]"
-		+ "[cell bg=%s border=%s]%s%s[/cell][/table][/right]\n"
-		% [bg, BUBBLE_PAD, header, body]
-	)
-
-
-static func format_assistant_bubble(text: String, kind: String = "interview") -> String:
-	var esc := _escape(text)
-	var bg := BUBBLE_ASSISTANT_BG
-	var label := "Interviewer"
-	var label_col := BUBBLE_LABEL_MUTED
+static func assistant_label_for_kind(kind: String, override_label: String = "") -> String:
+	if not override_label.is_empty():
+		return override_label
 	match kind:
 		"mirror":
-			bg = BUBBLE_MIRROR_BG
-			label = "Imitation try"
-			label_col = BUBBLE_MIRROR_LABEL
-		"finish":
-			label = "Interviewer"
-	var header := "[color=%s][font_size=12]%s[/font_size][/color]\n" % [_color_hex(label_col), label]
-	var body := "[color=%s][font_size=15]%s[/font_size][/color]" % [_color_hex(TEXT), esc]
-	return _assistant_bubble_block(header + body, bg)
+			return "Imitation try"
+		"profile":
+			return "Profile"
+		"buddy":
+			return "Buddy"
+		"finish", "interview":
+			return "Interviewer"
+		_:
+			return "Assistant"
 
 
-static func format_assistant_open(label: String = "Buddy") -> String:
-	var header := "[color=%s][font_size=12]%s[/font_size][/color]\n" % [_color_hex(BUBBLE_LABEL_MUTED), label]
-	var body_open := "[color=%s][font_size=15]" % _color_hex(TEXT)
-	return _assistant_bubble_block(header + body_open, BUBBLE_ASSISTANT_BG)
+static func assistant_colors_for_kind(kind: String) -> Dictionary:
+	match kind:
+		"mirror":
+			return {"bg": BUBBLE_MIRROR_BG, "label": BUBBLE_MIRROR_LABEL}
+		_:
+			return {"bg": BUBBLE_ASSISTANT_BG, "label": BUBBLE_LABEL_MUTED}
 
 
-static func format_assistant_close() -> String:
-	return "[/font_size][/color][/cell][cell expand=1][/cell][/table]\n"
-
-
-static func _assistant_bubble_block(inner_bbcode: String, bg: Color) -> String:
-	return (
-		"\n[table=2][cell bg=%s border=%s]%s[/cell][cell expand=1][/cell][/table]\n"
-		% [_color_hex(bg), BUBBLE_PAD, inner_bbcode]
+static func make_user_bubble(text: String, max_width: float) -> Control:
+	return _make_bubble_row(
+		_make_bubble_panel("You", text, BUBBLE_USER_BG, BUBBLE_LABEL_MUTED, max_width, true),
+		true
 	)
+
+
+static func make_assistant_bubble(text: String, kind: String, max_width: float) -> Control:
+	var colors := assistant_colors_for_kind(kind)
+	var label := assistant_label_for_kind(kind)
+	return _make_bubble_row(
+		_make_bubble_panel(label, text, colors["bg"], colors["label"], max_width, false),
+		false
+	)
+
+
+static func make_assistant_bubble_open(
+	label: String,
+	kind: String,
+	max_width: float
+) -> Dictionary:
+	var colors := assistant_colors_for_kind(kind)
+	var resolved_label := assistant_label_for_kind(kind, label)
+	var panel := _make_bubble_panel(resolved_label, "", colors["bg"], colors["label"], max_width, false)
+	var body := panel.get_meta("body") as Label
+	return {"root": _make_bubble_row(panel, false), "body": body}
+
+
+static func set_bubble_max_width(row: Control, max_width: float) -> void:
+	var panel := row.get_meta("bubble_panel", null) as PanelContainer
+	if panel == null:
+		return
+	var body := panel.get_meta("body") as Label
+	if body == null:
+		return
+	var inner_w := maxf(max_width - float(BUBBLE_MARGIN_H * 2), 120.0)
+	body.custom_minimum_size.x = inner_w
+
+
+static func _make_bubble_row(panel: PanelContainer, align_right: bool) -> Control:
+	panel.set_meta("bubble_panel", panel)
+	var row := HBoxContainer.new()
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.set_meta("bubble_panel", panel)
+	if align_right:
+		var spacer := Control.new()
+		spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(spacer)
+	row.add_child(panel)
+	if not align_right:
+		var spacer := Control.new()
+		spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(spacer)
+	return row
+
+
+static func _make_bubble_panel(
+	header_text: String,
+	body_text: String,
+	bg: Color,
+	header_color: Color,
+	max_width: float,
+	align_right: bool
+) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", bubble_panel_style(bg))
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_END if align_right else Control.SIZE_SHRINK_BEGIN
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", BUBBLE_MARGIN_H)
+	margin.add_theme_constant_override("margin_top", BUBBLE_MARGIN_V)
+	margin.add_theme_constant_override("margin_right", BUBBLE_MARGIN_H)
+	margin.add_theme_constant_override("margin_bottom", BUBBLE_MARGIN_V)
+	panel.add_child(margin)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 4)
+	margin.add_child(col)
+	var header := Label.new()
+	header.text = header_text
+	header.add_theme_color_override("font_color", header_color)
+	header.add_theme_font_size_override("font_size", 12)
+	col.add_child(header)
+	var body := Label.new()
+	body.text = body_text
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_theme_color_override("font_color", TEXT)
+	body.add_theme_font_size_override("font_size", 15)
+	body.custom_minimum_size.x = maxf(max_width - float(BUBBLE_MARGIN_H * 2), 120.0)
+	col.add_child(body)
+	panel.set_meta("body", body)
+	panel.set_meta("bubble_panel", panel)
+	return panel
+
+
+static func bubble_panel_style(bg: Color) -> StyleBoxFlat:
+	var s := _panel(bg, BUBBLE_RADIUS, Color(0.88, 0.89, 0.92, 1.0), 0)
+	s.shadow_size = 2
+	s.shadow_color = Color(0, 0, 0, 0.06)
+	s.shadow_offset = Vector2(0, 1)
+	return s
 
 
 static func _color_hex(c: Color) -> String:
