@@ -32,12 +32,14 @@ class ProfileStore:
         self.validation_dir = root / "validation"
         self.refinement_dir = root / "refinement"
         self.sessions_dir = root / "sessions"
+        self.moments_dir = root / "moments"
         for d in (
             self.raw_dir,
             self.behavioral_dir,
             self.validation_dir,
             self.refinement_dir,
             self.sessions_dir,
+            self.moments_dir,
         ):
             d.mkdir(parents=True, exist_ok=True)
 
@@ -98,6 +100,22 @@ class ProfileStore:
                 return behavioral["yaml_profile"]
             return None
         return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+    def save_moments(self, payload: dict[str, Any]) -> dict[str, Any]:
+        profile_id = _safe_id(str(payload.get("profile_id", "")))
+        data = dict(payload)
+        data["profile_id"] = profile_id
+        if not data.get("created_at"):
+            data["created_at"] = _utc_now_iso()
+        path = self.moments_dir / f"{profile_id}.json"
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        return data
+
+    def load_moments(self, profile_id: str) -> dict[str, Any] | None:
+        path = self.moments_dir / f"{_safe_id(profile_id)}.json"
+        if not path.is_file():
+            return None
+        return json.loads(path.read_text(encoding="utf-8"))
 
     def load_final_profile(self, profile_id: str) -> dict[str, Any] | None:
         yaml_profile = self.load_behavioral_yaml(profile_id)
@@ -287,12 +305,14 @@ class ProfileStore:
             "refinement": 0,
             "validation": 0,
             "sessions": 0,
+            "moments": 0,
         }
         targets = [
             (self.raw_dir / f"{pid}.json", "raw"),
             (self.behavioral_dir / f"{pid}.json", "behavioral_json"),
             (self.behavioral_dir / f"{pid}.yaml", "behavioral_yaml"),
             (self.refinement_dir / f"{pid}.json", "refinement"),
+            (self.moments_dir / f"{pid}.json", "moments"),
         ]
         for path, key in targets:
             if path.is_file():
@@ -317,12 +337,21 @@ class ProfileStore:
             "refinement": 0,
             "validation": 0,
             "sessions": 0,
+            "moments": 0,
         }
         for profile_id in list(self._all_profile_ids()):
             try:
                 result = self.delete_profile(profile_id)
                 totals["profiles_deleted"] += 1
-                for key in ("raw", "behavioral_json", "behavioral_yaml", "refinement", "validation", "sessions"):
+                for key in (
+                    "raw",
+                    "behavioral_json",
+                    "behavioral_yaml",
+                    "refinement",
+                    "validation",
+                    "sessions",
+                    "moments",
+                ):
                     totals[key] += result.get(key, 0)
             except ValueError:
                 continue

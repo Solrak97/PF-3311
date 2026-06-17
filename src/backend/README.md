@@ -92,6 +92,8 @@ data/profiles/          # runtime (gitignored)
 | GET | `/profiles/behavioral/{profile_id}` | Load compiled profile |
 | POST | `/profiles/validation/generate-sample` | Sample reply using profile (condition A prompt) |
 | POST | `/profiles/validation` | Save validator ratings |
+| POST | `/profiles/validation/ai-judge` | LLM scores a sample (`validator_id=ai-judge`) |
+| POST | `/profiles/validation/auto-test` | Generate + AI-judge N samples (optional finalize) |
 | POST | `/experiment/chat` | Optional HTTP chat mirror (primary run path is WebSocket) |
 
 ### WebSocket experiment fields
@@ -112,16 +114,23 @@ SQLite `turns` table also stores `profile_id` and `interaction_index` when prese
 
 Config (`app/config.py`): `PROFILES_DATA_DIR`, `SKILLS_DIR`, `EXPERIMENT_INTERACTION_SEC` (default 300).
 
-## LangGraph profile lifecycle
+## LangGraph agents & skills
 
-Behavioral profiles are orchestrated by LangGraph in `app/agents/`:
+Two conversational agents drive the backend. Instructions and profiles are loaded from **Cursor-style skills** (`skills/<id>/skill.yaml`) and rendered with **Jinja2** (`app/prompts/templates/`).
+
+| Agent | Module | Skill | Used by |
+|-------|--------|-------|---------|
+| **Training** | `training_agent.py` | `train_profile` | `POST /profiles/training/*` |
+| **Conversation** | `conversation_agent.py` | `converse_with_profile` | WebSocket turns, `POST /experiment/chat`, validation sample gen, refinement chat |
+
+Supporting graphs (not full agents):
 
 | Graph | Module | HTTP |
 |-------|--------|------|
-| Profile training | `training_graph.py` | `POST /profiles/training/*` |
 | Profile refinement | `refinement_graph.py` | `POST /profiles/refinement/*` |
 | Pilot validation | `validation_graph.py` | `POST /profiles/validation/*` |
-| Experiment chat | `chat_graph.py` | `POST /experiment/chat`, WebSocket turns |
+
+Message history uses LangGraph-style trimming (`app/agents/memory.py`): system prompt + last N turns from SQLite (WS) or client history (HTTP).
 
 Storage under `data/profiles/` (gitignored):
 

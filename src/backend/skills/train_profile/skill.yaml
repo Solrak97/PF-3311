@@ -1,0 +1,89 @@
+skill_id: train_profile
+name: Train Behavioral Profile
+description: >
+  Runs calibration-cycle interviews with the modeled user to collect conversational
+  samples and build a behavioral familiarity profile.
+version: 1.0.0
+
+templates:
+  system: training_system.jinja2
+  mirror_system: training_mirror_system.jinja2
+  probe_welcome: training_probe_welcome.jinja2
+  probe_question: training_probe_question.jinja2
+  cycle_intro: training_cycle_intro.jinja2
+  mirror: training_mirror.jinja2
+  refine_mirror: training_refine_mirror.jinja2
+  finish: training_finish.jinja2
+  extract_profile: profile_extraction.jinja2
+  refine_profile: profile_refinement.jinja2
+  profile_incremental: training_profile_incremental.jinja2
+  turn_decision: training_turn_decision.jinja2
+
+calibration:
+  mode: continuous
+  min_answers_before_mirror: 5
+  min_profile_phrases_before_mirror: 3
+  max_refine_rounds: 1
+  # Legacy cycle mode (if mode: cycles)
+  probes_per_cycle: 5
+  min_cycles_to_finish: 3
+
+cycles:
+  - target: routine_register
+    label: Rutina y tono cotidiano
+    prompt_ids: [daily_routine, after_work, current_interest, boring_tasks, small_talk]
+  - target: emotional_reaction
+    label: Reacciones emocionales
+    prompt_ids: [good_news, annoying_situation, boring_tasks, advice, mood_check]
+  - target: banter_advice
+    label: Conversación y consejo
+    prompt_ids: [banter, advice, explain_to_friend, good_news, annoying_situation]
+  - target: discourse
+    label: Cierres y despedidas
+    prompt_ids: [closing, banter, small_talk, after_work, mood_check]
+
+prompts:
+  - id: daily_routine
+    category: routine
+    text: "Explore how their day went — mood, small details, how they phrase ordinary stuff."
+  - id: after_work
+    category: routine
+    text: "Explore what they do to unwind after work/study — habits, tone when talking about downtime."
+  - id: current_interest
+    category: preferences
+    text: "Explore something they're into lately — let them talk with their natural enthusiasm or dryness."
+  - id: boring_tasks
+    category: opinion
+    text: "Explore how they react to annoying errands or boring obligations — complaint style, humor, resignation."
+  - id: good_news
+    category: emotional_reaction
+    text: "Explore how they'd respond if a friend shared good news — exact words, warmth, teasing, etc."
+  - id: annoying_situation
+    category: emotional_reaction
+    text: "Explore how they'd react when something small ruins the mood — venting, minimizing, joking."
+  - id: explain_to_friend
+    category: explanation
+    text: "Explore how they'd explain something they know well to a friend — pacing, examples, impatience."
+  - id: advice
+    category: advice
+    text: "Explore what they'd tell someone who had a rough day — tone of support, bluntness, humor."
+  - id: banter
+    category: casual_banter
+    text: "Explore their reply when someone sends something funny in chat — banter, emoji energy, deadpan."
+  - id: closing
+    category: closing
+    text: "Explore how they'd naturally wind down and say goodbye in a casual chat."
+  - id: small_talk
+    category: casual_banter
+    text: "Explore light small talk — how they fill a quiet moment, change subject, or react to something mundane."
+  - id: mood_check
+    category: routine
+    text: "Explore how they answer a simple «¿cómo estás?» or mood check — not generic, in their real register."
+
+safety_rules:
+  - Do not collect legal names unless explicitly necessary.
+  - Do not ask for sensitive personal information.
+  - Remind the user they may skip any question.
+  - Store all data under profile_id, not real identity.
+  - Do not claim this creates a perfect clone.
+  - Mirror and probe replies must show voice, not label it (no "soy sarcástico", "con ironía", etc.).

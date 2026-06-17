@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from app.agents.chat_graph import _build_context_graph
-from app.agents.interview_graph import _build_start_graph, _build_turn_graph
-from app.experiment.interview import build_interview_messages, normalize_history
+from app.agents.conversation_agent import _build_context_graph, _build_conversation_graph
+from app.agents.training_agent import _build_finalize_graph
 from app.profiles.store import ProfileStore
-from app.skills.registry import SkillRegistry
+from app.skills.loader import SkillLoader
 
 
 class _FakeBrain:
@@ -16,23 +15,13 @@ class _FakeBrain:
 
 def main() -> None:
     brain = _FakeBrain()
-    assert _build_start_graph(brain) is not None
-    assert _build_turn_graph(brain) is not None
-    assert _build_context_graph() is not None
-
-    history = [
-        {"role": "assistant", "content": "Hola"},
-        {"role": "user", "content": "Bien"},
-    ]
-    messages = build_interview_messages(
-        system="system",
-        conversation_history=history,
-        steering="[NEXT]",
-    )
-    assert len(messages) == 4
-
     store = ProfileStore()
-    skills = SkillRegistry()
+    skills = SkillLoader()
+    assert _build_context_graph(store, skills) is not None
+    assert _build_conversation_graph(brain, store, skills) is not None
+    assert _build_finalize_graph(brain, store, skills) is not None
+    assert skills.get("train_profile").skill_id == "train_profile"
+    assert skills.get("converse_with_profile").skill_id == "converse_with_profile"
     print("langgraph agents smoke ok")
 
 

@@ -21,6 +21,8 @@ from app.agents.training_graph import (
 )
 from app.experiment.scenarios import list_scenarios
 from app.agents.validation_graph import (
+    run_validation_ai_judge,
+    run_validation_auto_test,
     run_validation_finalize,
     run_validation_generate,
     run_validation_rating,
@@ -30,6 +32,7 @@ from app.brain.factory import create_brain
 from app.experiment.chat import run_experiment_chat
 from app.profiles.builder import compile_behavioral
 from app.profiles.store import ProfileStore
+from app.storage.sqlite_store import SQLiteExperimentStore
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +68,19 @@ class ExperimentChatPayload(BaseModel):
     message: str = ""
     conversation_open: bool = False
     conversation_history: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class QuestionnairePayload(BaseModel):
+    run_session_id: str = ""
+    session_id: str = ""
+    participant_id: str = ""
+    condition: str = "B"
+    order_group: str = "A-B"
+    interaction_index: int = 1
+    questionnaire_after_interaction: int = 1
+    profile_id: str = ""
+    scenario_id: str = ""
+    responses: dict[str, Any] = Field(default_factory=dict)
 
 
 class InterviewStartPayload(BaseModel):
@@ -150,9 +166,23 @@ class ValidationFinalizePayload(BaseModel):
     profile_id: str
 
 
+class ValidationAiJudgePayload(BaseModel):
+    profile_id: str
+    prompt: str = ""
+    agent_response: str = ""
+    generate_if_missing: bool = True
+
+
+class ValidationAutoTestPayload(BaseModel):
+    profile_id: str
+    samples: int = 1
+    finalize: bool = False
+
+
 def build_experiment_router(
     profile_store: ProfileStore,
     brain: Any | None = None,
+    store: SQLiteExperimentStore | None = None,
 ) -> APIRouter:
     router = APIRouter(tags=["experiment"])
     _brain = brain or create_brain()
@@ -307,6 +337,33 @@ def build_experiment_router(
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @router.post("/profiles/validation/ai-judge")
+    async def validation_ai_judge(body: ValidationAiJudgePayload) -> dict[str, Any]:
+        try:
+            return await run_validation_ai_judge(
+                _brain,
+                profile_store,
+                profile_id=body.profile_id.strip(),
+                prompt=body.prompt.strip(),
+                agent_response=body.agent_response.strip(),
+                generate_if_missing=body.generate_if_missing,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @router.post("/profiles/validation/auto-test")
+    async def validation_auto_test(body: ValidationAutoTestPayload) -> dict[str, Any]:
+        try:
+            return await run_validation_auto_test(
+                _brain,
+                profile_store,
+                profile_id=body.profile_id.strip(),
+                samples=body.samples,
+                finalize=body.finalize,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @router.post("/profiles/interview/start")
     async def interview_start(body: InterviewStartPayload) -> dict[str, Any]:
         if not body.profile_id.strip():
@@ -453,6 +510,41 @@ def build_experiment_router(
             "audio_url": None,
             "animation": None,
             "metadata": meta,
+        }
+
+    @router.post("/experiment/questionnaire")
+    async def experiment_questionnaire(body: QuestionnairePayload) -> dict[str, Any]:
+        if store is None:
+            raise HTTPException(status_code=503, detail="experiment_store_unavailable")
+        run_session_id = body.run_session_id.strip()
+        session_id = body.session_id.strip()
+        participant_id = body.participant_id.strip()
+        if not run_session_id and not session_id:
+            raise HTTPException(status_code=400, detail="missing_session_id")
+        if not participant_id:
+            raise HTTPException(status_code=400, detail="missing_participant_id")
+        if not body.responses:
+            raise HTTPException(status_code=400, detail="empty_responses")
+        condition = body.condition.strip().upper()
+        if condition not in {"A", "B"}:
+            condition = "B"
+        row_id = store.insert_questionnaire_response(
+            run_session_id=run_session_id or session_id,
+            session_id=session_id or run_session_id,
+            participant_id=participant_id,
+            condition=condition,
+            order_group=body.order_group.strip() or "A-B",
+            interaction_index=max(1, int(body.interaction_index)),
+            questionnaire_after_interaction=max(1, int(body.questionnaire_after_interaction)),
+            profile_id=body.profile_id.strip(),
+            scenario_id=body.scenario_id.strip(),
+            responses=body.responses,
+        )
+        return {
+            "ok": True,
+            "id": row_id,
+            "run_session_id": run_session_id or session_id,
+            "session_id": session_id or run_session_id,
         }
 
     return router

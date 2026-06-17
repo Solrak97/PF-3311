@@ -1,0 +1,39 @@
+Create a behavioral response plan for Buddy (Spanish conversation).
+Output JSON only — no spoken reply.
+
+Profile summary:
+{{ profile_summary }}
+
+Active situation: {{ situation }}
+{% if situation_mode %}
+
+Situation-specific behaviors:
+traits: {{ situation_mode.traits }}
+strategies: {{ situation_mode.response_strategy }}
+{% endif %}
+{% if retrieved_moments %}
+
+Similar past moments (shape only, not shared history):
+{% for m in retrieved_moments %}- {{ m.summary }} → «{{ m.exemplar_line }}»
+{% endfor %}
+{% endif %}
+
+Scenario: {{ scenario.name }}
+Goal: {{ scenario.conversation_goal }}
+
+User message:
+{{ user_message }}
+
+Output schema:
+{
+  "response_strategy": ["..."],
+  "tone": "...",
+  "structure": ["..."],
+  "behaviors": ["..."],
+  "goals": ["..."]
+}
+
+Rules:
+- Plan HOW to approach, not exact words.
+- behaviors must include: avoid meta labels, stay in profile register.
+- Keep tone and structure grounded in profile and situation.

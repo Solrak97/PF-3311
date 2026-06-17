@@ -1,0 +1,616 @@
+{
+  "profile_id": "pf-20260610-0237",
+  "scenario_id": "daily_conversation",
+  "run_at": "2026-06-10T02:45:26.579375+00:00",
+  "transcript": [
+    {
+      "turn": 1,
+      "user": "",
+      "assistant": "Hola, soy Buddy. ¿Cómo estás hoy?",
+      "conversation_open": true,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 5.0,
+          "phrasing_similarity": 6.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 5.0,
+          "reminds_me_of_person": 5.0,
+          "naturalness": 6.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "El tono y la frase inicial del agente son adecuados para iniciar una conversación de manera informal. La respuesta es corta pero efectiva, siguiendo el patrón del perfil para responder con preguntas abiertas. No hay fuga de identidad ya que no reveló ningún detalle personal o específico del modelo.",
+        "raw": "{\n  \"tone_similarity\": 5,\n  \"phrasing_similarity\": 6,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 5,\n  \"reminds_me_of_person\": 5,\n  \"naturalness\": 6,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"El tono y la frase inicial del agente son adecuados para iniciar una conversación de manera informal. La respuesta es corta pero efectiva, siguiendo el patrón del perfil para responder con preguntas abiertas. No hay fuga de identidad ya que no reveló ningún detalle personal o específico del modelo.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": true,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:42:29.104064+00:00"
+      }
+    },
+    {
+      "turn": 2,
+      "user": "Pues hoy estuvo tranquilo, trabajé un rato y ya estoy en casa.",
+      "assistant": "Genial, ¿qué te gusta hacer después de trabajar para relajarte?",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 6.0,
+          "phrasing_similarity": 5.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 6.0,
+          "reminds_me_of_person": 5.0,
+          "naturalness": 7.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "El tono y la consistencia de las respuestas son adecuados, manteniendo un diálogo informal pero sin ser excesivamente familiar. La longitud del texto es acertada para una conversación casera, y el agente mantiene su estilo sin revelar detalles que rompan la identidad genérica.",
+        "raw": "{\n  \"tone_similarity\": 6,\n  \"phrasing_similarity\": 5,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 6,\n  \"reminds_me_of_person\": 5,\n  \"naturalness\": 7,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"El tono y la consistencia de las respuestas son adecuados, manteniendo un diálogo informal pero sin ser excesivamente familiar. La longitud del texto es acertada para una conversación casera, y el agente mantiene su estilo sin revelar detalles que rompan la identidad genérica.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:42:36.543049+00:00"
+      }
+    },
+    {
+      "turn": 3,
+      "user": "Después suelo poner música y descansar un rato en el sillón.",
+      "assistant": "Eso suena muy agradable. ¿Qué tipo de música te gusta escuchar cuando quieres relajarte?",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 6.0,
+          "phrasing_similarity": 5.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 6.0,
+          "reminds_me_of_person": 5.0,
+          "naturalness": 7.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "La respuesta del agente mantiene un tono conversacional y ligero, pero podría ser más directa. La elección de palabras es acertada para continuar el tema con una pregunta abierta. La longitud de la respuesta es adecuada. El agente sigue hábitos conversacionales como usar preguntas abiertas y compartir detalles sobre gustos personales sin revelar demasiado. Sin embargo, no suena tan personal como podría ser en un diálogo natural, pero aún así se percibe como una interacción realista.",
+        "raw": "{\n  \"tone_similarity\": 6,\n  \"phrasing_similarity\": 5,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 6,\n  \"reminds_me_of_person\": 5,\n  \"naturalness\": 7,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"La respuesta del agente mantiene un tono conversacional y ligero, pero podría ser más directa. La elección de palabras es acertada para continuar el tema con una pregunta abierta. La longitud de la respuesta es adecuada. El agente sigue hábitos conversacionales como usar preguntas abiertas y compartir detalles sobre gustos personales sin revelar demasiado. Sin embargo, no suena tan personal como podría ser en un diálogo natural, pero aún así se percibe como una interacción realista.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:42:44.125650+00:00"
+      }
+    },
+    {
+      "turn": 4,
+      "user": "Últimamente me ha gustado mucho cocinar cosas sencillas.",
+      "assistant": "¡Qué interesante! La cocina puede ser muy terapéutica. ¿Hay algún plato en particular que disfrutes preparar últimamente?",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 6.0,
+          "phrasing_similarity": 5.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 7.0,
+          "reminds_me_of_person": 3.0,
+          "naturalness": 6.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "El tono es amigable y conversacional, pero falta un poco de ligereza para el humor. La respuesta usa una frase común ('La cocina puede ser muy terapéutica') que se ajusta al perfil. La longitud es adecuada para un diálogo informal. El agente sigue hábitos conversacionales como preguntar abiertamente, aunque no proporciona ejemplos personales (un bajo nivel en el perfil). No parece una persona específica pero falta personalidad única. Suena natural y no revela información sobre la identidad del agente.",
+        "raw": "{\n  \"tone_similarity\": 6,\n  \"phrasing_similarity\": 5,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 7,\n  \"reminds_me_of_person\": 3,\n  \"naturalness\": 6,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"El tono es amigable y conversacional, pero falta un poco de ligereza para el humor. La respuesta usa una frase común ('La cocina puede ser muy terapéutica') que se ajusta al perfil. La longitud es adecuada para un diálogo informal. El agente sigue hábitos conversacionales como preguntar abiertamente, aunque no proporciona ejemplos personales (un bajo nivel en el perfil). No parece una persona específica pero falta personalidad única. Suena natural y no revela información sobre la identidad del agente.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:42:53.776622+00:00"
+      }
+    },
+    {
+      "turn": 5,
+      "user": "¿Y tú qué sueles hacer cuando quieres desconectar?",
+      "assistant": "Me gusta leer un buen libro o ver una película. ¡También me encanta cocinar cuando tengo tiempo libre. ¿Has probado alguna receta nueva últimamente?",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 6.0,
+          "phrasing_similarity": 5.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 6.0,
+          "reminds_me_of_person": 4.0,
+          "naturalness": 6.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "El tono del agente es amigable y conversacional, similar al perfil. Las frases están en línea con el estilo informal pero podrían ser más directas en algunos aspectos. La longitud de la respuesta es media, adecuada para el perfil. El comportamiento general sigue los patrones del perfil, incluyendo preguntas abiertas. No hay riesgo de fuga de identidad, manteniendo la ambigüedad y naturalidad del diálogo.",
+        "raw": "{\n  \"tone_similarity\": 6,\n  \"phrasing_similarity\": 5,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 6,\n  \"reminds_me_of_person\": 4,\n  \"naturalness\": 6,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"El tono del agente es amigable y conversacional, similar al perfil. Las frases están en línea con el estilo informal pero podrían ser más directas en algunos aspectos. La longitud de la respuesta es media, adecuada para el perfil. El comportamiento general sigue los patrones del perfil, incluyendo preguntas abiertas. No hay riesgo de fuga de identidad, manteniendo la ambigüedad y naturalidad del diálogo.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:43:03.887143+00:00"
+      }
+    },
+    {
+      "turn": 6,
+      "user": "Ayer vi un capítulo de una serie y se me fue la tarde.",
+      "assistant": "¡Las series pueden ser muy absorbentes! ¿Cuál es tu serie favorita actualmente?",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 6.0,
+          "phrasing_similarity": 5.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 6.0,
+          "reminds_me_of_person": 5.0,
+          "naturalness": 7.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "La respuesta del agente mantiene un tono conversacional y ligero, lo que se ajusta a la personalidad descrita. La frase 'Las series pueden ser muy absorbentes' es apropiada para el estilo de lenguaje informal y directo del perfil. La pregunta abierta sobre las preferencias de series sigue los patrones habituales de conversación del agente, aunque podría haber sido más breve. No se observan revelaciones o referencias a la identidad que rompan con las restricciones.",
+        "raw": "{\n  \"tone_similarity\": 6,\n  \"phrasing_similarity\": 5,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 6,\n  \"reminds_me_of_person\": 5,\n  \"naturalness\": 7,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"La respuesta del agente mantiene un tono conversacional y ligero, lo que se ajusta a la personalidad descrita. La frase 'Las series pueden ser muy absorbentes' es apropiada para el estilo de lenguaje informal y directo del perfil. La pregunta abierta sobre las preferencias de series sigue los patrones habituales de conversación del agente, aunque podría haber sido más breve. No se observan revelaciones o referencias a la identidad que rompan con las restricciones.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:43:12.579435+00:00"
+      }
+    },
+    {
+      "turn": 7,
+      "user": "Los trámites son un rollo, la verdad, pero hay que hacerlos.",
+      "assistant": "Totalmente, a veces esos momentos no son los más emocionantes del día. ¿Has terminado ya todos los trámites o te quedan algunos por hacer?",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 6.0,
+          "phrasing_similarity": 5.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 5.0,
+          "reminds_me_of_person": 5.0,
+          "naturalness": 6.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "La respuesta muestra un tono y estilo de lenguaje que se alinean con el perfil, aunque podría ser un poco más informal. La longitud y estructura de la respuesta son adecuadas para las pautas del perfil, y no hay fugas de identidad.",
+        "raw": "{\n  \"tone_similarity\": 6,\n  \"phrasing_similarity\": 5,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 5,\n  \"reminds_me_of_person\": 5,\n  \"naturalness\": 6,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"La respuesta muestra un tono y estilo de lenguaje que se alinean con el perfil, aunque podría ser un poco más informal. La longitud y estructura de la respuesta son adecuadas para las pautas del perfil, y no hay fugas de identidad.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:43:22.167841+00:00"
+      }
+    },
+    {
+      "turn": 8,
+      "user": "Oye, un amigo me contó que le ascendieron en el trabajo.",
+      "assistant": "¡Qué genial! Eso debe ser muy gratificante para él. ¿Te has felicitado con él?",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 6.0,
+          "phrasing_similarity": 5.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 7.0,
+          "reminds_me_of_person": 5.0,
+          "naturalness": 6.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "La respuesta mantiene un tono conversacional y directo, sin ser demasiado formal ni informal. La frase '¡Qué genial!' es apropiada para la emoción del momento. La pregunta de seguimiento '¿Te has felicitado con él?' sigue el patrón de preguntas abiertas. El uso de un breve y directo lenguaje se mantiene coherente con el perfil, sin revelar detalles personales que puedan comprometer la identidad.",
+        "raw": "{\n  \"tone_similarity\": 6,\n  \"phrasing_similarity\": 5,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 7,\n  \"reminds_me_of_person\": 5,\n  \"naturalness\": 6,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"La respuesta mantiene un tono conversacional y directo, sin ser demasiado formal ni informal. La frase '¡Qué genial!' es apropiada para la emoción del momento. La pregunta de seguimiento '¿Te has felicitado con él?' sigue el patrón de preguntas abiertas. El uso de un breve y directo lenguaje se mantiene coherente con el perfil, sin revelar detalles personales que puedan comprometer la identidad.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:43:29.580413+00:00"
+      }
+    },
+    {
+      "turn": 9,
+      "user": "Hoy se me olvidó el paraguas y llegué empapado al carro.",
+      "assistant": "¡Qué contratiempo! Espero que no te haya afectado demasiado tu día. Al menos, ahora tienes una historia para contar. ¿Te gusta contar historias como esta a tus amigos?",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 6.0,
+          "phrasing_similarity": 5.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 5.0,
+          "reminds_me_of_person": 5.0,
+          "naturalness": 6.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "La respuesta del agente es acogedora y ligera, manteniendo un tono similar al perfil. Sin embargo, la frase 'Al menos, ahora tienes una historia para contar' podría ser más directa y casual, por lo que el grado de coherencia lingüística se reduce ligeramente. La longitud de la respuesta es adecuada y no contiene referencias que rompan la ambigüedad del perfil.",
+        "raw": "{\n  \"tone_similarity\": 6,\n  \"phrasing_similarity\": 5,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 5,\n  \"reminds_me_of_person\": 5,\n  \"naturalness\": 6,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"La respuesta del agente es acogedora y ligera, manteniendo un tono similar al perfil. Sin embargo, la frase 'Al menos, ahora tienes una historia para contar' podría ser más directa y casual, por lo que el grado de coherencia lingüística se reduce ligeramente. La longitud de la respuesta es adecuada y no contiene referencias que rompan la ambigüedad del perfil.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:43:39.905005+00:00"
+      }
+    },
+    {
+      "turn": 10,
+      "user": "¿Tienes alguna receta fácil para cuando no quieres complicarte?",
+      "assistant": "Claro, una ensalada rápida con ingredientes del refrigerador es siempre una buena opción. O un sencillo plato de pasta con aceite de oliva y albahaca fresca. ¿Te apetece algo en particular hoy?",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 6.0,
+          "phrasing_similarity": 5.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 5.0,
+          "reminds_me_of_person": 5.0,
+          "naturalness": 6.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "La respuesta del agente tiene un tono conversacional y directo, que se ajusta a la descripción. Usa frases comunes propias de alguien informal pero amable, como 'Claro' para iniciar la respuesta y ofrece opciones concretas basadas en ingredientes sencillos. La longitud es apropiada. Además, el agente vuelve a preguntar al usuario para mantener un flujo natural de conversación. No hay fuga de identidad.",
+        "raw": "{\n  \"tone_similarity\": 6,\n  \"phrasing_similarity\": 5,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 5,\n  \"reminds_me_of_person\": 5,\n  \"naturalness\": 6,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"La respuesta del agente tiene un tono conversacional y directo, que se ajusta a la descripción. Usa frases comunes propias de alguien informal pero amable, como 'Claro' para iniciar la respuesta y ofrece opciones concretas basadas en ingredientes sencillos. La longitud es apropiada. Además, el agente vuelve a preguntar al usuario para mantener un flujo natural de conversación. No hay fuga de identidad.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:43:49.458982+00:00"
+      }
+    },
+    {
+      "turn": 11,
+      "user": "Tuve un día pesado, muchas reuniones seguidas.",
+      "assistant": "Entiendo perfectamente lo agotador que puede ser tener muchas reuniones una tras otra. Después de esos días, ¿te gusta hacer algo especial para relajarte?",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 6.0,
+          "phrasing_similarity": 5.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 7.0,
+          "reminds_me_of_person": 5.0,
+          "naturalness": 6.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "El agente muestra una adecuada empatía y tono informal, aunque podría mejorar en el uso de frases más coloquiales. La longitud del mensaje es media, alineada con la directriz del perfil. Se comporta consistentemente siguiendo las pautas establecidas para preguntas abiertas y conversaciones relajadas. No se revelan detalles que comprometan su identidad ni se hacen referencias a un modelo específico.",
+        "raw": "{\n  \"tone_similarity\": 6,\n  \"phrasing_similarity\": 5,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 7,\n  \"reminds_me_of_person\": 5,\n  \"naturalness\": 6,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"El agente muestra una adecuada empatía y tono informal, aunque podría mejorar en el uso de frases más coloquiales. La longitud del mensaje es media, alineada con la directriz del perfil. Se comporta consistentemente siguiendo las pautas establecidas para preguntas abiertas y conversaciones relajadas. No se revelan detalles que comprometan su identidad ni se hacen referencias a un modelo específico.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:43:58.696946+00:00"
+      }
+    },
+    {
+      "turn": 12,
+      "user": "Jaja, mi hermano me mandó un meme buenísimo hace rato.",
+      "assistant": "¡Qué bien! Los memes siempre alegran el día. ¿Te envía muchos como ese?",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 5.0,
+          "phrasing_similarity": 5.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 5.0,
+          "reminds_me_of_person": 5.0,
+          "naturalness": 6.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "La respuesta del agente sigue el tono y la estructura apropiada, pero podría ser más breve al estilo de las conversaciones informales. Las preguntas abiertas son correctas y no revela información personal que comprometa su identidad.",
+        "raw": "{\n  \"tone_similarity\": 5,\n  \"phrasing_similarity\": 5,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 5,\n  \"reminds_me_of_person\": 5,\n  \"naturalness\": 6,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"La respuesta del agente sigue el tono y la estructura apropiada, pero podría ser más breve al estilo de las conversaciones informales. Las preguntas abiertas son correctas y no revela información personal que comprometa su identidad.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:44:07.366835+00:00"
+      }
+    },
+    {
+      "turn": 13,
+      "user": "¿Prefieres quedarte en casa o salir un rato?",
+      "assistant": "Me gusta variar, pero si tuviera que elegir, probablemente me quedaría en casa para relajarme. ¿Y a ti, qué te apetece hacer hoy?",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 6.0,
+          "phrasing_similarity": 5.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 5.0,
+          "reminds_me_of_person": 5.0,
+          "naturalness": 7.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "El agente mantiene un tono conversacional y un lenguaje informal, pero el uso de 'probablemente' puede ser más directo. La longitud es adecuada para responder a la pregunta del usuario. No se proporcionan ejemplos ni anécdotas adicionales, lo que refleja el perfil. La respuesta suena natural en español y no revela detalles personales o información sobre el perfil.",
+        "raw": "{\n  \"tone_similarity\": 6,\n  \"phrasing_similarity\": 5,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 5,\n  \"reminds_me_of_person\": 5,\n  \"naturalness\": 7,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"El agente mantiene un tono conversacional y un lenguaje informal, pero el uso de 'probablemente' puede ser más directo. La longitud es adecuada para responder a la pregunta del usuario. No se proporcionan ejemplos ni anécdotas adicionales, lo que refleja el perfil. La respuesta suena natural en español y no revela detalles personales o información sobre el perfil.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:44:15.213896+00:00"
+      }
+    },
+    {
+      "turn": 14,
+      "user": "Estoy pensando en retomar algo que dejé hace tiempo.",
+      "assistant": "Eso suena emocionante. ¿De qué se trata? Quizás sea un buen momento para reincorporarlo en tu rutina.",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 5.0,
+          "phrasing_similarity": 4.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 5.0,
+          "reminds_me_of_person": 4.0,
+          "naturalness": 5.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "La respuesta del agente es aceptable en términos de tono y consistencia con el perfil, aunque no destaca por ser muy innovadora ni profunda. La longitud y el uso de preguntas abiertas están bien alineados, pero las respuestas podrían beneficiarse de más detalles personales o ejemplos para aumentar la empatía.",
+        "raw": "{\n  \"tone_similarity\": 5,\n  \"phrasing_similarity\": 4,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 5,\n  \"reminds_me_of_person\": 4,\n  \"naturalness\": 5,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"La respuesta del agente es aceptable en términos de tono y consistencia con el perfil, aunque no destaca por ser muy innovadora ni profunda. La longitud y el uso de preguntas abiertas están bien alineados, pero las respuestas podrían beneficiarse de más detalles personales o ejemplos para aumentar la empatía.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:44:24.702802+00:00"
+      }
+    },
+    {
+      "turn": 15,
+      "user": "A veces me cuesta desconectar de la pantalla.",
+      "assistant": "Entiendo, a todos nos pasa. ¿Hay algún truco o método que te ayude a desconectarte y concentrarte en otras cosas?",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 5.0,
+          "phrasing_similarity": 4.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 5.0,
+          "reminds_me_of_person": 3.0,
+          "naturalness": 6.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "La respuesta muestra un tono y una estructura aceptable, pero no se siente como si fuera de una persona específica. La frase 'Entiendo' es directa, pero el contexto podría beneficiarse de más diversidad en las respuestas para evitar repetición.",
+        "raw": "{\n  \"tone_similarity\": 5,\n  \"phrasing_similarity\": 4,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 5,\n  \"reminds_me_of_person\": 3,\n  \"naturalness\": 6,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"La respuesta muestra un tono y una estructura aceptable, pero no se siente como si fuera de una persona específica. La frase 'Entiendo' es directa, pero el contexto podría beneficiarse de más diversidad en las respuestas para evitar repetición.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:44:33.769987+00:00"
+      }
+    },
+    {
+      "turn": 16,
+      "user": "¿Qué tipo de música te relaja?",
+      "assistant": "Me gusta escuchar música suave o clásica para relajarme. ¿Y tú, hay algún género o artista que disfrutes cuando quieres tomarte un respiro?",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 6.0,
+          "phrasing_similarity": 5.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 6.0,
+          "reminds_me_of_person": 5.0,
+          "naturalness": 7.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "El tono y la consistencia del comportamiento son fuertes, aunque el uso de frases específicas es moderado. La longitud de respuesta está bien ajustada pero no excelente. No hay fugas de identidad.",
+        "raw": "{\n  \"tone_similarity\": 6,\n  \"phrasing_similarity\": 5,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 6,\n  \"reminds_me_of_person\": 5,\n  \"naturalness\": 7,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"El tono y la consistencia del comportamiento son fuertes, aunque el uso de frases específicas es moderado. La longitud de respuesta está bien ajustada pero no excelente. No hay fugas de identidad.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:44:42.168998+00:00"
+      }
+    },
+    {
+      "turn": 17,
+      "user": "Mañana madrugo y no tengo ninguna ganas.",
+      "assistant": "Entiendo cómo te sientes. A veces es difícil empezar el día temprano. ¿Hay alguna rutina que puedas seguir para animarte en las mañanas? Por ejemplo, prepararse un desayuno especial o hacer ejercicio ligero.",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 5.0,
+          "phrasing_similarity": 4.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 5.0,
+          "reminds_me_of_person": 3.0,
+          "naturalness": 6.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "El tono es comprensivo y directo, pero falta un toque de humor ligero. La elección de palabras es adecuada, aunque no hay frases típicas del perfil. La longitud es razonable para el estilo medio. El comportamiento sigue patrones abiertos e invita a la conversación. Sin embargo, no se parece claramente a un personaje específico. Suena natural y fluido en español. No hay fugas de identidad.",
+        "raw": "{\n  \"tone_similarity\": 5,\n  \"phrasing_similarity\": 4,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 5,\n  \"reminds_me_of_person\": 3,\n  \"naturalness\": 6,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"El tono es comprensivo y directo, pero falta un toque de humor ligero. La elección de palabras es adecuada, aunque no hay frases típicas del perfil. La longitud es razonable para el estilo medio. El comportamiento sigue patrones abiertos e invita a la conversación. Sin embargo, no se parece claramente a un personaje específico. Suena natural y fluido en español. No hay fugas de identidad.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:44:51.063748+00:00"
+      }
+    },
+    {
+      "turn": 18,
+      "user": "Gracias por charlar un rato, se siente ligero.",
+      "assistant": "¡Me alegra mucho escuchar eso! Si necesitas hablar de algo más o simplemente quieres compartir cómo te va, aquí estaré. ¡Que tengas una buena noche!",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 6.0,
+          "phrasing_similarity": 5.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 5.0,
+          "reminds_me_of_person": 5.0,
+          "naturalness": 7.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "El tono y el uso de palabras son similares a los esperados, aunque la longitud del mensaje es un poco más larga que lo que indicaría una conversación informal. La respuesta sigue las pautas con preguntas abiertas y respuestas breves pero amigables.",
+        "raw": "{\n  \"tone_similarity\": 6,\n  \"phrasing_similarity\": 5,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 5,\n  \"reminds_me_of_person\": 5,\n  \"naturalness\": 7,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"El tono y el uso de palabras son similares a los esperados, aunque la longitud del mensaje es un poco más larga que lo que indicaría una conversación informal. La respuesta sigue las pautas con preguntas abiertas y respuestas breves pero amigables.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:45:01.424150+00:00"
+      }
+    },
+    {
+      "turn": 19,
+      "user": "Bueno, ya me tengo que ir a preparar algo de cena.",
+      "assistant": "Perfecto, que prepares algo rico. ¡Qué tengas un buen día mañana! Si necesitas cualquier cosa, sabes que puedes charlar otro rato si quieres. Hasta pronto.",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 5.0,
+          "phrasing_similarity": 4.0,
+          "response_length_similarity": 3.0,
+          "behavioral_consistency": 6.0,
+          "reminds_me_of_person": 3.0,
+          "naturalness": 5.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "El tono es generalmente acogedor, pero no hay una conexión emocional muy fuerte. Las frases son adecuadas pero no destacan por ser características del perfil. La longitud de la respuesta es un poco más larga de lo recomendado. Muestra coherencia en el comportamiento al ofrecer ayuda y terminar con un saludo, aunque podría ser más directo según el perfil. No se parece a una persona específica pero tampoco destaca como estilo único. Naturalmente, suena como una conversación en español normal.",
+        "raw": "{\n  \"tone_similarity\": 5,\n  \"phrasing_similarity\": 4,\n  \"response_length_similarity\": 3,\n  \"behavioral_consistency\": 6,\n  \"reminds_me_of_person\": 3,\n  \"naturalness\": 5,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"El tono es generalmente acogedor, pero no hay una conexión emocional muy fuerte. Las frases son adecuadas pero no destacan por ser características del perfil. La longitud de la respuesta es un poco más larga de lo recomendado. Muestra coherencia en el comportamiento al ofrecer ayuda y terminar con un saludo, aunque podría ser más directo según el perfil. No se parece a una persona específica pero tampoco destaca como estilo único. Naturalmente, suena como una conversación en español normal.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:45:10.302157+00:00"
+      }
+    },
+    {
+      "turn": 20,
+      "user": "Fue bueno hablar contigo, en serio.",
+      "assistant": "¡Gracias! Fue muy agradable conversar contigo también. Que tengas un excelente día. ¡Hasta la próxima!",
+      "conversation_open": false,
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 6.0,
+          "phrasing_similarity": 5.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 5.0,
+          "reminds_me_of_person": 5.0,
+          "naturalness": 7.0,
+          "identity_leakage_absent": 7.0
+        },
+        "rationale": "La respuesta del agente es amistosa y directa, lo que coincide con el tono y las pautas de lenguaje. La longitud es apropiada y no hay problemas de consistencia comportamental, aunque podría ser más conversacional o menos breve.",
+        "raw": "{\n  \"tone_similarity\": 6,\n  \"phrasing_similarity\": 5,\n  \"response_length_similarity\": 4,\n  \"behavioral_consistency\": 5,\n  \"reminds_me_of_person\": 5,\n  \"naturalness\": 7,\n  \"identity_leakage_absent\": 7,\n  \"rationale\": \"La respuesta del agente es amistosa y directa, lo que coincide con el tono y las pautas de lenguaje. La longitud es apropiada y no hay problemas de consistencia comportamental, aunque podría ser más conversacional o menos breve.\"\n}"
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "pf-20260610-0237",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": false,
+        "control_profile": false,
+        "timestamp": "2026-06-10T02:45:20.696963+00:00"
+      }
+    }
+  ],
+  "summary": {
+    "turns": 20,
+    "mean_tone_similarity": 5.7,
+    "mean_phrasing_similarity": 4.85,
+    "mean_behavioral_consistency": 5.6,
+    "mean_reminds_me_of_person": 4.5,
+    "mean_naturalness": 6.25,
+    "mean_identity_leakage_absent": 7.0
+  }
+}

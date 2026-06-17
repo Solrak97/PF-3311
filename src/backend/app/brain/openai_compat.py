@@ -4,6 +4,7 @@ from typing import Any
 
 import httpx
 
+from app.brain.http_client import llm_timeout
 from app.config import settings
 
 
@@ -26,7 +27,7 @@ class OpenAICompatBrain:
         if self._api_key.strip():
             headers["Authorization"] = f"Bearer {self._api_key.strip()}"
         body = {"model": self._model, "messages": messages, "stream": True}
-        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as client:
+        async with httpx.AsyncClient(timeout=llm_timeout()) as client:
             async with client.stream("POST", url, headers=headers, json=body) as resp:
                 resp.raise_for_status()
                 async for line in resp.aiter_lines():

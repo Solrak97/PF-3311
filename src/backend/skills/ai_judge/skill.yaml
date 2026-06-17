@@ -1,0 +1,31 @@
+skill_id: ai_judge
+name: AI Profile Response Judge
+description: >
+  LLM-as-judge for pilot validation and automated profile testing. Scores agent
+  replies on the same Likert dimensions used by the Godot Evaluate Profile UI.
+version: 1.0.0
+
+templates:
+  system: ai_judge_system.jinja2
+  rating: ai_judge_rating.jinja2
+
+validator_id: ai-judge
+
+rating_scale:
+  min: 1
+  max: 7
+
+thresholds:
+  mean_similarity: 4.5
+  mean_naturalness: 4.0
+  mean_identity_safety: 5.5
+
+rating_keys:
+  - tone_similarity
+  - phrasing_similarity
+  - response_length_similarity
+  - behavioral_consistency
+  - reminds_me_of_person
+  - naturalness
+  - identity_leakage_absent
+  - behavioral_plan_match

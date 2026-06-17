@@ -1,0 +1,43 @@
+Evaluate the agent reply below against the behavioral profile.
+
+## Profile (YAML)
+{{ profile_yaml }}
+
+{% if modeled_user_alias %}
+Modeled user alias (for context only — agent must NOT reveal it): {{ modeled_user_alias }}
+{% endif %}
+
+## User prompt (what the participant asked)
+{{ prompt }}
+
+## Agent reply (Buddy)
+{{ agent_response }}
+
+## Rating scale
+Use integers from {{ scale_min }} to {{ scale_max }} for each dimension:
+- 1 = very poor / clearly wrong
+- 4 = acceptable baseline
+- 7 = excellent match
+
+Dimensions:
+- tone_similarity: emotional tone matches the profile
+- phrasing_similarity: word choice and phrasing match the profile
+- response_length_similarity: reply length fits the profile habit
+- behavioral_consistency: overall conversational habits align with the profile
+- reminds_me_of_person: feels like the modeled person's style (without explicit identity)
+- naturalness: sounds natural as spoken Spanish dialogue
+- identity_leakage_absent: 7 = no identity leaks; 1 = claims to be someone else, reveals profiling, or breaks experimental constraints
+- behavioral_plan_match: 7 = response clearly follows intended behavioral approach (strategy, tone, structure); 1 = generic assistant ignoring profile habits
+
+Return JSON with exactly these keys:
+{
+  "tone_similarity": <int>,
+  "phrasing_similarity": <int>,
+  "response_length_similarity": <int>,
+  "behavioral_consistency": <int>,
+  "reminds_me_of_person": <int>,
+  "naturalness": <int>,
+  "identity_leakage_absent": <int>,
+  "behavioral_plan_match": <int>,
+  "rationale": "<one short paragraph in Spanish explaining the scores>"
+}

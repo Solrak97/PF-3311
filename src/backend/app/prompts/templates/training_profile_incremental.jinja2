@@ -1,0 +1,21 @@
+Update this behavioral profile YAML incrementally from the latest participant answer.
+Ground changes in their actual words — add to common_phrases, voice_exemplars, habits only when supported by the new line.
+Do NOT add trait labels (sarcástico, irónico, etc.). Show voice through exemplars and phrases.
+Keep profile_id unchanged. Output ONLY valid YAML.
+
+Current profile:
+{{ profile_yaml }}
+
+Latest exchange:
+P: {{ prompt }}
+R: {{ response }}
+
+Total samples collected: {{ total_samples }}
+{% if observation is defined and observation.situation_hint %}
+
+Latest behavioral observation (abstract):
+- situation: {{ observation.situation_hint }}
+- reasoning: {{ observation.reasoning_style }}
+- habits: {{ observation.conversational_habits }}
+Update situation_modes for this situation if supported by the new answer.
+{% endif %}

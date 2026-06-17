@@ -4,11 +4,14 @@ from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 
+from app.agents.ai_judge import judge_profile_response
 from app.agents.profile_state import BehavioralProfileState, default_training_state
 from app.agents.refinement_graph import RATING_KEYS
-from app.agents.training_prompts import CORE_TRAINING_PROMPTS
 from app.experiment.chat import run_experiment_chat
 from app.profiles.store import ProfileStore
+from app.skills.loader import SkillLoader
+
+TRAINING_SKILL_ID = "train_profile"
 
 SIMILARITY_KEYS = ("tone_similarity", "phrasing_similarity", "response_length_similarity", "behavioral_consistency", "reminds_me_of_person")
 THRESHOLDS = {
@@ -26,9 +29,17 @@ def load_behavioral_profile(store: ProfileStore, state: BehavioralProfileState) 
     return {**state, "behavioral_profile": profile, "status": "validation"}
 
 
-def generate_validation_prompt(state: BehavioralProfileState) -> BehavioralProfileState:
-    idx = len(state.get("validation_samples") or []) % len(CORE_TRAINING_PROMPTS)
-    prompt = CORE_TRAINING_PROMPTS[idx].get("text", "Cuéntame brevemente cómo fue tu día.")
+def generate_validation_prompt(
+    state: BehavioralProfileState,
+    *,
+    skills: SkillLoader | None = None,
+) -> BehavioralProfileState:
+    registry = skills or SkillLoader()
+    prompts = registry.get(TRAINING_SKILL_ID).prompts
+    if not prompts:
+        return {**state, "validation_prompt": "Cuéntame brevemente cómo fue tu día."}
+    idx = len(state.get("validation_samples") or []) % len(prompts)
+    prompt = str(prompts[idx].get("text", "Cuéntame brevemente cómo fue tu día."))
     return {**state, "validation_prompt": prompt}
 
 
@@ -137,7 +148,7 @@ async def run_validation_generate(
     loaded = store.load_session(profile_id, "validation") or load_behavioral_profile(
         store, default_training_state(profile_id)
     )
-    state = generate_validation_prompt(loaded)
+    state = generate_validation_prompt(loaded, skills=SkillLoader())
     state = await generate_agent_response(brain, store, state)
     store.save_session(profile_id, "validation", dict(state))
     sample = (state.get("validation_samples") or [])[-1]
@@ -169,6 +180,99 @@ async def run_validation_rating(
     state = collect_validator_rating(loaded, rating)
     store.save_session(profile_id, "validation", dict(state))
     return {"ok": True, "ratings_count": len(state.get("validation_results") or [])}
+
+
+async def run_validation_ai_judge(
+    brain: Any,
+    store: ProfileStore,
+    *,
+    profile_id: str,
+    prompt: str = "",
+    agent_response: str = "",
+    generate_if_missing: bool = True,
+) -> dict[str, Any]:
+    """Score a validation sample with the LLM judge (validator_id=ai-judge)."""
+    loaded = store.load_session(profile_id, "validation")
+    if loaded is None:
+        loaded = load_behavioral_profile(store, default_training_state(profile_id))
+        store.save_session(profile_id, "validation", dict(loaded))
+
+    profile = loaded.get("behavioral_profile")
+    if not isinstance(profile, dict):
+        profile = store.load_final_profile(profile_id)
+    if profile is None:
+        raise ValueError("profile_not_found")
+
+    use_prompt = prompt.strip()
+    use_response = agent_response.strip()
+    if not use_prompt or not use_response:
+        samples = list(loaded.get("validation_samples") or [])
+        if samples:
+            last = samples[-1]
+            use_prompt = use_prompt or str(last.get("prompt", ""))
+            use_response = use_response or str(last.get("agent_response", ""))
+        elif generate_if_missing:
+            generated = await run_validation_generate(brain, store, profile_id=profile_id)
+            use_prompt = str(generated.get("prompt", ""))
+            use_response = str(generated.get("agent_response", ""))
+            loaded = store.load_session(profile_id, "validation") or loaded
+
+    if not use_prompt or not use_response:
+        raise ValueError("missing_prompt_or_agent_response")
+
+    judged = await judge_profile_response(
+        brain,
+        profile=profile,
+        prompt=use_prompt,
+        agent_response=use_response,
+    )
+    await run_validation_rating(
+        store,
+        profile_id=profile_id,
+        validator_id=str(judged.get("validator_id", "ai-judge")),
+        scores=judged["scores"],
+        prompt=use_prompt,
+        agent_response=use_response,
+    )
+    return {
+        "ok": True,
+        "profile_id": profile_id,
+        "prompt": use_prompt,
+        "agent_response": use_response,
+        "validator_id": judged.get("validator_id", "ai-judge"),
+        "scores": judged["scores"],
+        "rationale": judged.get("rationale", ""),
+    }
+
+
+async def run_validation_auto_test(
+    brain: Any,
+    store: ProfileStore,
+    *,
+    profile_id: str,
+    samples: int = 1,
+    finalize: bool = False,
+) -> dict[str, Any]:
+    """Generate N samples, score each with the AI judge, optionally finalize."""
+    await run_validation_start(store, profile_id=profile_id)
+    judgements: list[dict[str, Any]] = []
+    for _ in range(max(1, samples)):
+        await run_validation_generate(brain, store, profile_id=profile_id)
+        judged = await run_validation_ai_judge(
+            brain,
+            store,
+            profile_id=profile_id,
+            generate_if_missing=False,
+        )
+        judgements.append(judged)
+    result: dict[str, Any] = {
+        "profile_id": profile_id,
+        "samples_judged": len(judgements),
+        "judgements": judgements,
+    }
+    if finalize:
+        result["summary"] = await run_validation_finalize(store, profile_id=profile_id)
+    return result
 
 
 async def run_validation_finalize(store: ProfileStore, *, profile_id: str) -> dict[str, Any]:

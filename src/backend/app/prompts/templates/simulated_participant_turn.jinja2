@@ -1,0 +1,18 @@
+Conversation so far:
+{% for item in history %}
+{% if item.role == "assistant" %}Buddy: {{ item.content }}
+{% else %}Participant: {{ item.content }}
+{% endif %}{% endfor %}
+
+Buddy's last message (you MUST respond to this):
+{{ buddy_last }}
+
+{% if phase == "closing" %}
+This is near the end of the chat — answer Buddy, then naturally start wrapping up (dinner, leaving, goodnight). Keep it brief.
+{% elif phase == "opening" %}
+Buddy just opened the chat — greet back briefly and share how your day went (calm, worked a bit, now home).
+{% else %}
+Continue naturally — answer Buddy, maybe share a small related detail from your life.
+{% endif %}
+
+Write the participant's next message:

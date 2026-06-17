@@ -14,6 +14,18 @@ class Settings(BaseSettings):
     # Legacy names (still read if LLM_* unset)
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "llama3.2"
+    ollama_embed_model: str = "nomic-embed-text"
+    ollama_keep_alive: str = "15m"
+    ollama_think: bool = False
+
+    llm_timeout_sec: float = 300.0
+    llm_num_predict: int = 512
+    llm_num_predict_json: int = 280
+
+    # Pipeline: auto = fast heuristics first, llm = always call model, keyword/heuristic = never
+    situation_classifier_mode: str = "auto"
+    behavioral_planner_mode: str = "auto"
+    embeddings_enabled: bool = True
 
     sqlite_path: str = "./data/experiment.db"
     profiles_data_dir: str = "./data/profiles"
@@ -23,6 +35,9 @@ class Settings(BaseSettings):
     experiment_interaction_sec: int = 300
 
     edge_tts_voice: str = "es-MX-DaliaNeural"
+    edge_tts_rate: str = "+8%"
+    edge_tts_pitch: str = "+4Hz"
+    edge_tts_volume: str = "+0%"
     max_tts_chars: int = 2_000
     tts_chunk_chars: int = 240
 

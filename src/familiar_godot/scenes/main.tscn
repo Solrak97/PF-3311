@@ -180,6 +180,13 @@ theme_override_constants/margin_bottom = 14
 layout_mode = 2
 theme_override_constants/separation = 12
 
+[node name="ChatStatusLabel" type="Label" parent="Margin/VBox/ChatPanel/ChatPad/ChatVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.58, 0.64, 1)
+theme_override_font_sizes/font_size = 13
+text = "Listo"
+
 [node name="Output" type="ScrollContainer" parent="Margin/VBox/ChatPanel/ChatPad/ChatVBox"]
 unique_name_in_owner = true
 layout_mode = 2

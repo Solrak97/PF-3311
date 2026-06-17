@@ -64,7 +64,7 @@ async def _ack_session(
 
 
 app.include_router(build_dashboard_router(_store, _profile_store))
-app.include_router(build_experiment_router(_profile_store, _brain))
+app.include_router(build_experiment_router(_profile_store, _brain, _store))
 
 
 @app.get("/audio/turn/{token}")
@@ -77,11 +77,18 @@ async def get_turn_audio(token: str) -> Response:
 
 
 @app.get("/healthz")
-async def healthz() -> dict[str, str]:
+async def healthz() -> dict[str, Any]:
+    from app.brain.embeddings import embed_model_available
+
     return {
         "status": "ok",
         "llm_provider": settings.llm_provider,
         "llm_model": settings.resolved_llm_model,
+        "embed_model": settings.ollama_embed_model,
+        "embeddings_available": embed_model_available(),
+        "classifier_mode": settings.situation_classifier_mode,
+        "planner_mode": settings.behavioral_planner_mode,
+        "llm_timeout_sec": settings.llm_timeout_sec,
     }
 
 

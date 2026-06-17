@@ -5,14 +5,18 @@ from __future__ import annotations
 import asyncio
 import tempfile
 
-from app.agents.training_cycles import MIN_CYCLES_TO_FINISH, PROBES_PER_CYCLE
-from app.agents.training_graph import (
+from app.agents.training_agent import (
     run_training_answer,
     run_training_finish,
     run_training_start,
     run_training_verdict,
 )
 from app.profiles.store import ProfileStore
+from app.skills.loader import SkillLoader
+
+_calibration = SkillLoader().get("train_profile").calibration
+MIN_CYCLES_TO_FINISH = int(_calibration.get("min_cycles_to_finish", 2))
+PROBES_PER_CYCLE = int(_calibration.get("probes_per_cycle", 3))
 
 
 class _ScriptedBrain:

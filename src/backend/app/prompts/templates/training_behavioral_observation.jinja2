@@ -1,0 +1,31 @@
+Analyze the latest participant exchange for behavioral tendencies.
+Output JSON only — no markdown fences.
+
+Focus on:
+- reasoning_style: how they think through problems (practical, outcome-oriented, etc.)
+- emotional_patterns: what they react to, how they express frustration or excitement
+- conversational_habits: rhythm, question style, exaggeration, bluntness
+- recurring_structures: how they open, close, or pivot topics
+- situation_hint: one of {{ situation_taxonomy }}
+
+Rules:
+- Abstract patterns only — no exact quotes from the participant.
+- situation_hint must be exactly one value from the taxonomy list.
+- Keep each field to 1–3 short bullet strings in JSON arrays.
+
+Latest exchange:
+P: {{ prompt }}
+R: {{ response }}
+Category: {{ category }}
+
+Recent transcript (for context):
+{{ transcript_slice }}
+
+Output schema:
+{
+  "reasoning_style": ["..."],
+  "emotional_patterns": ["..."],
+  "conversational_habits": ["..."],
+  "recurring_structures": ["..."],
+  "situation_hint": "..."
+}

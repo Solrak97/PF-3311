@@ -31,6 +31,7 @@ def default_profile_template(profile_id: str, source: str = "training") -> dict[
             "filler_words": [],
             "avoided_phrases": [],
         },
+        "voice_exemplars": [],
         "conversation_habits": {
             "asks_follow_up_questions": "medium",
             "validates_user_feelings": "medium",
@@ -44,8 +45,124 @@ def default_profile_template(profile_id: str, source: str = "training") -> dict[
             "facts": [],
             "reference_style": "subtle",
         },
+        "situation_modes": {},
         "constraints": dict(DEFAULT_CONSTRAINTS),
     }
+
+
+def _as_dict(value: Any, *, list_key: str = "tags") -> dict[str, Any]:
+    if isinstance(value, dict):
+        return dict(value)
+    if isinstance(value, list):
+        return {list_key: [str(item) for item in value]}
+    if value is None:
+        return {}
+    return {"value": str(value)}
+
+
+def normalize_profile_yaml(profile: dict[str, Any]) -> dict[str, Any]:
+    """Coerce LLM-extracted YAML into the expected behavioral profile shape."""
+    base = default_profile_template(str(profile.get("profile_id", "")))
+    merged = dict(base)
+    merged.update(profile)
+    merged["style"] = {**base["style"], **_as_dict(profile.get("style"), list_key="traits")}
+    lexical = _as_dict(profile.get("lexical_patterns"), list_key="patterns")
+    merged["lexical_patterns"] = {
+        **base["lexical_patterns"],
+        **lexical,
+        "common_phrases": lexical.get("common_phrases")
+        or lexical.get("patterns")
+        or base["lexical_patterns"]["common_phrases"],
+    }
+    merged["conversation_habits"] = {
+        **base["conversation_habits"],
+        **_as_dict(profile.get("conversation_habits"), list_key="habits"),
+    }
+    exemplars = profile.get("voice_exemplars")
+    if isinstance(exemplars, list):
+        merged["voice_exemplars"] = [
+            item for item in exemplars if isinstance(item, dict) and item.get("line")
+        ]
+    elif isinstance(exemplars, dict):
+        merged["voice_exemplars"] = [exemplars]
+    else:
+        merged["voice_exemplars"] = base.get("voice_exemplars", [])
+    response_structure = profile.get("response_structure")
+    if isinstance(response_structure, dict):
+        merged["response_structure"] = response_structure
+    elif isinstance(response_structure, list):
+        merged["response_structure"] = {"default_pattern": [str(item) for item in response_structure]}
+    memory = profile.get("contextual_memory")
+    if isinstance(memory, dict):
+        merged["contextual_memory"] = {**base["contextual_memory"], **memory}
+    else:
+        merged["contextual_memory"] = {
+            **base["contextual_memory"],
+            "reference_style": str(memory) if memory is not None else "subtle",
+        }
+    modes = profile.get("situation_modes")
+    if isinstance(modes, dict):
+        normalized_modes: dict[str, Any] = {}
+        for key, value in modes.items():
+            if not isinstance(value, dict):
+                continue
+            traits = value.get("traits") or []
+            strategies = value.get("response_strategy") or []
+            normalized_modes[str(key)] = {
+                "traits": [str(t).strip() for t in traits if str(t).strip()],
+                "response_strategy": [str(s).strip() for s in strategies if str(s).strip()],
+            }
+        merged["situation_modes"] = normalized_modes
+    else:
+        merged["situation_modes"] = {}
+    return merge_constraints(merged)
+
+
+def _looks_like_serialized_dict(text: str) -> bool:
+    stripped = text.strip()
+    return (
+        stripped.startswith("{")
+        and stripped.endswith("}")
+        and (":" in stripped or "'" in stripped)
+    )
+
+
+def sanitize_grounded_phrases(profile: dict[str, Any]) -> dict[str, Any]:
+    """Reject corrupted LLM output in lexical_patterns (e.g. nested dict strings)."""
+    out = dict(profile)
+    lexical = out.get("lexical_patterns")
+    if not isinstance(lexical, dict):
+        return out
+    cleaned_lexical = dict(lexical)
+    for key in ("common_phrases", "filler_words", "avoided_phrases"):
+        raw = lexical.get(key)
+        if not isinstance(raw, list):
+            continue
+        cleaned: list[str] = []
+        for item in raw:
+            if isinstance(item, dict):
+                line = str(item.get("line") or item.get("text") or "").strip()
+                if line and not _looks_like_serialized_dict(line):
+                    cleaned.append(line)
+                continue
+            text = str(item).strip()
+            if not text or _looks_like_serialized_dict(text):
+                continue
+            if len(text) > 120 and text.count(":") >= 2:
+                continue
+            cleaned.append(text)
+        cleaned_lexical[key] = cleaned
+    out["lexical_patterns"] = cleaned_lexical
+    exemplars = out.get("voice_exemplars")
+    if isinstance(exemplars, list):
+        out["voice_exemplars"] = [
+            ex
+            for ex in exemplars
+            if isinstance(ex, dict)
+            and str(ex.get("line", "")).strip()
+            and not _looks_like_serialized_dict(str(ex.get("line", "")))
+        ]
+    return out
 
 
 def parse_profile_yaml(text: str) -> dict[str, Any]:
@@ -56,7 +173,7 @@ def parse_profile_yaml(text: str) -> dict[str, Any]:
     data = yaml.safe_load(cleaned)
     if not isinstance(data, dict):
         raise ValueError("invalid_profile_yaml")
-    return data
+    return normalize_profile_yaml(data)
 
 
 def dump_profile_yaml(profile: dict[str, Any]) -> str:
@@ -74,31 +191,40 @@ def merge_constraints(profile: dict[str, Any]) -> dict[str, Any]:
 
 
 def profile_to_style_summary(profile: dict[str, Any]) -> str:
-    profile = merge_constraints(profile)
-    style = profile.get("style") or {}
-    lexical = profile.get("lexical_patterns") or {}
-    habits = profile.get("conversation_habits") or {}
-    memory = profile.get("contextual_memory") or {}
+    profile = normalize_profile_yaml(profile) if isinstance(profile, dict) else {}
+    style = profile.get("style") if isinstance(profile.get("style"), dict) else {}
+    lexical = profile.get("lexical_patterns") if isinstance(profile.get("lexical_patterns"), dict) else {}
+    memory = profile.get("contextual_memory") if isinstance(profile.get("contextual_memory"), dict) else {}
+    exemplars = profile.get("voice_exemplars") or []
     parts: list[str] = [
-        "Responde en español siguiendo este perfil conductual.",
+        "Responde en español con la voz del perfil. Demuestra el tono con palabras — no lo describas.",
         f"Formalidad: {style.get('formality', 'medium')}. "
-        f"Tono: {style.get('emotional_tone', 'conversacional')}. "
-        f"Humor: {style.get('humor_style', 'ligero')}. "
-        f"Longitud típica: {style.get('average_response_length', 'medium')}.",
+        f"Longitud típica: {style.get('average_response_length', 'medium')}. "
+        f"Pronombres: {style.get('pronouns', 'tú')}.",
     ]
     phrases = lexical.get("common_phrases") or []
     if isinstance(phrases, list) and phrases:
-        parts.append("Frases frecuentes: " + ", ".join(str(p) for p in phrases[:8]))
+        parts.append("Frases frecuentes: " + ", ".join(str(p) for p in phrases[:10]))
     fillers = lexical.get("filler_words") or []
     if isinstance(fillers, list) and fillers:
         parts.append("Muletillas: " + ", ".join(str(p) for p in fillers[:8]))
+    avoided = lexical.get("avoided_phrases") or []
+    if isinstance(avoided, list) and avoided:
+        parts.append("Evitar: " + ", ".join(str(p) for p in avoided[:6]))
+    if isinstance(exemplars, list) and exemplars:
+        lines = [
+            f"- {str(ex.get('line', '')).strip()}"
+            for ex in exemplars[:6]
+            if isinstance(ex, dict) and str(ex.get("line", "")).strip()
+        ]
+        if lines:
+            parts.append("Ejemplos de voz:\n" + "\n".join(lines))
     facts = memory.get("facts") or []
     if isinstance(facts, list) and facts:
         parts.append("Hechos contextuales seguros: " + "; ".join(str(f) for f in facts[:6]))
     parts.append(
         "No reveles que imitas a una persona concreta ni menciones el origen del perfil."
     )
-    parts.append("Hábitos: " + ", ".join(f"{k}={v}" for k, v in habits.items()))
     return "\n".join(parts)
 
 

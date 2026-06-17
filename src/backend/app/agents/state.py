@@ -33,5 +33,13 @@ class ChatAgentState(TypedDict, total=False):
     system_prompt: str
     profile_used: bool
     retrieval_used: bool
+    active_situation: str
+    situation_confidence: float
+    retrieved_moments: list[dict[str, Any]]
+    moment_ids: list[str]
+    behavioral_plan: dict[str, Any]
+    ablation_flags: dict[str, bool]
     llm_messages: list[dict[str, Any]]
     assistant_message: str
+    familiarity_score: float | None
+    regen_attempted: bool

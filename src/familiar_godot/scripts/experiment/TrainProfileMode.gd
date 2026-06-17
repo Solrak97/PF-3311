@@ -6,7 +6,9 @@ var _profile_id: LineEdit
 var _alias: LineEdit
 var _status: Label
 var _progress: Label
+var _verdict_banner: Label
 var _chat: ChatBubbleLog
+var _turn_counter: int = 0
 var _input: TextEdit
 var _send: Button
 var _save: Button
@@ -43,9 +45,9 @@ func _ready() -> void:
 	var hint := Label.new()
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.text = (
-		"Ciclos de calibración: unas preguntas y luego el agente imita cómo hablas. "
-		+ "Pulsa «Suena bien» cuando la imitación encaje, o envía una corrección para afinarla. "
-		+ "Completa al menos 2 ciclos, luego Finalizar entrevista y Guardar perfil."
+		"Charla continua: el entrevistador va armando tu perfil en vivo. "
+		+ "Cuando tenga contexto, probará imitarte (te avisa antes). "
+		+ "«Suena bien» o corrige. Tú decides cuándo terminar: Finalizar entrevista → Guardar."
 	)
 	content.add_child(hint)
 	_profile_id = ExperimentScreenHelper.add_labeled_line(content, "ID del perfil", "ej. perfil-001")
@@ -53,6 +55,11 @@ func _ready() -> void:
 	_progress = Label.new()
 	_progress.text = "Entrevista no iniciada."
 	content.add_child(_progress)
+	_verdict_banner = Label.new()
+	_verdict_banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_verdict_banner.visible = false
+	_verdict_banner.add_theme_color_override("font_color", ExperimentUI.ACCENT)
+	content.add_child(_verdict_banner)
 	var chat_panel := PanelContainer.new()
 	chat_panel.custom_minimum_size = Vector2(0, CHAT_MIN_HEIGHT)
 	chat_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -167,11 +174,15 @@ func _set_interview_controls(active: bool) -> void:
 	_interview_active = active
 	_input.editable = active and not _interview_busy
 	_send.disabled = not active or _interview_busy
-	_skip.disabled = not active or _interview_busy or _interview_complete or _awaiting_verdict
+	if _awaiting_verdict:
+		_skip.text = "Seguir charlando"
+		_skip.disabled = not active or _interview_busy
+	else:
+		_skip.text = "Omitir"
+		_skip.disabled = not active or _interview_busy or _interview_complete
 	_accept.disabled = not active or _interview_busy or _interview_complete or not _awaiting_verdict
 	_finish.disabled = (
-		not active or _interview_busy or _interview_complete
-		or _cycle_count < _min_cycles or _awaiting_verdict
+		not active or _interview_busy or _interview_complete or _awaiting_verdict
 	)
 	_start.disabled = active and not _interview_complete
 	_save.disabled = not _interview_complete or _interview_busy
@@ -185,6 +196,7 @@ func _on_start() -> void:
 		_status.text = "El ID del perfil es obligatorio."
 		return
 	_chat.clear_log()
+	_turn_counter = 0
 	_samples.clear()
 	_conversation_history.clear()
 	_prompt_index = 0
@@ -203,7 +215,7 @@ func _on_send() -> void:
 	var text := _input.text.strip_edges()
 	if _awaiting_verdict:
 		if text.is_empty():
-			_status.text = "Describe qué cambiarías o pulsa Suena bien."
+			_status.text = "Suena bien, una corrección breve, o Seguir charlando."
 			return
 		_submit_verdict("refine", text)
 		return
@@ -214,7 +226,12 @@ func _on_send() -> void:
 
 
 func _on_skip() -> void:
-	if not _interview_active or _interview_busy or _interview_complete or _awaiting_verdict:
+	if not _interview_active or _interview_busy:
+		return
+	if _awaiting_verdict:
+		_submit_verdict("skip", "")
+		return
+	if _interview_complete:
 		return
 	_submit_turn("", true)
 
@@ -234,7 +251,7 @@ func _history_append(role: String, content: String) -> void:
 
 func _submit_turn(user_message: String, skip: bool) -> void:
 	var display := user_message if not skip else "(omitido)"
-	_append_user(display)
+	_append_user(display, skip)
 	if skip:
 		_history_append("user", "[skipped]")
 	else:
@@ -273,7 +290,7 @@ func _submit_verdict(verdict: String, user_message: String) -> void:
 func _on_finish() -> void:
 	if not _interview_active or _interview_busy or _interview_complete:
 		return
-	if _cycle_count < _min_cycles:
+	if _min_cycles > 0 and _cycle_count < _min_cycles:
 		_status.text = "Completa al menos %d ciclos de calibración antes de finalizar." % _min_cycles
 		return
 	_interview_busy = true
@@ -331,22 +348,60 @@ func _apply_interview_state(data: Dictionary) -> void:
 		mode_hint = " — revisa la imitación: Suena bien o envía corrección"
 	elif _turn_mode == "probe":
 		mode_hint = " — responde con naturalidad"
-	_progress.text = "Ciclo %d — %s — Pregunta %s%s" % [
-		_cycle_index,
-		_cycle_label if not _cycle_label.is_empty() else "calibración",
-		_probe_progress,
-		mode_hint,
-	]
-	_progress.text += " (%d/%d ciclos completados)" % [_cycle_count, _min_cycles]
+	var cal_mode := str(data.get("calibration_mode", ""))
+	if cal_mode == "continuous":
+		var mirrors := int(data.get("mirror_count", _cycle_count))
+		_progress.text = "Charla continua — %s · %d imitaciones aceptadas%s" % [
+			_probe_progress,
+			mirrors,
+			mode_hint,
+		]
+	else:
+		_progress.text = "Ciclo %d — %s — Pregunta %s%s" % [
+			_cycle_index,
+			_cycle_label if not _cycle_label.is_empty() else "calibración",
+			_probe_progress,
+			mode_hint,
+		]
+		_progress.text += " (%d/%d ciclos completados)" % [_cycle_count, _min_cycles]
+	var style_summary := str(data.get("style_summary", "")).strip_edges()
+	if not style_summary.is_empty():
+		_status.text = "Borrador de perfil actualizado."
 	if _interview_complete:
 		_progress.text += " — listo para guardar"
 		_status.text = "Entrevista completa. Pulsa Guardar perfil."
+	_update_verdict_banner()
 	_set_interview_controls(true)
 	_focus_input()
 
 
-func _append_user(text: String) -> void:
-	_chat.append_user(text)
+func _update_verdict_banner() -> void:
+	if _verdict_banner == null:
+		return
+	if _awaiting_verdict:
+		_verdict_banner.text = (
+			"Fase de imitación — lee «Así lo dirías tú». "
+			+ "«Suena bien» si encaja, una corrección si casi, o «Seguir charlando» para omitir y seguir la entrevista."
+		)
+		_verdict_banner.visible = true
+	elif _turn_mode == "probe" and _interview_active and not _interview_complete:
+		_verdict_banner.text = "Responde con naturalidad, como en un chat real."
+		_verdict_banner.visible = true
+	else:
+		_verdict_banner.visible = false
+
+
+func _bubble_header(turn_mode: String) -> String:
+	var role := "Entrevistador"
+	if turn_mode in ["mirror", "refine"]:
+		role = "Imitación"
+	return "%s · Ciclo %d · %s" % [role, _cycle_index, _probe_progress]
+
+
+func _append_user(text: String, skipped: bool = false) -> void:
+	_turn_counter += 1
+	var header := "Tú · omitido" if skipped else "Tú · turno %d" % _turn_counter
+	_chat.append_user(text, header)
 	_scroll_chat_to_bottom()
 
 
@@ -354,7 +409,9 @@ func _append_assistant(text: String, turn_mode: String = "probe") -> void:
 	var bubble_mode := turn_mode
 	if turn_mode in ["mirror", "refine"]:
 		bubble_mode = "mirror"
-	_chat.append_assistant(text, bubble_mode)
+	elif turn_mode == "probe":
+		bubble_mode = "probe"
+	_chat.append_assistant(text, bubble_mode, _bubble_header(turn_mode))
 	_scroll_chat_to_bottom()
 
 

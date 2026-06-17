@@ -1,0 +1,105 @@
+{
+  "profile_id": "baseline_sassy_gf",
+  "scenario_id": "daily_conversation",
+  "participant_mode": "scripted",
+  "llm_model": "gemma4:latest",
+  "llm_provider": "ollama",
+  "pipeline_fast": true,
+  "run_at": "2026-06-15T19:24:20.660369+00:00",
+  "transcript": [
+    {
+      "turn": 1,
+      "user": "",
+      "assistant": "",
+      "conversation_open": true,
+      "participant_mode": "scripted",
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 4.0,
+          "phrasing_similarity": 4.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 4.0,
+          "reminds_me_of_person": 4.0,
+          "naturalness": 4.0,
+          "identity_leakage_absent": 4.0,
+          "behavioral_plan_match": 4.0
+        },
+        "rationale": "judge returned non-JSON response",
+        "raw": ""
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "baseline_sassy_gf",
+        "scenario_id": "daily_conversation",
+        "conversation_open": true,
+        "profile_used": true,
+        "retrieval_used": true,
+        "active_situation": "open",
+        "situation_confidence": 0.0,
+        "moment_ids": [
+          "m-ex-001",
+          "m-ex-002",
+          "m-ex-003"
+        ],
+        "has_behavioral_plan": true,
+        "regen_attempted": false,
+        "familiarity_score": null,
+        "control_profile": false,
+        "timestamp": "2026-06-15T19:23:54.657333+00:00"
+      }
+    },
+    {
+      "turn": 2,
+      "user": "Pues hoy estuvo tranquilo, trabajé un rato y ya estoy en casa.",
+      "assistant": "",
+      "conversation_open": false,
+      "participant_mode": "scripted",
+      "judge": {
+        "validator_id": "ai-judge",
+        "scores": {
+          "tone_similarity": 4.0,
+          "phrasing_similarity": 4.0,
+          "response_length_similarity": 4.0,
+          "behavioral_consistency": 4.0,
+          "reminds_me_of_person": 4.0,
+          "naturalness": 4.0,
+          "identity_leakage_absent": 4.0,
+          "behavioral_plan_match": 4.0
+        },
+        "rationale": "judge returned non-JSON response",
+        "raw": ""
+      },
+      "metadata": {
+        "condition": "A",
+        "profile_id": "baseline_sassy_gf",
+        "scenario_id": "daily_conversation",
+        "conversation_open": false,
+        "profile_used": true,
+        "retrieval_used": true,
+        "active_situation": "open",
+        "situation_confidence": 0.2,
+        "moment_ids": [
+          "m-ex-001",
+          "m-ex-002",
+          "m-ex-003"
+        ],
+        "has_behavioral_plan": true,
+        "regen_attempted": false,
+        "familiarity_score": null,
+        "control_profile": false,
+        "timestamp": "2026-06-15T19:24:13.195343+00:00"
+      }
+    }
+  ],
+  "summary": {
+    "turns": 2,
+    "participant_mode": "scripted",
+    "mean_tone_similarity": 4.0,
+    "mean_phrasing_similarity": 4.0,
+    "mean_behavioral_consistency": 4.0,
+    "mean_reminds_me_of_person": 4.0,
+    "mean_naturalness": 4.0,
+    "mean_identity_leakage_absent": 4.0
+  }
+}

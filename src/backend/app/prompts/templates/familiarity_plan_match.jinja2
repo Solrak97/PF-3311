@@ -1,0 +1,17 @@
+Score how well the agent response follows the behavioral plan and profile.
+Output JSON only: {"score": 0-10, "notes": "..."}
+
+Behavioral plan:
+{{ plan_json }}
+
+Profile:
+{{ profile_yaml }}
+
+Agent response:
+{{ agent_response }}
+
+Score criteria:
+- 0-3: ignores plan tone/structure; generic assistant voice
+- 4-6: partial match; some profile cues
+- 7-9: strong behavioral match; plan strategies visible
+- 10: excellent match without meta labels

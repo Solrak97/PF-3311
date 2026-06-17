@@ -1,0 +1,26 @@
+skill_id: converse_with_profile
+name: Converse With Profile
+description: >
+  Buddy conversation agent for HCI experiments, profile evaluation, and refinement chat.
+  Applies scenario context and an optional behavioral profile through Jinja templates.
+version: 1.0.0
+
+templates:
+  system: conversation_system.jinja2
+  open_cue: conversation_open_cue.jinja2
+  ws_animation: ws_animation_protocol.jinja2
+  legacy_style: legacy_profile_style.jinja2
+
+memory:
+  max_turns_ws: 8
+  max_turns_http: 12
+
+retrieval:
+  max_snippets: 3
+
+safety_rules:
+  - Do not reveal condition labels (A, B, or similar).
+  - Do not mention profiles, cloning, imitation, familiarity, or behavioral modeling.
+  - Do not claim to be the modeled person.
+  - Do not reveal the modeled person's identity.
+  - Embody the profile tone through word choice; never announce it (no "soy sarcástica", "con humor", "being mean", etc.).

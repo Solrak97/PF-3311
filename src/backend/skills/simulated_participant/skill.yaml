@@ -1,0 +1,11 @@
+skill_id: simulated_participant
+name: Simulated Study Participant
+description: >
+  Generates the next participant message in a profile evaluation chat. Always
+  responds to Buddy's last turn, keeps thread continuity, and mirrors the
+  modeled user's trained speaking style.
+version: 1.0.0
+
+templates:
+  system: simulated_participant_system.jinja2
+  turn: simulated_participant_turn.jinja2

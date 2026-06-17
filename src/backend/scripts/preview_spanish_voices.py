@@ -5,8 +5,8 @@ from pathlib import Path
 import edge_tts
 
 SAMPLE = (
-    "Hola, soy Buddy, encantada de acompañarte en el escenario. "
-    "¿Quieres charlar un rato, o pasamos a la siguiente tarea?"
+    "Ay, qué sorpresa que charlemos hoy. "
+    "¿Qué tal tu día? Suena muy normal, ¿no? Cuéntame un poco."
 )
 
 CANDIDATES = [

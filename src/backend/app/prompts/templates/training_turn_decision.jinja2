@@ -1,0 +1,26 @@
+Decide the interviewer's next step for a Spanish profile calibration chat.
+
+Live profile draft (YAML):
+{{ profile_yaml }}
+
+Recent answers since last accepted/skipped imitation:
+{{ recent_summary }}
+
+Stats:
+- Answers since last mirror: {{ samples_since_mirror }} (need at least {{ min_before_mirror }} before considering mirror)
+- Accepted imitations so far: {{ mirror_count }}
+- Total samples: {{ total_samples }}
+- Profile phrases captured: {{ phrase_count }}
+
+DEFAULT to "probe" unless you are confident.
+
+Choose "mirror" ONLY if ALL are true:
+- At least {{ min_before_mirror }} substantive answers since last mirror
+- At least 3 distinct voice cues in the profile (phrases or exemplars)
+- Answers show varied situations (not all the same topic)
+- You could quote their exact words in an imitation
+
+Otherwise choose "probe" — keep learning their voice.
+
+Output ONLY JSON:
+{"action": "probe" | "mirror", "reason": "brief Spanish explanation"}

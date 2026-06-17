@@ -29,6 +29,8 @@ var _ratings: Array[Dictionary] = []
 var _conversation_history: Array = []
 var _chat_busy: bool = false
 var _pending_user_message: String = ""
+var _turn_counter: int = 0
+var _active_profile_label: String = "Perfil"
 var _loaded: bool = false
 var _local_ids: Array[String] = []
 var _pending_validation_start: bool = false
@@ -62,12 +64,22 @@ func _ready() -> void:
 	_summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_summary_scroll.add_child(_summary)
 	var chat_label := Label.new()
-	chat_label.text = "Chat de prueba (perfil condición A)"
+	chat_label.text = "Chat de prueba (condición A)"
 	content.add_child(chat_label)
+	var chat_panel := PanelContainer.new()
+	chat_panel.custom_minimum_size = Vector2(0, CHAT_MIN_HEIGHT)
+	chat_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	chat_panel.add_theme_stylebox_override("panel", ExperimentUI.chat_panel_style())
+	content.add_child(chat_panel)
+	var chat_margin := MarginContainer.new()
+	chat_margin.add_theme_constant_override("margin_left", 12)
+	chat_margin.add_theme_constant_override("margin_top", 10)
+	chat_margin.add_theme_constant_override("margin_right", 12)
+	chat_margin.add_theme_constant_override("margin_bottom", 10)
+	chat_panel.add_child(chat_margin)
 	_chat = ChatBubbleLog.new()
-	_chat.custom_minimum_size = Vector2(0, CHAT_MIN_HEIGHT)
 	_chat.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_child(_chat)
+	chat_margin.add_child(_chat)
 	var input_panel := PanelContainer.new()
 	input_panel.add_theme_stylebox_override("panel", ExperimentUI.viewport_panel())
 	content.add_child(input_panel)
@@ -142,6 +154,7 @@ func _apply_profile_options(profile_ids: Array[String]) -> void:
 func _reset_chat() -> void:
 	_conversation_history.clear()
 	_pending_user_message = ""
+	_turn_counter = 0
 	_chat.clear_log()
 	_input.clear()
 	_chat_busy = false
@@ -379,12 +392,15 @@ func _save_local_validation(payload: Dictionary) -> void:
 
 
 func _append_user(text: String) -> void:
-	_chat.append_user(text)
+	_turn_counter += 1
+	_chat.append_user(text, "Tú · turno %d" % _turn_counter)
 	_scroll_chat_to_bottom()
 
 
 func _append_assistant(text: String) -> void:
-	_chat.append_assistant(text, "profile")
+	_turn_counter += 1
+	var header := "%s · turno %d" % [_active_profile_label, _turn_counter]
+	_chat.append_assistant(text, "profile", header)
 	_scroll_chat_to_bottom()
 
 
@@ -485,6 +501,9 @@ func _on_api_finished(action: String, success: bool, data: Variant, error: Strin
 				_status.text = "No se pudo cargar el perfil (%s)." % error
 				return
 			_loaded = true
+			_active_profile_label = _selected_profile_id()
+			if _active_profile_label.is_empty():
+				_active_profile_label = "Perfil"
 			_summary.text = String(data.get("style_summary", "(sin resumen)"))
 			if data.get("yaml_profile") is Dictionary:
 				var yaml := data.get("yaml_profile") as Dictionary

@@ -54,6 +54,10 @@ func post_experiment_chat(payload: Dictionary) -> void:
 	_post_json("/experiment/chat", payload, "experiment_chat")
 
 
+func post_questionnaire(payload: Dictionary) -> void:
+	_post_json("/experiment/questionnaire", payload, "questionnaire")
+
+
 func interview_start(profile_id: String, modeled_user_alias: String) -> void:
 	training_start(profile_id, modeled_user_alias, "interview_start")
 
@@ -245,6 +249,18 @@ func _emit_mock(action: String, body: Dictionary) -> void:
 						"profile_used": true,
 						"retrieval_used": false,
 					},
+				},
+				""
+			)
+		"questionnaire":
+			request_finished.emit(
+				action,
+				true,
+				{
+					"ok": true,
+					"id": 1,
+					"run_session_id": body.get("run_session_id", ""),
+					"session_id": body.get("session_id", ""),
 				},
 				""
 			)

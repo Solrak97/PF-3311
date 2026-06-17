@@ -52,6 +52,7 @@ var _buddy_reply_open: bool = false
 @onready var _top_row: HBoxContainer = %TopRow
 @onready var _pill_sep: VSeparator = %TopRow/ConditionPill/PillMargin/PillPad/PillSep
 @onready var _out: ChatBubbleLog = %Output
+@onready var _chat_status: Label = %ChatStatusLabel
 @onready var _anim: Label = %AnimLabel
 @onready var _player: AudioStreamPlayer = %AudioStreamPlayer
 @onready var _avatar_ctl: Node = $AvatarController
@@ -196,7 +197,7 @@ func _ready() -> void:
 		_on_send()
 	)
 	_seconds_left = session_duration_sec
-	_update_timer_label()
+	_hide_session_timer_ui()
 	_buddy = _resolve_buddy()
 	if is_instance_valid(_buddy):
 		var presenter := get_node_or_null("AvatarPresenter")
@@ -610,7 +611,14 @@ func _exit_tree() -> void:
 	_send_session_end("exit")
 
 
+func _hide_session_timer_ui() -> void:
+	_timer_label.visible = false
+	_pill_sep.visible = false
+
+
 func _update_timer_label() -> void:
+	if not _timer_label.visible:
+		return
 	var minutes := int(_seconds_left / 60.0)
 	var seconds := _seconds_left % 60
 	_timer_label.text = "%02d:%02d" % [minutes, seconds]
@@ -645,8 +653,16 @@ func _on_json_packet(pkt: PackedByteArray) -> void:
 			var delta := String(payload.get("text", ""))
 			_assistant_reply_buffer += delta
 			_append_output(delta)
+			_set_status("Escribiendo…")
 		"llm.done":
 			_close_buddy_bubble()
+			_turn_busy = false
+			_send.disabled = false
+			_focus_chat_input()
+			if _expected_tts_chunks > _received_tts_chunks:
+				_set_status("Hablando…")
+			else:
+				_set_status("Listo")
 			if _experiment_run and not _assistant_reply_buffer.is_empty():
 				ExperimentSessionManager.append_message("assistant", _assistant_reply_buffer)
 				ExperimentSessionManager.log_run_event(
@@ -667,7 +683,14 @@ func _on_json_packet(pkt: PackedByteArray) -> void:
 			var total: int = int(payload.get("total", 1))
 			var nbytes: int = int(payload.get("bytes", 0))
 			var kb := float(nbytes) / 1024.0
-			_set_status("Audio %d/%d (%.1f KB)…" % [idx + 1, total, kb])
+			_set_status("Hablando… %d/%d (%.1f KB)" % [idx + 1, total, kb])
+		"tts.audio_ready":
+			var ready_url := str(payload.get("url", ""))
+			if not ready_url.is_empty():
+				_queue_tts_http_urls([ready_url])
+				_expected_tts_chunks += 1
+				_turn_end_pending = true
+				_set_status("Hablando…")
 		"tts.audio_chunk":
 			_ingest_tts_audio_payload(payload)
 		"tts.error":
@@ -812,10 +835,18 @@ func _finish_turn(payload: Dictionary) -> void:
 	var url_count := 0
 	var urls: Variant = payload.get("tts_audio_urls", [])
 	if urls is Array:
-		url_count = _queue_tts_http_urls(urls)
+		for u in urls:
+			var path := str(u)
+			if path.is_empty():
+				continue
+			_queue_tts_http_urls([path])
+			url_count += 1
 	var b64_played := _play_tts_audio_b64_list(payload.get("tts_audio_b64", []))
-	_expected_tts_chunks = maxi(int(payload.get("tts_chunk_count", 0)), url_count + b64_played)
-	_received_tts_chunks = b64_played
+	var end_count := int(payload.get("tts_chunk_count", 0))
+	_expected_tts_chunks = maxi(maxi(_expected_tts_chunks, end_count), url_count + b64_played)
+	_received_tts_chunks = mini(_received_tts_chunks, _expected_tts_chunks)
+	if b64_played > _received_tts_chunks:
+		_received_tts_chunks = b64_played
 	_tts_log(
 		"turn.end expected=%d b64_played=%d http_queued=%d audio_errors=%s"
 		% [_expected_tts_chunks, b64_played, url_count, str(payload.get("audio_errors", []))]
@@ -848,6 +879,7 @@ func _try_unlock_turn_after_audio() -> void:
 	_turn_end_pending = false
 	_turn_busy = false
 	_send.disabled = false
+	_set_status("Listo")
 	_focus_chat_input()
 
 
@@ -881,7 +913,7 @@ func _append_output(text: String) -> void:
 	if text.is_empty():
 		return
 	if not _buddy_reply_open:
-		_out.begin_assistant("Buddy", "buddy")
+		_out.begin_assistant(_buddy_bubble_label(), "buddy")
 		_buddy_reply_open = true
 	_out.append_assistant_delta(text)
 
@@ -1071,8 +1103,20 @@ func _apply_bot_animation(clip_id: String, blend: float) -> void:
 		_avatar_ctl.call("play_reaction", clip_id, blend)
 
 
-func _set_status(_t: String) -> void:
-	pass
+func _buddy_bubble_label() -> String:
+	if _experiment_run:
+		return ExperimentSessionManager.participant_interaction_label()
+	if condition == "A":
+		var pid := _active_profile_id()
+		if not pid.is_empty():
+			return "Buddy · %s" % pid
+		return "Buddy · Perfil A"
+	return "Buddy · Control"
+
+
+func _set_status(t: String) -> void:
+	if _chat_status != null:
+		_chat_status.text = t.strip_edges()
 
 
 func _on_window_resized() -> void:

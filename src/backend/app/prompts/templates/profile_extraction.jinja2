@@ -1,0 +1,28 @@
+Extract a behavioral familiarity profile as YAML from the training samples below.
+
+GOAL: capture how this person SOUNDS in Spanish — grounded in their actual words, not psychological labels.
+
+Rules:
+- `common_phrases` and `filler_words`: ONLY strings that appear verbatim (or near-verbatim) in participant answers or accepted mirror imitations. Minimum 5 phrases if the data supports it.
+- `voice_exemplars`: 3–8 short example lines copied or lightly trimmed from the best samples (prefer `mirror_calibration` and banter/emotional categories). Each item: `{context: "...", line: "..."}`.
+- `style.formality`, `style.average_response_length`, `style.pronouns`: observable register only (informal/formal, short/medium/long, tú/usted).
+- Do NOT use trait adjectives in `style` such as sarcástico, pícaro, mordaz, passive-aggressive, annoying. If you cannot ground a trait in a quoted line, omit it.
+- `conversation_habits`: prefer concrete cues ("often opens with ay + rhetorical question") over abstract keys like teasing=high. Omit habit keys you cannot ground.
+- `response_structure`: optional; if present use 2–3 real mini-lines from data, not abstract step names.
+- Weight accepted mirror imitations and user corrections higher than neutral probe answers.
+- Do not invent sensitive personal data, names, or relationships not in the samples.
+- `situation_modes`: map situation keys (routine_register, emotional_reaction, banter_advice, discourse, comforting, brainstorming, teaching) to `{traits: [...], response_strategy: [...]}`. Ground traits in observed behavior, not trait adjectives.
+- Output ONLY valid YAML. Fields: profile_id, profile_version, source, style, lexical_patterns, voice_exemplars, conversation_habits, response_structure, contextual_memory, situation_modes, constraints.
+{% if observations %}
+
+Behavioral observations (abstract, no quotes):
+{{ observations }}
+{% endif %}
+{% if draft_profile %}
+
+Current draft profile (reconcile and improve — fix corrupted phrases):
+{{ draft_profile }}
+{% endif %}
+
+Samples:
+{{ samples }}

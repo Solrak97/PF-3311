@@ -1,0 +1,10 @@
+Update the behavioral profile YAML conservatively from modeled-user feedback.
+Do not overfit to one correction. Preserve all constraints (do_not_claim_to_be_person, do_not_reveal_profile_source, avoid_identity_leakage).
+If a rewrite is provided, treat it as a high-value positive phrasing example.
+Output ONLY valid YAML.
+
+Current profile:
+{{ profile }}
+
+Feedback:
+{{ feedback }}

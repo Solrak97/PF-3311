@@ -8,9 +8,18 @@ from app.config import settings
 class EdgeTtsEngine:
     def __init__(self, voice: str | None = None) -> None:
         self._voice = voice or settings.edge_tts_voice
+        self._rate = settings.edge_tts_rate
+        self._pitch = settings.edge_tts_pitch
+        self._volume = settings.edge_tts_volume
 
     async def synthesize_mp3(self, text: str) -> bytes:
-        communicate = edge_tts.Communicate(text, self._voice)
+        communicate = edge_tts.Communicate(
+            text,
+            self._voice,
+            rate=self._rate,
+            pitch=self._pitch,
+            volume=self._volume,
+        )
         out = bytearray()
         async for chunk in communicate.stream():
             if chunk["type"] == "audio" and chunk.get("data"):

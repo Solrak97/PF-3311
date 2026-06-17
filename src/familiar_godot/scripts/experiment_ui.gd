@@ -13,8 +13,11 @@ const ACCENT_B := Color(0.45, 0.58, 0.85, 1.0)
 const BUBBLE_USER_BG := Color(1.0, 0.93, 0.88, 1.0)
 const BUBBLE_ASSISTANT_BG := Color(0.96, 0.97, 0.99, 1.0)
 const BUBBLE_MIRROR_BG := Color(0.94, 0.91, 0.98, 1.0)
+const BUBBLE_SKIP_BG := Color(0.97, 0.97, 0.98, 1.0)
+const BUBBLE_SYSTEM_BG := Color(0.95, 0.96, 0.98, 1.0)
 const BUBBLE_LABEL_MUTED := Color(0.54, 0.56, 0.62, 1.0)
 const BUBBLE_MIRROR_LABEL := Color(0.36, 0.29, 0.48, 1.0)
+const BUBBLE_SYSTEM_LABEL := Color(0.42, 0.46, 0.54, 1.0)
 const BUBBLE_RADIUS := 16
 const BUBBLE_GAP := 12
 const BUBBLE_MAX_WIDTH_RATIO := 0.72
@@ -219,8 +222,10 @@ static func assistant_label_for_kind(kind: String, override_label: String = "") 
 			return "Perfil"
 		"buddy":
 			return "Buddy"
-		"finish", "interview":
+		"probe", "finish", "interview":
 			return "Entrevistador"
+		"system":
+			return "Sistema"
 		_:
 			return "Asistente"
 
@@ -229,20 +234,23 @@ static func assistant_colors_for_kind(kind: String) -> Dictionary:
 	match kind:
 		"mirror":
 			return {"bg": BUBBLE_MIRROR_BG, "label": BUBBLE_MIRROR_LABEL}
+		"system":
+			return {"bg": BUBBLE_SYSTEM_BG, "label": BUBBLE_SYSTEM_LABEL}
 		_:
 			return {"bg": BUBBLE_ASSISTANT_BG, "label": BUBBLE_LABEL_MUTED}
 
 
-static func make_user_bubble(text: String, max_width: float) -> Control:
+static func make_user_bubble(text: String, max_width: float, header: String = "Tú") -> Control:
+	var bg := BUBBLE_SKIP_BG if header.contains("omitido") else BUBBLE_USER_BG
 	return _make_bubble_row(
-		_make_bubble_panel("Tú", text, BUBBLE_USER_BG, BUBBLE_LABEL_MUTED, max_width, true),
+		_make_bubble_panel(header, text, bg, BUBBLE_LABEL_MUTED, max_width, true),
 		true
 	)
 
 
-static func make_assistant_bubble(text: String, kind: String, max_width: float) -> Control:
+static func make_assistant_bubble(text: String, kind: String, max_width: float, header: String = "") -> Control:
 	var colors := assistant_colors_for_kind(kind)
-	var label := assistant_label_for_kind(kind)
+	var label := assistant_label_for_kind(kind, header)
 	return _make_bubble_row(
 		_make_bubble_panel(label, text, colors["bg"], colors["label"], max_width, false),
 		false

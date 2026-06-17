@@ -7,20 +7,15 @@ from langgraph.graph import END, START, StateGraph
 
 from app.agents.brain_adapter import complete_chat
 from app.agents.profile_state import BehavioralProfileState, default_training_state
-from app.agents.prompts import PROFILE_REFINEMENT_PROMPT
+from app.prompts.renderer import render_template
+from app.skills.loader import SkillLoader
+
+TRAINING_SKILL_ID = "train_profile"
 from app.experiment.chat import run_experiment_chat
 from app.profiles.store import ProfileStore
 from app.profiles.yaml_profile import parse_profile_yaml, profile_to_style_summary
 
-RATING_KEYS = (
-    "tone_similarity",
-    "phrasing_similarity",
-    "response_length_similarity",
-    "behavioral_consistency",
-    "reminds_me_of_person",
-    "naturalness",
-    "identity_leakage_absent",
-)
+from app.agents.rating_keys import RATING_KEYS
 
 
 def _utc_now() -> str:
@@ -89,15 +84,15 @@ def classify_feedback(state: BehavioralProfileState) -> BehavioralProfileState:
 async def update_behavioral_profile(brain: Any, state: BehavioralProfileState) -> BehavioralProfileState:
     profile = state.get("behavioral_profile") or {}
     feedback = (state.get("refinement_feedback") or [])[-1]
+    skill = SkillLoader().get(TRAINING_SKILL_ID)
+    prompt = render_template(
+        skill.templates.get("refine_profile", "profile_refinement"),
+        profile=profile,
+        feedback=feedback,
+    )
     messages = [
         {"role": "system", "content": "Output valid YAML only."},
-        {
-            "role": "user",
-            "content": PROFILE_REFINEMENT_PROMPT.format(
-                profile=profile,
-                feedback=feedback,
-            ),
-        },
+        {"role": "user", "content": prompt},
     ]
     raw = await complete_chat(brain, messages)
     try:

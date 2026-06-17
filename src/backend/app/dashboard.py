@@ -570,6 +570,20 @@ def build_dashboard_router(
     async def session_turns(session_id: str) -> list[dict]:
         return store.list_turns_for_session(session_id=session_id)
 
+    @router.get("/questionnaires")
+    async def questionnaires(
+        limit: int = Query(default=500, ge=1, le=5000),
+        participant_id: str | None = None,
+        run_session_id: str | None = None,
+        session_id: str | None = None,
+    ) -> list[dict]:
+        return store.list_questionnaire_responses(
+            limit=limit,
+            participant_id=participant_id,
+            run_session_id=run_session_id,
+            session_id=session_id,
+        )
+
     @router.delete("/sessions/{session_id}")
     async def delete_session(session_id: str) -> dict:
         session_id = session_id.strip()

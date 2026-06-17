@@ -2,6 +2,7 @@ class_name ChatBubbleLog
 extends ScrollContainer
 
 const MAX_CHARS := 12_000
+const STICK_BOTTOM_THRESHOLD := 48.0
 
 var _list: VBoxContainer
 var _streaming_body: Label
@@ -35,7 +36,7 @@ func clear_log() -> void:
 		child.queue_free()
 	_streaming_body = null
 	_char_count = 0
-	_scroll_to_bottom()
+	_scroll_to_bottom(true)
 
 
 func is_empty() -> bool:
@@ -43,12 +44,16 @@ func is_empty() -> bool:
 	return _list.get_child_count() == 0 and _streaming_body == null
 
 
-func append_user(text: String) -> void:
+func append_user(text: String, header: String = "Tú") -> void:
 	_ensure_list()
 	_finish_streaming()
-	_list.add_child(ExperimentUI.make_user_bubble(text, _bubble_max_width()))
+	_list.add_child(ExperimentUI.make_user_bubble(text, _bubble_max_width(), header))
 	_track_chars(text.length() + 24)
 	_scroll_to_bottom()
+
+
+func append_system(text: String) -> void:
+	append_assistant(text, "system", "Sistema")
 
 
 func begin_assistant(label: String = "Buddy", kind: String = "buddy") -> void:
@@ -74,10 +79,10 @@ func finish_assistant() -> void:
 	_streaming_body = null
 
 
-func append_assistant(text: String, kind: String = "interview") -> void:
+func append_assistant(text: String, kind: String = "interview", header: String = "") -> void:
 	_ensure_list()
 	_finish_streaming()
-	_list.add_child(ExperimentUI.make_assistant_bubble(text, kind, _bubble_max_width()))
+	_list.add_child(ExperimentUI.make_assistant_bubble(text, kind, _bubble_max_width(), header))
 	_track_chars(text.length() + 24)
 	_scroll_to_bottom()
 
@@ -98,8 +103,16 @@ func _sync_bubble_widths() -> void:
 		ExperimentUI.set_bubble_max_width(child, max_w)
 
 
-func _scroll_to_bottom() -> void:
-	call_deferred("_scroll_to_bottom_deferred")
+func _should_auto_scroll() -> bool:
+	var bar := get_v_scroll_bar()
+	if bar == null or bar.max_value <= 0.0:
+		return true
+	return bar.value >= bar.max_value - STICK_BOTTOM_THRESHOLD
+
+
+func _scroll_to_bottom(force: bool = false) -> void:
+	if force or _should_auto_scroll():
+		call_deferred("_scroll_to_bottom_deferred")
 
 
 func _scroll_to_bottom_deferred() -> void:

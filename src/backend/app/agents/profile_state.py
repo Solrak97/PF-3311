@@ -42,6 +42,7 @@ class BehavioralProfileState(TypedDict, total=False):
     current_cycle_data: dict[str, Any]
     cycles_completed: list[dict[str, Any]]
     signals_covered: dict[str, bool]
+    observations: list[dict[str, Any]]
     calibration_cycles: bool
     sample_saved: bool
     passed: bool
@@ -78,12 +79,13 @@ def default_training_state(profile_id: str, modeled_user_alias: str = "") -> Beh
         "cycle_signal_target": "",
         "cycle_label": "",
         "probe_questions_asked": 0,
-        "probe_questions_planned": 3,
+        "probe_questions_planned": 5,
         "refine_round": 0,
         "awaiting_verdict": False,
         "last_imitation": "",
         "current_cycle_data": {"probe": [], "imitation_attempts": []},
         "cycles_completed": [],
         "signals_covered": {},
+        "observations": [],
         "calibration_cycles": True,
     }

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -39,6 +40,7 @@ class TurnRecord:
     profile_id: str = ""
     interaction_index: int = 0
     scenario_id: str = ""
+    turn_metadata: dict[str, Any] | None = None
 
 
 class SQLiteExperimentStore:
@@ -106,6 +108,42 @@ class SQLiteExperimentStore:
                 ON sessions(participant_id, started_at);
                 """
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS questionnaire_responses (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    run_session_id TEXT NOT NULL,
+                    session_id TEXT NOT NULL,
+                    participant_id TEXT NOT NULL,
+                    condition TEXT NOT NULL,
+                    order_group TEXT NOT NULL,
+                    interaction_index INTEGER NOT NULL,
+                    questionnaire_after_interaction INTEGER NOT NULL,
+                    profile_id TEXT NOT NULL DEFAULT '',
+                    scenario_id TEXT NOT NULL DEFAULT '',
+                    responses_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_questionnaires_run
+                ON questionnaire_responses(run_session_id, interaction_index);
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_questionnaires_participant
+                ON questionnaire_responses(participant_id, created_at);
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_questionnaires_session
+                ON questionnaire_responses(session_id);
+                """
+            )
             self._migrate_turns_columns(conn)
 
     def _migrate_turns_columns(self, conn: sqlite3.Connection) -> None:
@@ -116,6 +154,8 @@ class SQLiteExperimentStore:
             conn.execute("ALTER TABLE turns ADD COLUMN interaction_index INTEGER NOT NULL DEFAULT 0")
         if "scenario_id" not in cols:
             conn.execute("ALTER TABLE turns ADD COLUMN scenario_id TEXT NOT NULL DEFAULT ''")
+        if "turn_metadata" not in cols:
+            conn.execute("ALTER TABLE turns ADD COLUMN turn_metadata TEXT NOT NULL DEFAULT '{}'")
 
     def record_session_start(
         self,
@@ -180,6 +220,91 @@ class SQLiteExperimentStore:
                 (now, duration_sec, final_count, end_reason, session_id),
             )
 
+    def insert_questionnaire_response(
+        self,
+        *,
+        run_session_id: str,
+        session_id: str,
+        participant_id: str,
+        condition: str,
+        order_group: str,
+        interaction_index: int,
+        questionnaire_after_interaction: int,
+        profile_id: str = "",
+        scenario_id: str = "",
+        responses: dict[str, Any],
+    ) -> int:
+        now = _utc_now_iso()
+        with self._connect() as conn:
+            cur = conn.execute(
+                """
+                INSERT INTO questionnaire_responses (
+                    run_session_id, session_id, participant_id, condition, order_group,
+                    interaction_index, questionnaire_after_interaction, profile_id,
+                    scenario_id, responses_json, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    run_session_id,
+                    session_id,
+                    participant_id,
+                    condition,
+                    order_group,
+                    interaction_index,
+                    questionnaire_after_interaction,
+                    profile_id,
+                    scenario_id,
+                    json.dumps(responses, ensure_ascii=False),
+                    now,
+                ),
+            )
+            return int(cur.lastrowid)
+
+    def list_questionnaire_responses(
+        self,
+        *,
+        limit: int = 500,
+        participant_id: str | None = None,
+        run_session_id: str | None = None,
+        session_id: str | None = None,
+    ) -> list[dict[str, Any]]:
+        clauses: list[str] = []
+        params: list[Any] = []
+        if participant_id:
+            clauses.append("participant_id = ?")
+            params.append(participant_id.strip())
+        if run_session_id:
+            clauses.append("run_session_id = ?")
+            params.append(run_session_id.strip())
+        if session_id:
+            clauses.append("session_id = ?")
+            params.append(session_id.strip())
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        params.append(limit)
+        with self._connect() as conn:
+            rows = conn.execute(
+                f"""
+                SELECT
+                    id, run_session_id, session_id, participant_id, condition, order_group,
+                    interaction_index, questionnaire_after_interaction, profile_id,
+                    scenario_id, responses_json, created_at
+                FROM questionnaire_responses
+                {where}
+                ORDER BY created_at DESC, id DESC
+                LIMIT ?
+                """,
+                params,
+            ).fetchall()
+        out: list[dict[str, Any]] = []
+        for row in rows:
+            item = dict(row)
+            try:
+                item["responses"] = json.loads(item.pop("responses_json", "{}") or "{}")
+            except json.JSONDecodeError:
+                item["responses"] = {}
+            out.append(item)
+        return out
+
     def insert_turn(self, record: TurnRecord) -> None:
         with self._connect() as conn:
             conn.execute(
@@ -202,8 +327,9 @@ class SQLiteExperimentStore:
                 INSERT INTO turns (
                     participant_id, session_id, condition, order_group, turn_index,
                     user_text, assistant_text, profile_used, retrieval_used, model_name,
-                    audio_error_count, created_at, profile_id, interaction_index, scenario_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    audio_error_count, created_at, profile_id, interaction_index, scenario_id,
+                    turn_metadata
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     record.participant_id,
@@ -221,6 +347,7 @@ class SQLiteExperimentStore:
                     record.profile_id,
                     record.interaction_index,
                     record.scenario_id,
+                    json.dumps(record.turn_metadata or {}, ensure_ascii=False),
                 ),
             )
             conn.execute(
@@ -335,10 +462,15 @@ class SQLiteExperimentStore:
                             SELECT participant_id FROM sessions
                         )
                     ) AS participants,
-                    (SELECT COUNT(*) FROM turns) AS turns
+                    (SELECT COUNT(*) FROM turns) AS turns,
+                    (SELECT COUNT(*) FROM questionnaire_responses) AS questionnaires
                 """
             ).fetchone()
-        return dict(row) if row else {"sessions": 0, "participants": 0, "turns": 0}
+        return (
+            dict(row)
+            if row
+            else {"sessions": 0, "participants": 0, "turns": 0, "questionnaires": 0}
+        )
 
     def list_turns_for_session(self, session_id: str) -> list[dict[str, Any]]:
         with self._connect() as conn:
@@ -363,7 +495,22 @@ class SQLiteExperimentStore:
                 (session_id,),
             ).fetchone()
             turns_deleted = int(turns_row["n"]) if turns_row else 0
+            questionnaire_row = conn.execute(
+                """
+                SELECT COUNT(*) AS n FROM questionnaire_responses
+                WHERE session_id = ? OR run_session_id = ?
+                """,
+                (session_id, session_id),
+            ).fetchone()
+            questionnaires_deleted = int(questionnaire_row["n"]) if questionnaire_row else 0
             conn.execute("DELETE FROM turns WHERE session_id = ?", (session_id,))
+            conn.execute(
+                """
+                DELETE FROM questionnaire_responses
+                WHERE session_id = ? OR run_session_id = ?
+                """,
+                (session_id, session_id),
+            )
             session_result = conn.execute(
                 "DELETE FROM sessions WHERE session_id = ?",
                 (session_id,),
@@ -373,19 +520,26 @@ class SQLiteExperimentStore:
             "session_id": session_id,
             "turns_deleted": turns_deleted,
             "sessions_deleted": sessions_deleted,
+            "questionnaires_deleted": questionnaires_deleted,
         }
 
     def delete_all_data(self) -> dict[str, int]:
         with self._connect() as conn:
             turns_row = conn.execute("SELECT COUNT(*) AS n FROM turns").fetchone()
             sessions_row = conn.execute("SELECT COUNT(*) AS n FROM sessions").fetchone()
+            questionnaire_row = conn.execute(
+                "SELECT COUNT(*) AS n FROM questionnaire_responses"
+            ).fetchone()
             turns_deleted = int(turns_row["n"]) if turns_row else 0
             sessions_deleted = int(sessions_row["n"]) if sessions_row else 0
+            questionnaires_deleted = int(questionnaire_row["n"]) if questionnaire_row else 0
             conn.execute("DELETE FROM turns")
             conn.execute("DELETE FROM sessions")
+            conn.execute("DELETE FROM questionnaire_responses")
         return {
             "turns_deleted": turns_deleted,
             "sessions_deleted": sessions_deleted,
+            "questionnaires_deleted": questionnaires_deleted,
         }
 
     def recent_turns_for_session(self, session_id: str, limit: int = 8) -> list[dict[str, Any]]:
@@ -437,6 +591,7 @@ class SQLiteExperimentStore:
         profile_id: str = "",
         interaction_index: int = 0,
         scenario_id: str = "",
+        turn_metadata: dict[str, Any] | None = None,
     ) -> TurnRecord:
         return TurnRecord(
             participant_id=participant_id,
@@ -454,4 +609,5 @@ class SQLiteExperimentStore:
             profile_id=profile_id,
             interaction_index=interaction_index,
             scenario_id=scenario_id,
+            turn_metadata=turn_metadata or {},
         )
