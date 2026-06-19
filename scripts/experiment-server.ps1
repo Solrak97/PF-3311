@@ -23,7 +23,9 @@ param(
 
     [switch]$SkipFirewall,
     [switch]$SkipWarmup,
-    [switch]$PullModels
+    [switch]$PullModels,
+    [switch]$ForceDocker,
+    [switch]$ForceNative
 )
 
 Set-StrictMode -Version Latest
@@ -63,8 +65,9 @@ function Get-LanIPv4 {
             $_.PrefixOrigin -ne "WellKnown"
         } |
         ForEach-Object {
-            $alias = (Get-NetAdapter -InterfaceIndex $_.InterfaceIndex -ErrorAction SilentlyContinue).Name
-            if (-not $alias) { $alias = $_.InterfaceAlias }
+            $addr = $_
+            $adapter = Get-NetAdapter -InterfaceIndex $addr.InterfaceIndex -ErrorAction SilentlyContinue
+            $alias = if ($adapter) { $adapter.Name } else { $addr.InterfaceAlias }
             $skip = $false
             foreach ($s in $skipIfaces) {
                 if ($alias -like "*$s*") { $skip = $true; break }
@@ -74,11 +77,18 @@ function Get-LanIPv4 {
             foreach ($p in $preferIfaces) {
                 if ($alias -like "*$p*") { $prefer = 1; break }
             }
+            $metric = 999
+            if ($adapter) {
+                $metricProp = $adapter.PSObject.Properties['InterfaceMetric']
+                if ($null -ne $metricProp) {
+                    $metric = [int]$metricProp.Value
+                }
+            }
             [PSCustomObject]@{
-                IP = $_.IPAddress
+                IP = $addr.IPAddress
                 Alias = $alias
                 Prefer = $prefer
-                Metric = $_.InterfaceMetric
+                Metric = $metric
             }
         }
 
@@ -122,12 +132,20 @@ function Get-PowerTimeouts {
     }
 }
 
+function Invoke-PowerCfg([string[]]$Args) {
+    try {
+        & powercfg @Args 2>$null | Out-Null
+    } catch {
+        # Some SKUs omit hybrid-sleep or other knobs; ignore.
+    }
+}
+
 function Disable-SystemSleep {
     Write-Host "Disabling sleep while server mode is active (AC power)..."
-    powercfg /change standby-timeout-ac 0 | Out-Null
-    powercfg /change monitor-timeout-ac 0 | Out-Null
-    powercfg /change hibernate-timeout-ac 0 | Out-Null
-    powercfg /change hybrid-sleep-timeout-ac 0 | Out-Null
+    Invoke-PowerCfg @("/change", "standby-timeout-ac", "0")
+    Invoke-PowerCfg @("/change", "monitor-timeout-ac", "0")
+    Invoke-PowerCfg @("/change", "hibernate-timeout-ac", "0")
+    Invoke-PowerCfg @("/change", "hybrid-sleep-timeout-ac", "0")
 }
 
 function Restore-SystemSleep([object]$State) {
@@ -152,13 +170,17 @@ function Enable-FirewallRules([int]$BackendPort, [int]$OllamaPort, [string]$Back
         return
     }
     if (-not (Test-IsAdmin)) {
-        Write-Warning "Not running as Administrator - firewall rules were NOT added. Re-run Start as admin or open ports $BackendPort and $OllamaPort manually."
+        $ports = if ($OllamaPort -gt 0) { "$BackendPort and $OllamaPort" } else { "$BackendPort" }
+        Write-Warning "Not running as Administrator - firewall rules were NOT added. Re-run Start as admin or open port(s) $ports manually."
         return
     }
-    foreach ($pair in @(
-        @{ Name = $BackendRule; Port = $BackendPort; Desc = "PF-3311 FastAPI backend" },
-        @{ Name = $OllamaRule; Port = $OllamaPort; Desc = "PF-3311 Ollama API" }
-    )) {
+    $rules = @(
+        @{ Name = $BackendRule; Port = $BackendPort; Desc = "PF-3311 FastAPI backend" }
+    )
+    if ($OllamaPort -gt 0) {
+        $rules += @{ Name = $OllamaRule; Port = $OllamaPort; Desc = "PF-3311 Ollama API" }
+    }
+    foreach ($pair in $rules) {
         $existing = Get-NetFirewallRule -DisplayName $pair.Name -ErrorAction SilentlyContinue
         if ($existing) {
             Enable-NetFirewallRule -DisplayName $pair.Name | Out-Null
@@ -183,6 +205,97 @@ function Disable-FirewallRules([string]$BackendRule, [string]$OllamaRule) {
             Remove-NetFirewallRule -DisplayName $name
             Write-Host "Removed firewall rule: $name"
         }
+    }
+}
+
+function Test-DockerReady {
+    try {
+        & docker info 2>$null | Out-Null
+        return $LASTEXITCODE -eq 0
+    } catch {
+        return $false
+    }
+}
+
+function Test-PortListening([int]$Port) {
+    $conn = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+    return $null -ne $conn
+}
+
+function Test-OllamaReady([string]$BaseUrl) {
+    try {
+        Invoke-RestMethod -Uri "$BaseUrl/api/tags" -TimeoutSec 5 | Out-Null
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+function Resolve-ServerMode {
+    if ($ForceDocker) { return "docker" }
+    if ($ForceNative) { return "native" }
+
+    $ollamaUrl = "http://127.0.0.1:$($Config.ollama_port)"
+    if ((Test-PortListening ([int]$Config.ollama_port)) -and (Test-OllamaReady $ollamaUrl)) {
+        Write-Host "Host Ollama detected; using native mode (backend on 0.0.0.0, Ollama stays local)."
+        return "native"
+    }
+    if (Test-DockerReady) {
+        return "docker"
+    }
+    throw "Neither Docker nor host Ollama is available. Start Docker Desktop or the Ollama app, then retry."
+}
+
+function Invoke-OllamaPull([string]$Model, [string]$Mode) {
+    Write-Host "Pulling $Model..."
+    if ($Mode -eq "docker") {
+        & docker exec pf3311-ollama ollama pull $Model
+    } else {
+        & ollama pull $Model
+    }
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to pull model: $Model"
+    }
+}
+
+function Start-NativeBackend([int]$Port, [string]$KeepAlive) {
+    $backendDir = Join-Path $RepoRoot "src\backend"
+    New-Item -ItemType Directory -Force -Path $StateDir | Out-Null
+    $logFile = Join-Path $StateDir "backend.log"
+
+    $env:OLLAMA_KEEP_ALIVE = $KeepAlive
+    $env:LLM_MODEL = [string]$Config.chat_model
+    $env:OLLAMA_MODEL = [string]$Config.chat_model
+    $env:OLLAMA_BASE_URL = "http://127.0.0.1:$($Config.ollama_port)"
+    $env:LLM_BASE_URL = $env:OLLAMA_BASE_URL
+
+    $uv = Get-Command uv -ErrorAction SilentlyContinue
+    if (-not $uv) {
+        throw "Native mode requires 'uv' on PATH (install from https://docs.astral.sh/uv/)."
+    }
+
+    $proc = Start-Process `
+        -FilePath $uv.Source `
+        -ArgumentList @("run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "$Port") `
+        -WorkingDirectory $backendDir `
+        -WindowStyle Hidden `
+        -PassThru `
+        -RedirectStandardOutput $logFile `
+        -RedirectStandardError (Join-Path $StateDir "backend.err.log")
+
+    return [int]$proc.Id
+}
+
+function Stop-NativeBackend([object]$State) {
+    if ($null -eq $State) { return }
+    $pidProp = $State.PSObject.Properties['backend_pid']
+    if ($null -eq $pidProp) { return }
+    $pid = [int]$pidProp.Value
+    if ($pid -le 0) { return }
+    $proc = Get-Process -Id $pid -ErrorAction SilentlyContinue
+    if ($proc) {
+        Stop-Process -Id $pid -Force
+        Write-Host "Stopped native backend (PID $pid)."
     }
 }
 
@@ -272,43 +385,65 @@ function Start-ExperimentServer {
     $backendPort = [int]$Config.backend_port
     $ollamaPort = [int]$Config.ollama_port
     $keepAlive = [string]$Config.keep_alive
+    $mode = Resolve-ServerMode
 
     Write-Banner "Starting experiment server"
     Write-Host "Repo:        $RepoRoot"
+    Write-Host "Mode:        $mode"
     Write-Host "LAN IP:      $lanIp"
     Write-Host "Chat model:  $($Config.chat_model)"
     Write-Host "Embed model: $($Config.embed_model)"
 
     $powerBefore = Get-PowerTimeouts
     Disable-SystemSleep
-    Enable-FirewallRules $backendPort $ollamaPort $Config.firewall_rule_backend $Config.firewall_rule_ollama
-
-    if ($PullModels) {
-        Write-Host "Pulling models (may take a while)..."
-        Invoke-DockerCompose @("up", "-d", "ollama")
-        docker exec pf3311-ollama ollama pull $Config.chat_model
-        docker exec pf3311-ollama ollama pull $Config.embed_model
+    if ($mode -eq "native") {
+        Enable-FirewallRules $backendPort 0 $Config.firewall_rule_backend $Config.firewall_rule_ollama
+    } else {
+        Enable-FirewallRules $backendPort $ollamaPort $Config.firewall_rule_backend $Config.firewall_rule_ollama
     }
 
-    Write-Host "Starting Docker stack..."
-    Invoke-DockerCompose @("up", "-d")
+    $backendPid = 0
+    if ($PullModels) {
+        if ($mode -eq "docker") {
+            Invoke-DockerCompose @("up", "-d", "ollama")
+        }
+        Invoke-OllamaPull $Config.chat_model $mode
+        Invoke-OllamaPull $Config.embed_model $mode
+    }
+
+    if ($mode -eq "native") {
+        if (Test-PortListening $backendPort) {
+            throw "Port $backendPort is already in use. Stop the other service or run -Action Stop."
+        }
+        Write-Host "Starting native backend (uvicorn on 0.0.0.0:$backendPort)..."
+        $backendPid = Start-NativeBackend $backendPort $keepAlive
+    } else {
+        Write-Host "Starting Docker stack..."
+        Invoke-DockerCompose @("up", "-d")
+    }
 
     $healthUrl = "http://127.0.0.1:${backendPort}/healthz"
-    if (-not (Wait-BackendHealth $healthUrl)) {
+    if (-not (Wait-BackendHealth $healthUrl 180)) {
+        if ($mode -eq "native") {
+            $logFile = Join-Path $StateDir "backend.log"
+            throw "Backend did not become healthy at $healthUrl - see $logFile"
+        }
         throw "Backend did not become healthy at $healthUrl - check: docker compose logs backend"
     }
     Write-Host "Backend healthy: $healthUrl" -ForegroundColor Green
 
     if (-not $SkipWarmup) {
-        $ollamaUrl = "http://127.0.0.1:${ollamaPort}"
+        $ollamaUrl = if ($mode -eq "docker") { "http://127.0.0.1:${ollamaPort}" } else { "http://127.0.0.1:${ollamaPort}" }
         Invoke-OllamaWarm $ollamaUrl $Config.chat_model $Config.embed_model $keepAlive
         Write-Host "Models warmed (keep_alive=$keepAlive)." -ForegroundColor Green
     }
 
     Save-State @{
         started_at    = (Get-Date).ToString("o")
+        mode          = $mode
         lan_ip        = $lanIp
         backend_port  = $backendPort
+        backend_pid   = $backendPid
         ollama_port   = $ollamaPort
         chat_model    = $Config.chat_model
         embed_model   = $Config.embed_model
@@ -318,15 +453,27 @@ function Start-ExperimentServer {
     }
 
     Show-MacInstructions $lanIp $backendPort
-    Write-Host "Server mode ON. Leave this PC plugged in. Use -Action Stop when finished." -ForegroundColor Yellow
+    Write-Host "Server mode ON ($mode). Leave this PC plugged in. Use -Action Stop when finished." -ForegroundColor Yellow
 }
 
 function Stop-ExperimentServer {
     Write-Banner "Stopping experiment server"
     $state = Load-State
+    $mode = "docker"
+    if ($null -ne $state -and $state.PSObject.Properties['mode']) {
+        $mode = [string]$state.mode
+    }
 
-    Invoke-DockerCompose @("stop")
-    Write-Host "Docker services stopped (volumes preserved)."
+    if ($mode -eq "native") {
+        Stop-NativeBackend $state
+    } else {
+        if (Test-DockerReady) {
+            Invoke-DockerCompose @("stop")
+            Write-Host "Docker services stopped (volumes preserved)."
+        } else {
+            Write-Warning "Docker not running; skipped docker compose stop."
+        }
+    }
 
     Disable-FirewallRules $Config.firewall_rule_backend $Config.firewall_rule_ollama
     if ($null -ne $state -and $state.PSObject.Properties['power_before']) {
@@ -353,6 +500,9 @@ function Show-ExperimentStatus {
     Write-Banner "Experiment server status"
     if ($null -ne $state) {
         Write-Host "Server mode: ACTIVE since $($state.started_at)"
+        if ($state.PSObject.Properties['mode']) {
+            Write-Host "Stack mode:  $($state.mode)"
+        }
     } else {
         Write-Host "Server mode: not active (no state file)"
     }
