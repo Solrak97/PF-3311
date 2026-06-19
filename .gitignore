@@ -14,20 +14,9 @@ dist/
 build/
 *.egg-info/
 
-# Local experiment SQLite (per-session turn logs)
-src/backend/data/*.db
-src/backend/data/voice_previews/
-src/backend/data/profiles/
-
-# Experiment server mode state (scripts/experiment-server.ps1)
-.experiment-server/
-
-# Analysis exports (regenerate from backend SQLite/API)
-src/analysis/exports/*
-!src/analysis/exports/.gitkeep
-src/analysis/**/.ipynb_checkpoints/
-
-# LaTeX build artifacts (docs/)
+# LaTeX scratch + build artifacts
+*.cut
+texput.log
 docs/*.aux
 docs/*.bbl
 docs/*.blg
@@ -39,4 +28,32 @@ docs/*.synctex.gz
 docs/*.toc
 docs/*.lof
 docs/*.lot
-# docs/*.pdf
+docs/paper.pdf
+docs/paper template/*.aux
+docs/paper template/*.bbl
+docs/paper template/*.blg
+docs/paper template/*.fdb_latexmk
+docs/paper template/*.fls
+docs/paper template/*.log
+docs/paper template/*.out
+docs/paper template/*.synctex.gz
+docs/paper template/sigconf.pdf
+
+# Local experiment SQLite (per-session turn logs)
+src/backend/data/*.db
+src/backend/data/voice_previews/
+src/backend/data/profiles/
+src/backend/data/evaluations/*
+!src/backend/data/evaluations/.gitkeep
+
+# Experiment server mode state (scripts/experiment-server.ps1)
+.experiment-server/
+
+# Analysis exports (regenerate from backend SQLite/API)
+src/analysis/exports/*
+!src/analysis/exports/.gitkeep
+src/analysis/reports/*
+!src/analysis/reports/.gitkeep
+src/analysis/figures/*
+!src/analysis/figures/.gitkeep
+src/analysis/**/.ipynb_checkpoints/

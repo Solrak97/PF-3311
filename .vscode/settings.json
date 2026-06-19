@@ -2,9 +2,11 @@
   "latex-workshop.latex.rootFile.useSubFile": true,
   "latex-workshop.latex.rootFile.doNotPrompt": true,
   "latex-workshop.latex.autoBuild.run": "onSave",
-  "latex-workshop.latex.autoClean.run": "onBuilt",
+  "latex-workshop.latex.autoClean.run": "onFailedBuild",
+  "latex-workshop.latex.clean.method": "glob",
   "latex-workshop.latex.clean.subfolder.enabled": true,
   "latex-workshop.latex.outDir": "%DIR%",
+  "latex-workshop.latex.bibDirs": ["%DIR%"],
   "latex-workshop.latex.recipes": [
     {
       "name": "pdflatex ➞ bibtex ➞ pdflatex ×2",
@@ -19,13 +21,19 @@
         "-synctex=1",
         "-interaction=nonstopmode",
         "-file-line-error",
+        "-output-directory=%OUTDIR%",
+        "-include-directory=%DIR%/paper template",
         "%DOC%"
       ]
     },
     {
       "name": "bibtex",
       "command": "bibtex",
-      "args": ["%DOCFILE%"]
+      "args": ["%DOCFILE%"],
+      "env": {
+        "BIBINPUTS": ".;",
+        "BSTINPUTS": ".\\paper template//;"
+      }
     }
   ],
   "latex-workshop.view.pdf.viewer": "tab",
@@ -39,7 +47,8 @@
     "**/*.log",
     "**/*.out",
     "**/*.synctex.gz",
-    "**/*.toc"
+    "**/*.toc",
+    "**/*.cut"
   ],
   "[latex]": {
     "editor.wordWrap": "on",

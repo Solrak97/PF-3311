@@ -11,6 +11,7 @@ Committed JSON schemas live in `schema/`. The control baseline for Condition B i
 | `data/profiles/raw/` | Training sessions from Train Profile mode |
 | `data/profiles/behavioral/` | Compiled profiles used in Condition A |
 | `data/profiles/validation/` | Pilot validator ratings |
+| `data/evaluations/` | Local AI-judge / ablation outputs (gitignored; regenerate with `scripts/run_long_chat_judge.py`) |
 
 **Condition A** loads a trained behavioral profile (`Profile A`) with optional contextual retrieval.  
 **Condition B** always loads `generic_control_agent.yaml` — no familiarity prompting, no profile-specific retrieval.
