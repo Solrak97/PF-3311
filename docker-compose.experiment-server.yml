@@ -1,0 +1,15 @@
+# Overlay for LAN experiment day — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.experiment-server.yml up -d
+#
+# Keeps models loaded longer and binds Ollama on all interfaces inside the container.
+
+services:
+  backend:
+    environment:
+      OLLAMA_KEEP_ALIVE: "24h"
+      LLM_TIMEOUT_SEC: "300"
+
+  ollama:
+    environment:
+      OLLAMA_HOST: "0.0.0.0:11434"
+      OLLAMA_KEEP_ALIVE: "24h"

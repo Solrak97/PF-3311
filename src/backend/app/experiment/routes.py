@@ -433,6 +433,29 @@ def build_experiment_router(
     async def list_profiles() -> dict[str, Any]:
         return {"profile_ids": profile_store.list_profile_ids()}
 
+    @router.get("/profiles/{profile_id}/status")
+    async def profile_status(profile_id: str) -> dict[str, Any]:
+        pid = profile_id.strip()
+        if not pid:
+            raise HTTPException(status_code=400, detail="missing_profile_id")
+        raw = profile_store.load_raw(pid)
+        behavioral = profile_store.load_behavioral(pid)
+        yaml_profile = profile_store.load_behavioral_yaml(pid)
+        validation = profile_store.load_validation_aggregate(pid)
+        summary = (validation or {}).get("summary") or {}
+        passed = summary.get("passed") if validation else None
+        if passed is None and validation:
+            passed = validation.get("passed")
+        return {
+            "profile_id": pid,
+            "on_server": raw is not None or behavioral is not None or yaml_profile is not None,
+            "has_raw": raw is not None,
+            "has_behavioral": behavioral is not None,
+            "has_yaml": yaml_profile is not None,
+            "validation_passed": passed,
+            "validation_summary": summary or None,
+        }
+
     @router.get("/profiles/behavioral/{profile_id}")
     async def get_behavioral_profile(profile_id: str) -> dict[str, Any]:
         try:

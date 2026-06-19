@@ -31,7 +31,7 @@ Este repositorio implementa un **agente 3D (“Buddy”)** para estudiar si la *
 | **A (experimental)** | Conversa con un **perfil conductual entrenado** (familiaridad modelada). |
 | **B (control)** | Mismo avatar, voz e interfaz; comportamiento **genérico** (`generic_control_agent`). |
 
-El participante ve dos interacciones (~5 min c/u) en orden contrabalanceado (A→B o B→A). Los cuestionarios del estudio (Godspeed, SAM, Likert) están **fuera** de la app por ahora; el software cubre chat, perfiles, logging y dashboard del investigador.
+El participante ve dos interacciones (~5 min c/u) en orden contrabalanceado (A→B o B→A), cuestionarios post-interacción en la app, entrevista breve final y logging en SQLite. Flujo: consentimiento → instrucciones → chat → cuestionario (×2) → entrevista.
 
 **Stack del prototipo:**
 
@@ -156,6 +156,43 @@ Si el backend corre en otra máquina de la red, sustituye `127.0.0.1` por la IP 
 
 Guía del cliente: [`src/familiar_godot/README.md`](src/familiar_godot/README.md).
 
+### Servidor Windows + cliente Mac (día del experimento)
+
+En el **PC Windows** (servidor con GPU/Ollama), desde PowerShell **como Administrador** (para reglas de firewall):
+
+```powershell
+cd C:\Users\luisc\dev\PF-3311
+
+# Primera vez: modelos en Docker
+.\scripts\experiment-server.ps1 -Action Start -PullModels
+
+# Días siguientes
+.\scripts\experiment-server.ps1 -Action Start
+
+# Al terminar el día
+.\scripts\experiment-server.ps1 -Action Stop
+
+# Comprobar estado
+.\scripts\experiment-server.ps1 -Status
+```
+
+El script: abre firewall (8000 + 11434), desactiva suspensión en AC, levanta `docker compose` con modelos **keep_alive 24h**, precalienta chat + embeddings, e imprime la IP LAN para el Mac.
+
+En el **Mac** (antes de abrir Godot):
+
+```bash
+source scripts/mac-client-env.sh <IP-del-PC-Windows>
+# o: export PF3311_SERVER=192.168.x.x && source scripts/mac-client-env.sh
+```
+
+Verifica: `curl http://<IP>:8000/healthz`
+
+| Máquina | Rol |
+|---------|-----|
+| PC Windows | `experiment-server.ps1 -Action Start` |
+| Mac | Godot + `FAMILIAR_BACKEND_*` apuntando al PC |
+| Investigador | `http://<IP-PC>:8000/research/dashboard` |
+
 ### Exportar el cliente (PCs del laboratorio)
 
 El juego **no** va en Docker. Para participantes sin el editor:
@@ -197,6 +234,7 @@ PF-3311/
 ├── docker-compose.external-llm.yml
 ├── docs/                       # propuesta, protocolo, roadmap
 ├── src/
+│   ├── analysis/               # notebooks, informes y figuras del estudio
 │   ├── backend/                # FastAPI, LangGraph, perfiles, SQLite
 │   └── familiar_godot/         # cliente Godot 4.6
 └── README.md

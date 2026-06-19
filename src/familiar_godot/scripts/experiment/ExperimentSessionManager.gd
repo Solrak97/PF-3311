@@ -1,6 +1,6 @@
 extends Node
 
-enum Phase { IDLE, SETUP, CHAT, QUESTIONNAIRE, DONE }
+enum Phase { IDLE, SETUP, INSTRUCTIONS, CHAT, QUESTIONNAIRE, EXIT_INTERVIEW, DONE }
 
 const INTERACTION_SEC := 300
 const CHAT_SCENE := "res://scenes/main.tscn"
@@ -27,6 +27,7 @@ var conversation_history: Array[Dictionary] = []
 var scenario_id_by_interaction: Dictionary = {1: DEFAULT_SCENARIO_ID, 2: DEFAULT_SCENARIO_ID}
 ## 1 = cuestionario tras interacción 1; 2 = cuestionario final tras interacción 2
 var questionnaire_after_interaction: int = 0
+var consent_confirmed: bool = false
 
 signal interaction_finished(interaction_index: int)
 signal run_finished()
@@ -48,6 +49,7 @@ func reset_run() -> void:
 	conversation_history.clear()
 	scenario_id_by_interaction = {1: DEFAULT_SCENARIO_ID, 2: DEFAULT_SCENARIO_ID}
 	questionnaire_after_interaction = 0
+	consent_confirmed = false
 
 
 func load_profile_config() -> void:
@@ -73,12 +75,13 @@ func active_profile_id() -> String:
 	return profile_for_condition(current_condition)
 
 
-func configure_run(participant: String, order_ab: Array[String]) -> void:
+func configure_run(participant: String, order_ab: Array[String], *, with_consent: bool = false) -> void:
 	var chosen_order := order_ab.duplicate() if order_ab.size() >= 2 else ["A", "B"]
 	reset_run()
 	is_run_active = true
 	phase = Phase.SETUP
 	participant_id = participant.strip_edges()
+	consent_confirmed = with_consent
 	load_profile_config()
 	order = chosen_order
 	session_id = "exp-%s" % _token()
@@ -92,6 +95,10 @@ func begin_interaction(index: int) -> void:
 	else:
 		current_condition = "B"
 	conversation_history.clear()
+	phase = Phase.INSTRUCTIONS
+
+
+func enter_chat_after_instructions() -> void:
 	phase = Phase.CHAT
 
 
@@ -104,6 +111,11 @@ func finish_interaction() -> void:
 
 func complete_final_questionnaire() -> void:
 	_log_run_event("questionnaire_final_complete", {"interaction_index": 2})
+	phase = Phase.EXIT_INTERVIEW
+
+
+func complete_exit_interview(answers: Dictionary) -> void:
+	_log_run_event("exit_interview", {"answers": answers})
 	phase = Phase.DONE
 	is_run_active = false
 	run_finished.emit()

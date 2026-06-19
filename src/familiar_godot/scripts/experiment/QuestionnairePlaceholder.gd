@@ -7,7 +7,9 @@ var _after_interaction: int = 1
 var _sliders: Dictionary = {}
 var _submitting: bool = false
 var _continue_btn: Button
+var _retry_btn: Button
 var _status_label: Label
+var _last_responses: Dictionary = {}
 
 
 func _ready() -> void:
@@ -41,9 +43,11 @@ func _ready() -> void:
 	var continue_label := (
 		"Continuar a Interacción 2"
 		if _after_interaction == 1
-		else "Finalizar cuestionario"
+		else "Continuar a entrevista final"
 	)
 	QuestionnaireUIHelper.add_footer_button(footer, "Salir de la sesión", false, _confirm_exit_early)
+	_retry_btn = QuestionnaireUIHelper.add_footer_button(footer, "Reintentar guardado", false, _retry_submit)
+	_retry_btn.visible = false
 	_continue_btn = QuestionnaireUIHelper.add_footer_button(footer, continue_label, true, _on_submit)
 
 
@@ -167,26 +171,73 @@ func _questionnaire_api_payload(responses: Dictionary) -> Dictionary:
 	}
 
 
+func _save_questionnaire_local(responses: Dictionary) -> void:
+	var dir := "user://experiment_logs/questionnaires"
+	DirAccess.make_dir_recursive_absolute(dir)
+	var path := "%s/%s-i%d.json" % [
+		dir,
+		ExperimentSessionManager.session_id,
+		_after_interaction,
+	]
+	var payload := _questionnaire_api_payload(responses)
+	payload["saved_at"] = Time.get_datetime_string_from_system(true)
+	payload["backend_synced"] = false
+	var w := FileAccess.open(path, FileAccess.WRITE)
+	if w != null:
+		w.store_string(JSON.stringify(payload, "\t"))
+		w.close()
+
+
+func _mark_questionnaire_local_synced() -> void:
+	var path := "user://experiment_logs/questionnaires/%s-i%d.json" % [
+		ExperimentSessionManager.session_id,
+		_after_interaction,
+	]
+	if not FileAccess.file_exists(path):
+		return
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if parsed is Dictionary:
+		parsed["backend_synced"] = true
+		var w := FileAccess.open(path, FileAccess.WRITE)
+		if w != null:
+			w.store_string(JSON.stringify(parsed, "\t"))
+			w.close()
+
+
 func _set_submitting(active: bool) -> void:
 	_submitting = active
 	if _continue_btn != null:
 		_continue_btn.disabled = active
-	if _status_label != null:
-		_status_label.text = "Guardando respuestas…" if active else ""
+	if _retry_btn != null:
+		_retry_btn.disabled = active
+	if _status_label != null and active:
+		_status_label.text = "Guardando respuestas…"
 
 
 func _on_submit() -> void:
 	if _submitting:
 		return
 	var responses := _collect_responses()
+	_last_responses = responses
 	var local_payload := {
 		"questionnaire_after_interaction": _after_interaction,
 		"interaction_index": _after_interaction,
 		"responses": responses,
 	}
+	_save_questionnaire_local(responses)
 	ExperimentSessionManager.log_run_event("questionnaire_responses", local_payload)
 	_set_submitting(true)
+	if _retry_btn != null:
+		_retry_btn.visible = false
 	ExperimentApi.post_questionnaire(_questionnaire_api_payload(responses))
+
+
+func _retry_submit() -> void:
+	if _last_responses.is_empty():
+		_on_submit()
+		return
+	_set_submitting(true)
+	ExperimentApi.post_questionnaire(_questionnaire_api_payload(_last_responses))
 
 
 func _on_api_finished(action: String, success: bool, _data: Variant, error: String) -> void:
@@ -195,9 +246,15 @@ func _on_api_finished(action: String, success: bool, _data: Variant, error: Stri
 	_set_submitting(false)
 	if not success:
 		if _status_label != null:
-			_status_label.text = "No se pudo guardar en el servidor. Revisa la conexión e inténtalo de nuevo."
+			_status_label.text = (
+				"No se pudo guardar en el servidor (%s). "
+				+ "Copia local guardada — pulsa Reintentar."
+			) % error
+		if _retry_btn != null:
+			_retry_btn.visible = true
 		push_warning("questionnaire_save_failed: %s" % error)
 		return
+	_mark_questionnaire_local_synced()
 	if _after_interaction == 1:
 		_continue_to_interaction_2()
 	else:
@@ -208,7 +265,7 @@ func _continue_to_interaction_2() -> void:
 	ExperimentSessionManager.log_run_event("questionnaire_mid_complete", {"interaction_index": 1})
 	ExperimentSessionManager.begin_interaction(2)
 	ExperimentSessionManager.log_run_event("interaction_start", {"interaction_index": 2})
-	get_tree().change_scene_to_file(MAIN_SCENE)
+	get_tree().change_scene_to_file(ORCHESTRATOR_SCENE)
 
 
 func _finish_test() -> void:

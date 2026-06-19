@@ -12,6 +12,7 @@ Contexto del estudio, diseño experimental y documentación extendida: mismo REA
 |------|------|
 | [`familiar_godot/`](familiar_godot/) | Godot 4.6 client — naivee VRM avatar, WebSocket, chat UI |
 | [`backend/`](backend/) | Python FastAPI — Ollama stream, Edge-TTS, SQLite logging, research dashboard |
+| [`analysis/`](analysis/) | Notebooks, informes, exportaciones y figuras del análisis experimental |
 
 ## Run the buddy (dev)
 

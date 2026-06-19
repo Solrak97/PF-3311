@@ -548,8 +548,7 @@ func _on_new_chat() -> void:
 
 func _on_restart_experiment() -> void:
 	if _turn_busy:
-		_set_status("Espera a que termine el turno actual antes de reiniciar")
-		return
+		_force_unlock_turn()
 	_send_session_end("menu")
 	_flush_ws_outbound()
 	if _experiment_run:
@@ -564,8 +563,7 @@ func _on_restart_experiment() -> void:
 
 func _on_exit_early_pressed() -> void:
 	if _turn_busy:
-		_set_status("Espera a que termine el turno actual antes de salir")
-		return
+		_force_unlock_turn()
 	ExperimentExitHelper.confirm_exit(self, _complete_exit_early)
 
 
@@ -817,6 +815,8 @@ func _on_tts_http_completed(
 	_tts_http_fetching = false
 	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
 		_tts_log("HTTP TTS FAIL result=%s code=%s bytes=%d" % [result, response_code, body.size()])
+		# Count failed download so the UI does not stay locked waiting for audio.
+		_received_tts_chunks += 1
 	else:
 		if _enqueue_tts_bytes(body):
 			_received_tts_chunks += 1
@@ -876,6 +876,19 @@ func _try_unlock_turn_after_audio() -> void:
 		return
 	if _received_tts_chunks < _expected_tts_chunks:
 		return
+	_clear_turn_busy()
+
+
+func _force_unlock_turn() -> void:
+	_turn_end_pending = false
+	_expected_tts_chunks = 0
+	_received_tts_chunks = 0
+	_tts_http_queue.clear()
+	_tts_http_fetching = false
+	_clear_turn_busy()
+
+
+func _clear_turn_busy() -> void:
 	_turn_end_pending = false
 	_turn_busy = false
 	_send.disabled = false

@@ -34,6 +34,11 @@ func get_behavioral_profile(profile_id: String) -> void:
 	_get_json(path, "get_behavioral", {"profile_id": profile_id})
 
 
+func get_profile_status(profile_id: String) -> void:
+	var path := "/profiles/%s/status" % profile_id.uri_encode()
+	_get_json(path, "profile_status", {"profile_id": profile_id})
+
+
 func list_profiles() -> void:
 	_get_json("/profiles", "list_profiles")
 
@@ -215,6 +220,21 @@ func _emit_mock(action: String, body: Dictionary) -> void:
 				action,
 				true,
 				{"profile_ids": ProfileCatalog.list_local_raw_profile_ids()},
+				""
+			)
+		"profile_status":
+			var pid := str(body.get("profile_id", "demo"))
+			request_finished.emit(
+				action,
+				true,
+				{
+					"profile_id": pid,
+					"has_behavioral": true,
+					"has_yaml": true,
+					"has_raw": true,
+					"validation_passed": true,
+					"on_server": true,
+				},
 				""
 			)
 		"generate_sample":

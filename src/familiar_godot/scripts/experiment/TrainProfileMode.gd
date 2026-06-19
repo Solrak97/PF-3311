@@ -33,6 +33,7 @@ var _cycle_index: int = 1
 var _probe_progress: String = "0/3"
 var _cycle_label: String = ""
 var _awaiting_verdict: bool = false
+var _awaiting_finalize: bool = false
 var _turn_mode: String = "probe"
 var _samples: Array = []
 var _conversation_history: Array = []
@@ -316,7 +317,8 @@ func _on_save() -> void:
 	_save_local_raw(payload)
 	_interview_busy = true
 	_save.disabled = true
-	_status.text = "Guardando perfil…"
+	_awaiting_finalize = true
+	_status.text = "Guardando perfil (compilación conductual)…"
 	ExperimentApi.post_raw_profile(payload)
 
 
@@ -460,9 +462,24 @@ func _on_api_finished(action: String, success: bool, data: Variant, error: Strin
 			_apply_interview_state(data)
 			_status.text = "Entrevista completa. Pulsa Guardar perfil."
 		"post_raw":
+			if not success or not (data is Dictionary):
+				_awaiting_finalize = false
+				_interview_busy = false
+				_status.text = "Falló el guardado en el servidor (%s). Copia local en user://profiles/raw/." % error
+				_set_interview_controls(_interview_active)
+				return
+			if _awaiting_finalize:
+				_status.text = "Generando perfil YAML en el servidor…"
+				ExperimentApi.training_finalize(_profile_id.text.strip_edges())
+				return
+			_interview_busy = false
+			_status.text = "Perfil guardado en el servidor y en user://profiles/raw/."
+			_set_interview_controls(_interview_active)
+		"training_finalize", "interview_save":
+			_awaiting_finalize = false
 			_interview_busy = false
 			if success:
-				_status.text = "Perfil guardado en el servidor y en user://profiles/raw/."
+				_status.text = "Perfil guardado y YAML conductual generado en el servidor."
 			else:
-				_status.text = "Falló el guardado en el servidor (%s). Copia local en user://profiles/raw/." % error
+				_status.text = "Perfil raw guardado, pero falló el YAML (%s). Reintenta Guardar." % error
 			_set_interview_controls(_interview_active)

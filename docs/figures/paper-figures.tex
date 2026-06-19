@@ -1,0 +1,172 @@
+% TikZ figures for paper.tex — compile via \input{figures/paper-figures}
+
+\definecolor{sfclient}{RGB}{230,245,242}
+\definecolor{sfserver}{RGB}{255,243,230}
+\definecolor{sfgraph}{RGB}{238,232,248}
+\definecolor{sfstore}{RGB}{242,242,242}
+\definecolor{sfaccent}{RGB}{55,55,55}
+
+\tikzset{
+  sf/.style={font=\sffamily\footnotesize, text=sfaccent},
+  sfbox/.style 2 args={
+    sf, draw=#1, fill=#2, line width=0.6pt, rounded corners=2.5pt,
+    align=center, inner sep=5pt, minimum height=0.78cm
+  },
+  sfarr/.style={-{Stealth[length=2.4mm,width=1.8mm]}, line width=0.7pt, draw=black!55},
+  sfdarr/.style={sfarr, dashed, draw=black!40},
+  sflbl/.style={sf, font=\scriptsize, fill=white, inner sep=1.5pt, text=black!65},
+  sfphase/.style={
+    draw=black!22, line width=0.5pt, dashed, rounded corners=4pt, inner sep=7pt
+  },
+  sfphaselabel/.style={sf, font=\scriptsize\bfseries, text=black!75},
+}
+
+\newcommand{\ArchitectureFigure}{%
+  \begin{tikzpicture}[sf, node distance=0.5cm and 0.65cm]
+    % Cliente (izquierda)
+    \node[sfbox={teal!70}{sfclient}, minimum width=2.7cm] (ui) {Interfaz\\texto / voz};
+    \node[sfbox={teal!70}{sfclient}, minimum width=2.7cm, below=of ui] (avatar) {Avatar VRM};
+    \node[sfbox={teal!70}{sfclient}, minimum width=1.25cm, below left=0.4cm and 0cm of avatar] (stt) {Whisper};
+    \node[sfbox={teal!70}{sfclient}, minimum width=1.25cm, below right=0.4cm and 0cm of avatar] (tts) {Edge-TTS};
+
+    % API (centro)
+    \node[sfbox={orange!75}{sfserver}, minimum width=2.0cm, right=1.4cm of avatar] (api) {FastAPI};
+    \node[sf, font=\scriptsize, below=0.04cm of api] {REST + WebSocket};
+
+    % LangGraph (derecha)
+    \node[sfbox={violet!65}{sfgraph}, minimum width=2.6cm, right=1.2cm of api] (lg) {LangGraph};
+    \node[sfbox={violet!65}{sfgraph}, minimum width=1.2cm, above left=0.3cm and -0.5cm of lg] (train) {Entren.};
+    \node[sfbox={violet!65}{sfgraph}, minimum width=1.2cm, above=0.3cm of lg] (refine) {Refin.};
+    \node[sfbox={violet!65}{sfgraph}, minimum width=1.2cm, above right=0.3cm and -0.5cm of lg] (valid) {Valid.};
+    \node[sfbox={violet!65}{sfgraph}, minimum width=1.2cm, below=0.3cm of lg] (chat) {Chat A/B};
+
+    % Infraestructura
+    \node[sfbox={black!45}{sfstore}, minimum width=1.5cm, below left=0.55cm and 0.2cm of chat] (ollama) {Ollama};
+    \node[sfbox={black!45}{sfstore}, minimum width=1.5cm, below=0.55cm of chat] (db) {SQLite};
+    \node[sfbox={black!45}{sfstore}, minimum width=1.5cm, below right=0.55cm and 0.2cm of chat] (yaml) {Perfiles\\YAML};
+
+    % Marcos de capa
+    \node[sfphase, fit=(ui)(avatar)(stt)(tts),
+      label={[sfphaselabel]above:Cliente Godot}] {};
+    \node[sfphase, fit=(train)(refine)(valid)(chat)(lg)(ollama)(db)(yaml),
+      label={[sfphaselabel]above:Backend Python}] {};
+
+    % Conexiones
+    \draw[sfarr] (ui.east) -- node[sflbl, above, pos=0.55] {WS} (api.west);
+    \draw[sfarr] (avatar.east) -- (api.west);
+    \draw[sfarr] (stt.east) -| ([yshift=0.15cm]api.south west);
+    \draw[sfarr] (tts.east) -| ([yshift=0.15cm]api.south east);
+    \draw[sfarr] (api.east) -- (lg.west);
+    \draw[sfarr] (chat.south) -- (ollama.north);
+    \draw[sfarr] (chat.south) -- (db.north);
+    \draw[sfarr] (chat.south) -- (yaml.north);
+    \draw[sfdarr] (train.south) -- (lg.north);
+    \draw[sfdarr] (refine.south) -- (lg.north);
+    \draw[sfdarr] (valid.south) -- (lg.north);
+  \end{tikzpicture}%
+}
+
+\newcommand{\PipelineFigure}{%
+  \begin{tikzpicture}[sf, node distance=0.42cm]
+    \node[sfbox={blue!65}{blue!6}, minimum width=1.4cm] (in) {Entrada\\usuario};
+    \node[sfbox={violet!65}{sfgraph}, minimum width=1.4cm, right=of in] (cls) {Clasificar\\situación};
+    \node[sfbox={violet!65}{sfgraph}, minimum width=1.4cm, right=of cls] (ret) {Recuperar\\contexto};
+    \node[sfbox={violet!65}{sfgraph}, minimum width=1.4cm, right=of ret] (plan) {Planificar\\conducta};
+    \node[sfbox={violet!65}{sfgraph}, minimum width=1.4cm, right=of plan] (gen) {Generar\\respuesta};
+    \node[sfbox={teal!70}{sfclient}, minimum width=1.4cm, right=of gen] (out) {Salida\\agente};
+
+    \node[sfbox={black!45}{sfstore}, minimum width=1.15cm, below=0.7cm of ret] (yaml) {Perfil\\YAML};
+    \node[sfbox={black!45}{sfstore}, minimum width=1.15cm, below=0.7cm of plan] (mom) {Momentos};
+
+    \foreach \a/\b in {in/cls, cls/ret, ret/plan, plan/gen, gen/out}
+      \draw[sfarr] (\a) -- (\b);
+
+    \draw[sfdarr] (yaml.north) -- (ret.south);
+    \draw[sfdarr] (mom.north) -- (plan.south);
+    \draw[sfdarr] (yaml.east) -| (gen.south);
+
+    \node[sf, font=\scriptsize\itshape, text=violet!70!black, below=0.08cm of cls] {solo A};
+    \node[sf, font=\scriptsize\itshape, text=violet!70!black, below=0.08cm of ret] {solo A};
+    \node[sf, font=\scriptsize\itshape, text=violet!70!black, below=0.08cm of plan] {solo A};
+
+    \node[sfphase, fill=violet!3, fit=(cls)(ret)(plan)(gen),
+      label={[sf, font=\scriptsize]above:Condición A}] {};
+  \end{tikzpicture}%
+}
+
+\newcommand{\ProtocolFigure}{%
+  \begin{tikzpicture}[sf, node distance=0.34cm and 0.32cm]
+    % Fase 1
+    \node[sfbox={orange!75}{sfserver}, minimum width=1.7cm] (t) {Entrenamiento};
+    \node[sfbox={orange!75}{sfserver}, minimum width=1.7cm, right=of t] (r) {Refinamiento};
+    \node[sfbox={orange!75}{sfserver}, minimum width=1.7cm, right=of r] (v) {Validación};
+    \node[sf, font=\scriptsize\bfseries, right=0.15cm of v, text=orange!80!black] (ok) {$\geq$ umbrales};
+
+    % Fase 2
+    \node[sfbox={teal!70}{sfclient}, minimum width=1.55cm, below=1.2cm of t] (a) {Interacción A};
+    \node[sfbox={teal!70}{sfclient}, minimum width=1.55cm, right=of a] (qa) {Cuestionario};
+    \node[sfbox={teal!70}{sfclient}, minimum width=1.55cm, right=of qa] (b) {Interacción B};
+    \node[sfbox={teal!70}{sfclient}, minimum width=1.55cm, right=of b] (qb) {Cuestionario};
+    \node[sfbox={teal!70}{sfclient}, minimum width=1.55cm, right=of qb] (i) {Entrevista};
+
+    % Contrabalanceo
+    \node[sfbox={black!40}{sfstore}, minimum width=1.35cm, below=0.6cm of a] (ord1) {A$\rightarrow$B};
+    \node[sfbox={black!40}{sfstore}, minimum width=1.35cm, below=0.6cm of b] (ord2) {B$\rightarrow$A};
+
+    \node[sfphase, fill=orange!5, fit=(t)(r)(v)(ok),
+      label={[sfphaselabel]above left:Fase 1 --- validación de perfil}] {};
+    \node[sfphase, fill=teal!5, fit=(a)(qa)(b)(qb)(i)(ord1)(ord2),
+      label={[sfphaselabel]above left:Fase 2 --- estudio piloto}] {};
+
+    \draw[sfarr] (t) -- (r);
+    \draw[sfarr] (r) -- (v);
+    \draw[sfarr] (v) -- (ok);
+    \draw[sfarr] (r.west) to[bend left=40] node[sflbl, above, pos=0.5] {si falla} (t.south);
+
+    \draw[sfarr] (v.south) -- ++(0,-0.28) -| (a.north);
+
+    \draw[sfarr] (a) -- (qa);
+    \draw[sfarr] (qa) -- (b);
+    \draw[sfarr] (b) -- (qb);
+    \draw[sfarr] (qb) -- (i);
+
+    \draw[sfdarr] (ord1.north) -- (a.south);
+    \draw[sfdarr] (ord2.north) -- (b.south);
+  \end{tikzpicture}%
+}
+
+\newcommand{\ManipulationFigure}{%
+  \begin{tikzpicture}[sf, node distance=0.55cm]
+    \node[sfbox={black!40}{sfstore}, minimum width=6.8cm, minimum height=0.65cm] (const)
+      {Constantes: avatar \textbullet{} voz \textbullet{} interfaz \textbullet{} escenario \textbullet{} 5 min};
+
+    \node[sfbox={teal!70}{sfclient}, minimum width=3.0cm, below left=0.75cm and -0.15cm of const] (a)
+      {Condición A\\{\scriptsize perfil conductual}};
+    \node[sfbox={orange!75}{sfserver}, minimum width=3.0cm, below right=0.75cm and -0.15cm of const] (b)
+      {Condición B\\{\scriptsize control genérico}};
+
+    \node[sf, align=center, font=\scriptsize, below=0.3cm of a, text width=3.1cm] {%
+      Clasificación, recuperación\\y planificación activas};
+    \node[sf, align=center, font=\scriptsize, below=0.3cm of b, text width=3.1cm] {%
+      Sin pila conductual;\\prompt neutro};
+
+    \draw[sfarr] (const.south west) -- (a.north);
+    \draw[sfarr] (const.south east) -- (b.north);
+  \end{tikzpicture}%
+}
+
+\newcommand{\DialogueFigure}{%
+  \begin{tikzpicture}[sf]
+    \node[sfbox={black!40}{sfstore}, minimum width=6.6cm, align=left, text width=6.2cm] (user) {%
+      \textbf{Usuario:} Hola, hoy estuvo pesado en la u, llegué reventado.};
+    \node[sfbox={teal!70}{sfclient}, minimum width=6.6cm, align=left, text width=6.2cm,
+      below=0.45cm of user] (ca) {%
+      \textbf{Condición A:} Ay, qué sorpresa, otro día fatal. ¿Y tú también sobreviviendo o qué?};
+    \node[sfbox={orange!75}{sfserver}, minimum width=6.6cm, align=left, text width=6.2cm,
+      below=0.45cm of ca] (cb) {%
+      \textbf{Condición B:} Suena agotador. ¿Quieres contarme qué fue lo más pesado del día?};
+
+    \node[sf, font=\scriptsize\itshape, below=0.12cm of cb, text=black!55]
+      {Ilustración del sistema; no constituye dato experimental.};
+  \end{tikzpicture}%
+}

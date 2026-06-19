@@ -19,6 +19,14 @@ src/backend/data/*.db
 src/backend/data/voice_previews/
 src/backend/data/profiles/
 
+# Experiment server mode state (scripts/experiment-server.ps1)
+.experiment-server/
+
+# Analysis exports (regenerate from backend SQLite/API)
+src/analysis/exports/*
+!src/analysis/exports/.gitkeep
+src/analysis/**/.ipynb_checkpoints/
+
 # LaTeX build artifacts (docs/)
 docs/*.aux
 docs/*.bbl
