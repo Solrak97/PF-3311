@@ -18,20 +18,20 @@ _EMBED_WARNED = False
 
 @lru_cache(maxsize=1)
 def _ollama_model_names() -> frozenset[str]:
-    url = f"{settings.llm_base_url.rstrip('/')}/api/tags"
-    try:
-        with httpx.Client(timeout=httpx.Timeout(10.0)) as client:
-            resp = client.get(url)
-            resp.raise_for_status()
-            data = resp.json()
-    except Exception:  # noqa: BLE001
-        return frozenset()
     names: set[str] = set()
-    for item in data.get("models") or []:
-        if isinstance(item, dict) and item.get("name"):
-            names.add(str(item["name"]))
-            base = str(item["name"]).split(":")[0]
-            names.add(base)
+    for base in settings.ollama_base_urls():
+        url = f"{base.rstrip('/')}/api/tags"
+        try:
+            with httpx.Client(timeout=httpx.Timeout(10.0)) as client:
+                resp = client.get(url)
+                resp.raise_for_status()
+                data = resp.json()
+        except Exception:  # noqa: BLE001
+            continue
+        for item in data.get("models") or []:
+            if isinstance(item, dict) and item.get("name"):
+                names.add(str(item["name"]))
+                names.add(str(item["name"]).split(":")[0])
     return frozenset(names)
 
 
@@ -74,26 +74,33 @@ async def embed_text(text: str, *, model: str | None = None) -> list[float] | No
             _EMBED_WARNED = True
         return None
 
-    url = f"{settings.llm_base_url.rstrip('/')}/api/embeddings"
     body = {"model": embed_model, "prompt": prompt}
-    try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(45.0)) as client:
-            resp = await client.post(url, json=body)
-            resp.raise_for_status()
-            data = resp.json()
-    except Exception as exc:  # noqa: BLE001
-        if not _EMBED_WARNED:
-            logger.warning("embedding_unavailable model=%s err=%s", embed_model, exc)
-            _EMBED_WARNED = True
-        return None
+    last_exc: Exception | None = None
+    for base in settings.ollama_base_urls():
+        url = f"{base.rstrip('/')}/api/embeddings"
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(45.0)) as client:
+                resp = await client.post(url, json=body)
+                resp.raise_for_status()
+                data = resp.json()
+            embedding = data.get("embedding")
+            if isinstance(embedding, list) and embedding:
+                vector = [float(x) for x in embedding]
+                if len(_EMBED_CACHE) >= _EMBED_CACHE_MAX:
+                    _EMBED_CACHE.pop(next(iter(_EMBED_CACHE)))
+                _EMBED_CACHE[cache_key] = vector
+                return vector
+        except Exception as exc:  # noqa: BLE001
+            last_exc = exc
+            continue
 
-    embedding = data.get("embedding")
-    if isinstance(embedding, list) and embedding:
-        vector = [float(x) for x in embedding]
-        if len(_EMBED_CACHE) >= _EMBED_CACHE_MAX:
-            _EMBED_CACHE.pop(next(iter(_EMBED_CACHE)))
-        _EMBED_CACHE[cache_key] = vector
-        return vector
+    if not _EMBED_WARNED:
+        logger.warning(
+            "embedding_unavailable model=%s err=%s",
+            embed_model,
+            last_exc,
+        )
+        _EMBED_WARNED = True
     return None
 
 

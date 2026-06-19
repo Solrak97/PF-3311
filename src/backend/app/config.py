@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     llm_base_url: str = ""
     llm_model: str = ""
     llm_api_key: str = ""
+    llm_fallback_base_url: str = ""
+    llm_fallback_model: str = ""
+    llm_fallback_cooldown_sec: float = 180.0
+    llm_fallback_timeout_sec: float = 120.0
 
     # Legacy names (still read if LLM_* unset)
     ollama_base_url: str = "http://127.0.0.1:11434"
@@ -67,6 +71,20 @@ class Settings(BaseSettings):
     @property
     def resolved_llm_model(self) -> str:
         return self.llm_model.strip() or self.ollama_model
+
+    @property
+    def resolved_llm_fallback_model(self) -> str:
+        return self.llm_fallback_model.strip()
+
+    def ollama_base_urls(self) -> list[str]:
+        urls: list[str] = []
+        primary = self.llm_base_url.strip().rstrip("/")
+        if primary:
+            urls.append(primary)
+        fallback = self.llm_fallback_base_url.strip().rstrip("/")
+        if fallback and fallback not in urls:
+            urls.append(fallback)
+        return urls
 
 
 settings = Settings()

@@ -1,4 +1,5 @@
 from app.brain.base import Brain
+from app.brain.fallback import FallbackOllamaBrain
 from app.brain.ollama import OllamaBrain
 from app.brain.openai_compat import OpenAICompatBrain
 from app.config import settings
@@ -14,6 +15,8 @@ def create_brain() -> Brain:
         )
     if provider != "ollama":
         raise ValueError(f"Unsupported LLM_PROVIDER: {settings.llm_provider!r} (use ollama or openai_compat)")
+    if settings.llm_fallback_base_url.strip():
+        return FallbackOllamaBrain()
     return OllamaBrain(
         base_url=settings.llm_base_url,
         model=settings.resolved_llm_model,

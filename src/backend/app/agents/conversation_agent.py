@@ -534,9 +534,9 @@ async def prepare_chat_messages(
 ) -> tuple[list[dict[str, Any]], bool, bool, str, dict[str, Any]]:
     registry = skills or SkillLoader()
     if brain is None:
-        from app.brain.ollama import OllamaBrain
+        from app.brain.factory import create_brain
 
-        brain = OllamaBrain()
+        brain = create_brain()
     graph = _build_context_graph(brain, profile_store, registry)
     result = await graph.ainvoke(
         _invoke_state(

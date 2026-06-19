@@ -12,9 +12,16 @@ logger = logging.getLogger(__name__)
 
 
 class OllamaBrain:
-    def __init__(self, base_url: str | None = None, model: str | None = None) -> None:
+    def __init__(
+        self,
+        base_url: str | None = None,
+        model: str | None = None,
+        *,
+        timeout: httpx.Timeout | None = None,
+    ) -> None:
         self._base = (base_url or settings.llm_base_url).rstrip("/")
         self._model = model or settings.resolved_llm_model
+        self._timeout = timeout
 
     async def stream_chat(
         self,
@@ -36,7 +43,8 @@ class OllamaBrain:
             },
         }
         try:
-            async with httpx.AsyncClient(timeout=llm_timeout()) as client:
+            timeout = self._timeout or llm_timeout()
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 async with client.stream("POST", url, json=body) as resp:
                     resp.raise_for_status()
                     async for line in resp.aiter_lines():

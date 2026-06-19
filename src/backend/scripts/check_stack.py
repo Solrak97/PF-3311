@@ -14,25 +14,41 @@ from app.config import settings
 from app.profiles.store import ProfileStore
 
 
-async def _check_llm() -> dict:
-    url = f"{settings.llm_base_url.rstrip('/')}/api/tags"
+async def _check_endpoint(base_url: str, model: str) -> dict:
+    url = f"{base_url.rstrip('/')}/api/tags"
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
             resp = await client.get(url)
             resp.raise_for_status()
             tags = resp.json()
     except Exception as exc:  # noqa: BLE001
-        return {"ok": False, "error": str(exc)}
+        return {"ok": False, "base_url": base_url, "error": str(exc)}
 
     names = [m.get("name") for m in tags.get("models") or [] if isinstance(m, dict)]
-    model = settings.resolved_llm_model
     model_ok = model in names or model.split(":")[0] in {n.split(":")[0] for n in names if n}
     return {
         "ok": model_ok,
-        "provider": settings.llm_provider,
+        "base_url": base_url,
         "model": model,
         "installed_models": names,
         "model_installed": model_ok,
+    }
+
+
+async def _check_llm() -> dict:
+    primary = await _check_endpoint(settings.llm_base_url, settings.resolved_llm_model)
+    fallback_url = settings.llm_fallback_base_url.strip()
+    fallback: dict | None = None
+    if fallback_url:
+        fb_model = settings.resolved_llm_fallback_model or settings.resolved_llm_model
+        fallback = await _check_endpoint(fallback_url, fb_model)
+
+    ok = primary.get("ok") or (fallback.get("ok") if fallback else False)
+    return {
+        "ok": ok,
+        "provider": settings.llm_provider,
+        "primary": primary,
+        "fallback": fallback,
     }
 
 
@@ -61,7 +77,8 @@ async def _check_chat() -> dict:
             [{"role": "user", "content": "Responde solo: OK"}],
             num_predict=8,
         )
-        return {"ok": bool(reply.strip()), "sample": reply.strip()[:80]}
+        endpoint = getattr(brain, "last_endpoint", None)
+        return {"ok": bool(reply.strip()), "sample": reply.strip()[:80], "endpoint": endpoint}
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
 
@@ -104,11 +121,13 @@ async def main() -> int:
             f"\nTip: ollama pull {settings.ollama_embed_model}",
             file=sys.stderr,
         )
-    if not llm.get("model_installed"):
-        print(
-            f"\nTip: ollama pull {settings.resolved_llm_model}",
-            file=sys.stderr,
-        )
+    if not llm.get("ok"):
+        primary = llm.get("primary") or {}
+        if not primary.get("model_installed"):
+            print(
+                f"\nTip: ollama pull {settings.resolved_llm_model}",
+                file=sys.stderr,
+            )
     return 0 if report["ok"] else 1
 
 
