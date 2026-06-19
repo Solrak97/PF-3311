@@ -4,6 +4,7 @@
   "backend_port": 8000,
   "ollama_port": 11434,
   "keep_alive": "24h",
+  "prefer_tailscale": true,
   "compose_files": [
     "docker-compose.yml",
     "docker-compose.experiment-server.yml"

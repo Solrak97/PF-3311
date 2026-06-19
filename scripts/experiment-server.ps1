@@ -99,6 +99,73 @@ function Get-LanIPv4 {
     return $best.IP
 }
 
+function Get-TailscaleInfo {
+    $ts = Get-Command tailscale -ErrorAction SilentlyContinue
+    if (-not $ts) { return $null }
+
+    $ip = $null
+    $dnsName = $null
+    $hostName = $null
+
+    try {
+        $out = & tailscale ip -4 2>$null
+        if ($out -match '^\d+\.\d+\.\d+\.\d+$') {
+            $ip = $out.Trim()
+        }
+    } catch {
+        # ignore
+    }
+
+    try {
+        $json = & tailscale status --json 2>$null | ConvertFrom-Json
+        if ($null -ne $json.Self) {
+            if (-not $ip) {
+                $ips = @($json.Self.TailscaleIPs | Where-Object { $_ -match '^\d+\.\d+' })
+                if ($ips.Count -gt 0) { $ip = [string]$ips[0] }
+            }
+            $dnsProp = $json.Self.PSObject.Properties['DNSName']
+            if ($null -ne $dnsProp -and $dnsProp.Value) {
+                $dnsName = [string]$dnsProp.Value.TrimEnd('.')
+            }
+            $hostProp = $json.Self.PSObject.Properties['HostName']
+            if ($null -ne $hostProp -and $hostProp.Value) {
+                $hostName = [string]$hostProp.Value
+            }
+        }
+    } catch {
+        # ignore
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ip)) { return $null }
+    return @{
+        IP       = $ip
+        DNSName  = $dnsName
+        HostName = $hostName
+    }
+}
+
+function Get-ClientHostInfo([string]$LanIp) {
+    $tailscale = Get-TailscaleInfo
+    $preferTailscale = $true
+    if ($Config.PSObject.Properties['prefer_tailscale'] -and $Config.prefer_tailscale -eq $false) {
+        $preferTailscale = $false
+    }
+
+    $primary = $LanIp
+    $via = "lan"
+    if ($preferTailscale -and $null -ne $tailscale) {
+        $primary = $tailscale.IP
+        $via = "tailscale"
+    }
+
+    return @{
+        PrimaryHost = $primary
+        Via         = $via
+        LanIp       = $LanIp
+        Tailscale   = $tailscale
+    }
+}
+
 function Save-State([hashtable]$Data) {
     New-Item -ItemType Directory -Force -Path $StateDir | Out-Null
     ($Data | ConvertTo-Json -Depth 6) | Set-Content -Path $StateFile -Encoding UTF8
@@ -355,22 +422,49 @@ function Invoke-OllamaWarm([string]$OllamaUrl, [string]$ChatModel, [string]$Embe
     }
 }
 
-function Show-MacInstructions([string]$LanIp, [int]$BackendPort) {
+function Show-MacInstructions([object]$ClientHost, [int]$BackendPort) {
     Write-Banner "Mac / remote client"
+    $serverHost = [string]$ClientHost.PrimaryHost
     $lines = @(
         ""
-        "On the Mac (Godot or exported client), set before launching:"
-        ""
-        "  export FAMILIAR_BACKEND_HTTP=http://${LanIp}:${BackendPort}"
-        "  export FAMILIAR_BACKEND_WS=ws://${LanIp}:${BackendPort}/ws/session"
-        ""
+    )
+
+    if ($ClientHost.Via -eq "tailscale") {
+        $lines += "Tailscale (recommended - works off-LAN, no Windows firewall needed):"
+        $lines += ""
+        $lines += "  export FAMILIAR_BACKEND_HTTP=http://${serverHost}:${BackendPort}"
+        $lines += "  export FAMILIAR_BACKEND_WS=ws://${serverHost}:${BackendPort}/ws/session"
+        $lines += ""
+        if ($ClientHost.Tailscale -and $ClientHost.Tailscale.DNSName) {
+            $dns = [string]$ClientHost.Tailscale.DNSName
+            $lines += "  # MagicDNS alternative:"
+            $lines += "  export FAMILIAR_BACKEND_HTTP=http://${dns}:${BackendPort}"
+            $lines += "  export FAMILIAR_BACKEND_WS=ws://${dns}:${BackendPort}/ws/session"
+            $lines += ""
+        }
+        if ($ClientHost.LanIp -and $ClientHost.LanIp -ne $serverHost) {
+            $lines += "LAN fallback (same WiFi only): http://$($ClientHost.LanIp):${BackendPort}"
+            $lines += ""
+        }
+    } else {
+        $lines += "On the Mac (Godot or exported client), set before launching:"
+        $lines += ""
+        $lines += "  export FAMILIAR_BACKEND_HTTP=http://${serverHost}:${BackendPort}"
+        $lines += "  export FAMILIAR_BACKEND_WS=ws://${serverHost}:${BackendPort}/ws/session"
+        $lines += ""
+    }
+
+    $lines += @(
         "Or in Godot: Project -> Run -> Environment variables (same names)."
         ""
         "Test from Mac terminal:"
-        "  curl http://${LanIp}:${BackendPort}/healthz"
+        "  curl http://${serverHost}:${BackendPort}/healthz"
         ""
-        "Research dashboard (any browser on LAN):"
-        "  http://${LanIp}:${BackendPort}/research/dashboard"
+        "Research dashboard:"
+        "  http://${serverHost}:${BackendPort}/research/dashboard"
+        ""
+        "Quick setup on Mac (from repo):"
+        "  source scripts/mac-client-env.sh ${serverHost}"
         ""
     )
     Write-Host ($lines -join "`n") -ForegroundColor Green
@@ -382,6 +476,7 @@ function Start-ExperimentServer {
     }
 
     $lanIp = Get-LanIPv4
+    $clientHost = Get-ClientHostInfo $lanIp
     $backendPort = [int]$Config.backend_port
     $ollamaPort = [int]$Config.ollama_port
     $keepAlive = [string]$Config.keep_alive
@@ -391,6 +486,13 @@ function Start-ExperimentServer {
     Write-Host "Repo:        $RepoRoot"
     Write-Host "Mode:        $mode"
     Write-Host "LAN IP:      $lanIp"
+    if ($clientHost.Tailscale) {
+        Write-Host "Tailscale:   $($clientHost.Tailscale.IP)" -ForegroundColor Green
+        if ($clientHost.Tailscale.DNSName) {
+            Write-Host "MagicDNS:    $($clientHost.Tailscale.DNSName)" -ForegroundColor Green
+        }
+        Write-Host "Client URL:  http://$($clientHost.PrimaryHost):$backendPort (via $($clientHost.Via))"
+    }
     Write-Host "Chat model:  $($Config.chat_model)"
     Write-Host "Embed model: $($Config.embed_model)"
 
@@ -439,20 +541,24 @@ function Start-ExperimentServer {
     }
 
     Save-State @{
-        started_at    = (Get-Date).ToString("o")
-        mode          = $mode
-        lan_ip        = $lanIp
-        backend_port  = $backendPort
-        backend_pid   = $backendPid
-        ollama_port   = $ollamaPort
-        chat_model    = $Config.chat_model
-        embed_model   = $Config.embed_model
-        keep_alive    = $keepAlive
-        power_before  = $powerBefore
-        skip_firewall = [bool]$SkipFirewall
+        started_at      = (Get-Date).ToString("o")
+        mode            = $mode
+        lan_ip          = $lanIp
+        tailscale_ip    = if ($clientHost.Tailscale) { $clientHost.Tailscale.IP } else { $null }
+        tailscale_dns   = if ($clientHost.Tailscale) { $clientHost.Tailscale.DNSName } else { $null }
+        client_host     = $clientHost.PrimaryHost
+        client_via      = $clientHost.Via
+        backend_port    = $backendPort
+        backend_pid     = $backendPid
+        ollama_port     = $ollamaPort
+        chat_model      = $Config.chat_model
+        embed_model     = $Config.embed_model
+        keep_alive      = $keepAlive
+        power_before    = $powerBefore
+        skip_firewall   = [bool]$SkipFirewall
     }
 
-    Show-MacInstructions $lanIp $backendPort
+    Show-MacInstructions $clientHost $backendPort
     Write-Host "Server mode ON ($mode). Leave this PC plugged in. Use -Action Stop when finished." -ForegroundColor Yellow
 }
 
@@ -494,6 +600,11 @@ function Show-ExperimentStatus {
     if ($null -ne $state -and $state.PSObject.Properties['lan_ip']) {
         $lanIp = [string]$state.lan_ip
     }
+    $clientHost = Get-ClientHostInfo $lanIp
+    if ($null -ne $state -and $state.PSObject.Properties['client_host']) {
+        $clientHost.PrimaryHost = [string]$state.client_host
+        $clientHost.Via = if ($state.PSObject.Properties['client_via']) { [string]$state.client_via } else { "lan" }
+    }
     $backendPort = [int]$Config.backend_port
     $ollamaPort = [int]$Config.ollama_port
 
@@ -526,7 +637,7 @@ function Show-ExperimentStatus {
         }
     }
 
-    Show-MacInstructions $lanIp $backendPort
+    Show-MacInstructions $clientHost $backendPort
 }
 
 switch ($Action) {

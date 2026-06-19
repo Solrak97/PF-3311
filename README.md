@@ -158,12 +158,14 @@ Guía del cliente: [`src/familiar_godot/README.md`](src/familiar_godot/README.md
 
 ### Servidor Windows + cliente Mac (día del experimento)
 
-En el **PC Windows** (servidor con GPU/Ollama), desde PowerShell **como Administrador** (para reglas de firewall):
+Usamos **Tailscale** para que el Mac se conecte al PC servidor sin depender de la LAN ni del firewall de Windows.
+
+En el **PC Windows** (servidor con GPU/Ollama):
 
 ```powershell
 cd C:\Users\luisc\dev\PF-3311
 
-# Primera vez: modelos en Docker
+# Primera vez: descargar modelos
 .\scripts\experiment-server.ps1 -Action Start -PullModels
 
 # Días siguientes
@@ -172,26 +174,26 @@ cd C:\Users\luisc\dev\PF-3311
 # Al terminar el día
 .\scripts\experiment-server.ps1 -Action Stop
 
-# Comprobar estado
-.\scripts\experiment-server.ps1 -Status
+# Ver Tailscale IP + variables para el Mac
+.\scripts\experiment-server.ps1 -Action Status
 ```
 
-El script: abre firewall (8000 + 11434), desactiva suspensión en AC, levanta `docker compose` con modelos **keep_alive 24h**, precalienta chat + embeddings, e imprime la IP LAN para el Mac.
+El script imprime la **IP Tailscale** del PC (p. ej. `100.x.x.x`) y, si MagicDNS está activo, el hostname `*.ts.net`. Con Tailscale **no hace falta** abrir el firewall de Windows para el Mac.
 
-En el **Mac** (antes de abrir Godot):
+En el **Mac** (antes de abrir Godot), usa la IP Tailscale del PC Windows:
 
 ```bash
-source scripts/mac-client-env.sh <IP-del-PC-Windows>
-# o: export PF3311_SERVER=192.168.x.x && source scripts/mac-client-env.sh
+source scripts/mac-client-env.sh 100.x.x.x
+# o MagicDNS: source scripts/mac-client-env.sh ganimede-1.tailxxxxx.ts.net
 ```
 
-Verifica: `curl http://<IP>:8000/healthz`
+Verifica: `curl http://100.x.x.x:8000/healthz`
 
 | Máquina | Rol |
 |---------|-----|
 | PC Windows | `experiment-server.ps1 -Action Start` |
-| Mac | Godot + `FAMILIAR_BACKEND_*` apuntando al PC |
-| Investigador | `http://<IP-PC>:8000/research/dashboard` |
+| Mac (Tailscale) | Godot + `FAMILIAR_BACKEND_*` → IP Tailscale del PC |
+| Investigador | `http://<tailscale-ip>:8000/research/dashboard` |
 
 ### Exportar el cliente (PCs del laboratorio)
 
