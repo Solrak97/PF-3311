@@ -39,6 +39,18 @@ def _default_db_path() -> Path:
         return (BACKEND_ROOT / "data" / "experiment.db").resolve()
 
 
+def _default_godot_logs_dir() -> Path | None:
+    home = Path.home()
+    candidates = [
+        home / "Library/Application Support/Godot/app_userdata/PF-3311/experiment_logs/run",
+        home / ".local/share/godot/app_userdata/PF-3311/experiment_logs/run",
+    ]
+    for candidate in candidates:
+        if candidate.is_dir() and any(candidate.glob("*.json")):
+            return candidate.resolve()
+    return None
+
+
 def _default_profiles_dir() -> Path:
     if str(BACKEND_ROOT) not in sys.path:
         sys.path.insert(0, str(BACKEND_ROOT))
@@ -385,16 +397,92 @@ def _export_godot_logs(godot_logs_dir: Path) -> list[dict[str, Any]]:
         except (json.JSONDecodeError, OSError):
             continue
         for event in payload.get("events") or []:
-            rows.append(
-                {
-                    "run_session_id": payload.get("session_id", path.stem),
-                    "participant_id": payload.get("participant_id", ""),
-                    "profile_a_id": payload.get("profile_a_id", ""),
-                    "order": json.dumps(payload.get("order", []), ensure_ascii=False),
-                    **{k: event.get(k) for k in event},
-                }
-            )
+            row = {
+                "run_session_id": payload.get("session_id", path.stem),
+                "participant_id": payload.get("participant_id", ""),
+                "profile_a_id": payload.get("profile_a_id", ""),
+                "order": json.dumps(payload.get("order", []), ensure_ascii=False),
+            }
+            for key, value in event.items():
+                if isinstance(value, (dict, list)):
+                    row[key] = json.dumps(value, ensure_ascii=False)
+                else:
+                    row[key] = value
+            rows.append(row)
     return rows
+
+
+def _export_exit_interviews(godot_logs_dir: Path) -> list[dict[str, Any]]:
+    """One row per participant run with open-ended debrief answers (q1–q5)."""
+    if not godot_logs_dir.is_dir():
+        return []
+    rows: list[dict[str, Any]] = []
+    for path in sorted(godot_logs_dir.glob("*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        order = payload.get("order") or []
+        order_label = "-".join(str(x) for x in order) if isinstance(order, list) else str(order)
+        for event in payload.get("events") or []:
+            if event.get("event") != "exit_interview":
+                continue
+            answers = event.get("answers") or {}
+            row: dict[str, Any] = {
+                "run_session_id": payload.get("session_id", path.stem),
+                "participant_id": payload.get("participant_id", ""),
+                "profile_a_id": payload.get("profile_a_id", ""),
+                "profile_b_id": payload.get("profile_b_id", ""),
+                "order_group": order_label,
+                "exit_interview_at": event.get("timestamp", ""),
+            }
+            if isinstance(answers, dict):
+                for key in sorted(answers.keys()):
+                    item = answers[key]
+                    if isinstance(item, dict):
+                        row[f"{key}_question"] = item.get("question", "")
+                        row[f"{key}_answer"] = item.get("answer", "")
+                    else:
+                        row[f"{key}_answer"] = str(item)
+            rows.append(row)
+    return rows
+
+
+def _rows_for_parquet(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        flat: dict[str, Any] = {}
+        for key, value in row.items():
+            if isinstance(value, (dict, list)):
+                flat[key] = json.dumps(value, ensure_ascii=False)
+            else:
+                flat[key] = value
+        out.append(flat)
+    return out
+
+
+def _write_parquet_bundle(out_dir: Path, tables: dict[str, list[dict[str, Any]]]) -> dict[str, int]:
+    try:
+        import pandas as pd
+    except ImportError:
+        print("Warning: pandas not installed; parquet export skipped", file=sys.stderr)
+        return {}
+
+    try:
+        import pyarrow  # noqa: F401
+    except ImportError:
+        print("Warning: pyarrow not installed; parquet export skipped", file=sys.stderr)
+        return {}
+
+    pq_dir = out_dir / "parquet"
+    pq_dir.mkdir(parents=True, exist_ok=True)
+    counts: dict[str, int] = {}
+    for name, rows in tables.items():
+        df = pd.DataFrame(_rows_for_parquet(rows))
+        rel = f"parquet/{name}.parquet"
+        df.to_parquet(pq_dir / f"{name}.parquet", index=False, engine="pyarrow")
+        counts[rel] = len(df)
+    return counts
 
 
 def _turns_for_csv(turns: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -483,14 +571,41 @@ def export_all(
         "paired_scores.csv": _write_csv(out_dir / "paired_scores.csv", paired_rows),
     }
 
+    val_agg: list[dict[str, Any]] = []
+    val_long: list[dict[str, Any]] = []
     if profiles_dir:
         val_agg, val_long = _export_validation(profiles_dir)
         counts["validation_aggregates.csv"] = _write_csv(out_dir / "validation_aggregates.csv", val_agg)
         counts["validation_ratings_long.csv"] = _write_csv(out_dir / "validation_ratings_long.csv", val_long)
 
+    exit_interviews: list[dict[str, Any]] = []
     if godot_logs_dir:
         godot_rows = _export_godot_logs(godot_logs_dir)
+        exit_interviews = _export_exit_interviews(godot_logs_dir)
         counts["godot_run_events.jsonl"] = _write_jsonl(out_dir / "godot_run_events.jsonl", godot_rows)
+        counts["exit_interviews.csv"] = _write_csv(out_dir / "exit_interviews.csv", exit_interviews)
+
+    turns_parquet = [
+        {
+            **{k: v for k, v in t.items() if k != "turn_metadata"},
+            "turn_metadata_json": t.get("turn_metadata_json") or json.dumps(t.get("turn_metadata") or {}),
+        }
+        for t in turns
+    ]
+    parquet_tables: dict[str, list[dict[str, Any]]] = {
+        "sessions": sessions,
+        "turns": turns_parquet,
+        "questionnaires_wide": questionnaires_wide,
+        "questionnaires_long": questionnaires_long,
+        "runs_summary": runs_summary,
+        "paired_scores": paired_rows,
+    }
+    if exit_interviews:
+        parquet_tables["exit_interviews"] = exit_interviews
+    if val_agg or val_long:
+        parquet_tables["validation_aggregates"] = val_agg
+        parquet_tables["validation_ratings_long"] = val_long
+    counts.update(_write_parquet_bundle(out_dir, parquet_tables))
 
     report = _completeness_report(runs_summary, stats)
     (out_dir / "completeness_report.txt").write_text(report, encoding="utf-8")
@@ -525,7 +640,12 @@ def main(argv: list[str] | None = None) -> int:
         "--godot-logs",
         type=Path,
         default=None,
-        help="Path to Godot user://experiment_logs/run/ (optional)",
+        help="Path to Godot user://experiment_logs/run/ (default: auto-detect PF-3311)",
+    )
+    parser.add_argument(
+        "--no-godot-logs",
+        action="store_true",
+        help="Skip Godot run logs and exit-interview export",
     )
     parser.add_argument(
         "--out",
@@ -543,7 +663,14 @@ def main(argv: list[str] | None = None) -> int:
     db_path = (args.db or _default_db_path()).resolve()
     out_dir = (args.out or (DEFAULT_EXPORTS / _utc_stamp())).resolve()
     profiles_dir = None if args.no_validation else (args.profiles_dir or _default_profiles_dir()).resolve()
-    godot_logs = args.godot_logs.resolve() if args.godot_logs else None
+    if args.no_godot_logs:
+        godot_logs = None
+    elif args.godot_logs:
+        godot_logs = args.godot_logs.resolve()
+    else:
+        godot_logs = _default_godot_logs_dir()
+        if godot_logs:
+            print(f"Using Godot logs: {godot_logs}", file=sys.stderr)
 
     try:
         manifest = export_all(

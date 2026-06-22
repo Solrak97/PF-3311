@@ -43,6 +43,8 @@ El participante ve dos interacciones (~5 min c/u) en orden contrabalanceado (A�
 | Voz (salida) | **Edge-TTS** (requiere internet) |
 | Datos | **SQLite** + logs locales en Godot (`user://`) |
 
+**Pilot study export (Parquet + CSV):** [`data/study_exports/`](data/study_exports/) — LLM ingestion guide in [`data/study_exports/LLM.md`](data/study_exports/LLM.md). Regenerate with `./scripts/export-study-data.sh`.
+
 > La propuesta original menciona Gemini y Memoria; **en código hoy** el LLM es Ollama/compatible y la memoria es por sesión + perfil YAML (sin Memoria vectorial). Ver [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ---

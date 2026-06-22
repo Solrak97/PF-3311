@@ -1,0 +1,11 @@
+Suena Familiar — completeness report
+Generated: 2026-06-22T00:14:03.179492+00:00
+
+Sessions (SQLite): 8
+Turns: 68
+Questionnaires: 7
+Experimental runs: 4
+Complete runs (2 interactions + 2 questionnaires): 3
+
+Incomplete runs:
+  - test / exp-6226a8111382d9bf: missing interaction 2, missing questionnaire 2

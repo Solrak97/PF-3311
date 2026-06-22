@@ -1,0 +1,5 @@
+condition_i1,condition_i2,has_interaction_1,has_interaction_2,has_questionnaire_1,has_questionnaire_2,order_group,participant_id,run_complete,run_session_id,turns_i1,turns_i2
+A,,True,False,True,False,A-B,test,False,exp-6226a8111382d9bf,3,0
+A,B,True,True,True,True,A-B,pf002,True,exp-70d0b68738d7b9b3,10,19
+A,B,True,True,True,True,A-B,pf005,True,exp-bab25091ac7cd8dc,13,9
+B,A,True,True,True,True,B-A,pf004,True,exp-e73ee18b6c259505,5,9

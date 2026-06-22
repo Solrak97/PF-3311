@@ -1,0 +1,32 @@
+{
+  "exported_at": "2026-06-22T00:14:03.179637+00:00",
+  "db_path": "/Users/solrak/Documents/PF-3311/src/backend/data/experiment.db",
+  "profiles_dir": "/Users/solrak/Documents/PF-3311/src/backend/data/profiles",
+  "godot_logs_dir": "/Users/solrak/Library/Application Support/Godot/app_userdata/PF-3311/experiment_logs/run",
+  "stats": {
+    "sessions": 8,
+    "turns": 68,
+    "questionnaires": 7,
+    "participants": 5
+  },
+  "files": {
+    "sessions.csv": 8,
+    "turns.csv": 68,
+    "turns.jsonl": 68,
+    "questionnaires_wide.csv": 7,
+    "questionnaires_long.csv": 266,
+    "runs_summary.csv": 4,
+    "paired_scores.csv": 3,
+    "validation_aggregates.csv": 0,
+    "validation_ratings_long.csv": 0,
+    "godot_run_events.jsonl": 236,
+    "exit_interviews.csv": 5,
+    "parquet/sessions.parquet": 8,
+    "parquet/turns.parquet": 68,
+    "parquet/questionnaires_wide.parquet": 7,
+    "parquet/questionnaires_long.parquet": 266,
+    "parquet/runs_summary.parquet": 4,
+    "parquet/paired_scores.parquet": 3,
+    "parquet/exit_interviews.parquet": 5
+  }
+}
