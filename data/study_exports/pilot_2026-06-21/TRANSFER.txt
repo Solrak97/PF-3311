@@ -1,0 +1,25 @@
+Pilot study data — CSV bundle (real sessions, not demo)
+
+Copy this entire folder OR pilot_2026-06-21-csv.zip to your other PC.
+
+KEY FILES (open in Excel, R, Python, SPSS):
+  paired_scores.csv       — 3 complete runs, A vs B composites (START HERE)
+  questionnaires_wide.csv — 7 post-interaction surveys (all Likert items)
+  turns.csv               — 68 dialogue turns
+  exit_interviews.csv     — open-ended debrief (Spanish free text)
+  runs_summary.csv        — which runs are complete
+  sessions.csv            — interaction blocks
+  questionnaires_long.csv — one row per survey item
+  turns.jsonl             — same as turns.csv + full metadata JSON per line
+
+Complete participants: pf002, pf004, pf005
+Condition A = trained profile pf-0001 | Condition B = generic_control_agent
+
+Python:
+  import pandas as pd
+  pd.read_csv("paired_scores.csv")
+
+Analysis without SQLite:
+  python run_pilot_analysis.py --from-export path/to/pilot_2026-06-21
+
+See ../LLM.md for join keys and column meanings.
