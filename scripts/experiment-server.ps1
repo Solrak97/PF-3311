@@ -357,12 +357,12 @@ function Stop-NativeBackend([object]$State) {
     if ($null -eq $State) { return }
     $pidProp = $State.PSObject.Properties['backend_pid']
     if ($null -eq $pidProp) { return }
-    $pid = [int]$pidProp.Value
-    if ($pid -le 0) { return }
-    $proc = Get-Process -Id $pid -ErrorAction SilentlyContinue
+    $backendPid = [int]$pidProp.Value
+    if ($backendPid -le 0) { return }
+    $proc = Get-Process -Id $backendPid -ErrorAction SilentlyContinue
     if ($proc) {
-        Stop-Process -Id $pid -Force
-        Write-Host "Stopped native backend (PID $pid)."
+        Stop-Process -Id $backendPid -Force
+        Write-Host "Stopped native backend (PID $backendPid)."
     }
 }
 

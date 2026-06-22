@@ -201,8 +201,12 @@ def load_from_export_dir(export_dir: Path) -> dict[str, pd.DataFrame]:
     }
     for key, fname in mapping.items():
         path = export_dir / fname
-        if path.is_file():
+        if not path.is_file() or path.stat().st_size == 0:
+            continue
+        try:
             frames[key] = pd.read_csv(path)
+        except pd.errors.EmptyDataError:
+            continue
     if "questionnaires" in frames and "responses" not in frames["questionnaires"].columns:
         frames["questionnaires_raw"] = frames["questionnaires"]
     return frames

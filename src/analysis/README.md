@@ -36,9 +36,24 @@ python generate_demo_data.py
 python run_pilot_analysis.py --db exports\demo_synthetic\experiment_demo.db --out exports\demo_synthetic
 ```
 
-Revisa `exports/demo_synthetic/analysis/report.md` y `analysis/figures/`.
+Revisa `exports/demo_synthetic/analysis/report.md`.
 
-### 2. Después de las sesiones reales
+### 2. Piloto real (bundle en git, solo datos observados)
+
+Cohorte analizable: **n=3** completos (`pf002`, `pf004`, `pf005`).
+
+```powershell
+cd src\backend
+uv run python ..\analysis\run_pilot_analysis.py --from-export ..\..\data\study_exports\pilot_2026-06-21
+```
+
+- Datos: `data/study_exports/pilot_2026-06-21/`
+- Estadística: `.../analysis/report.md`
+- Insights para el caso: `.../analysis/case_insights.md`
+
+Regenerar export (Mac, SQLite + logs Godot): `./scripts/export-study-data.sh pilot_2026-06-21`
+
+### 3. Después de más sesiones reales
 
 ```powershell
 cd src\backend

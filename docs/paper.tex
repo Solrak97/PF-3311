@@ -1,6 +1,6 @@
 % !TeX root = paper.tex
-% Plantilla ACM sigconf — archivos de clase en ./paper template/
-% Bibliografía: ./references.bib
+% Formato: ACM sigconf (dos columnas). Objetivo: 8 páginas de cuerpo; bibliografía aparte.
+% Plantilla de clase: ./paper template/  ·  Bibliografía: ./references.bib
 \PassOptionsToPackage{spanish,es-noshorthands}{babel}
 
 \documentclass[sigconf, nonacm, language=spanish]{acmart}
@@ -31,261 +31,305 @@
 }
 
 \begin{abstract}
-Los agentes conversacionales basados en modelos de lenguaje pueden resultar naturales sin parecer familiares al nivel de una persona conocida. Este trabajo explora si la familiaridad puede emerger a partir de patrones conductuales (estilo conversacional, estructura de respuestas y preferencias comunicativas) sin imitar apariencia, voz ni identidad explícita. Se presenta Suena Familiar, un sistema que entrena, refina y valida perfiles conductuales, ejecuta un protocolo experimental A/B con avatar y voz constantes, y evalúa familiaridad implícita, naturalidad, presencia social, respuesta afectiva y conocimiento contextual percibido mediante Godspeed, SAM y escalas Likert alineadas a cuatro preguntas de investigación.
+  Los agentes conversacionales actuales pueden mantener interacciones naturales, pero rara vez evocan la sensación de estar conversando con alguien familiar. Aunque investigaciones previas han estudiado familiaridad mediante apariencia, voz o conocimiento contextual, existe poca evidencia sobre el papel de los patrones conductuales en la generación de esta percepción.
+
+Este trabajo explora la familiaridad conductual como un mecanismo capaz de activar modelos mentales asociados a personas conocidas a partir de señales conversacionales implícitas. Para ello se propone una metodología de construcción, refinamiento y validación de perfiles conductuales, posteriormente utilizados dentro de un diseño experimental que compara una condición basada en familiaridad conductual con una condición conversacional genérica.
+
+Un estudio piloto preliminar ($n=3$) sugiere que las señales conductuales pueden influir sobre la percepción de familiaridad, presencia social y conocimiento contextual percibido. Los resultados también indican que familiaridad y respuesta afectiva positiva no son necesariamente equivalentes. Aunque exploratorios, estos hallazgos apoyan la viabilidad de estudiar la familiaridad como un fenómeno conductual independiente de la apariencia o la identidad explícita en agentes virtuales.
+
+    
 \end{abstract}
 
-\keywords{familiaridad conductual, agentes virtuales inteligentes, interacción humano-computadora, agentes conversacionales, presencia social, conocimiento contextual percibido}
+\keywords{familiaridad conductual, modelos mentales, agentes conversacionales, interacción humano-computadora, presencia social, manipulación experimental}
 
 \maketitle
 
 \section{Introducción}
 
-Los agentes conversacionales basados en modelos de lenguaje mantienen diálogos cada vez más coherentes, pero rara vez se perciben como familiares al nivel de una persona conocida \cite{yang_exploring_2025}. Trabajos recientes muestran que la familiaridad y el conocimiento percibido del agente modulan confianza y disposición a interactuar \cite{poletaykina_knowing_2025, yang_exploring_2025}; no obstante, esas manipulaciones suelen combinar apariencia, voz y persona, lo que dificulta aislar el efecto del comportamiento. La literatura describe con más detalle qué ocurre cuando un agente parece familiar que cómo inducir familiaridad de forma controlada mediante la conducta conversacional.
+Los agentes conversacionales impulsados por modelos de lenguaje están evolucionando rápidamente desde asistentes orientados a tareas hacia interlocutores capaces de participar en interacciones cada vez más sociales. A medida que estos sistemas se incorporan a contextos educativos, laborales y personales, surge una pregunta fundamental: ¿qué hace que un agente se sienta socialmente familiar para un usuario?
 
-Este trabajo adopta un enfoque de familiaridad conductual: reproducir patrones conversacionales reconocibles asociados a alguien conocido, sin replicar identidad explícita ni depender de similitud visual. El diseño mantiene constantes avatar, voz e interfaz para focalizar la manipulación en el comportamiento. A diferencia de estudios que miden familiaridad solo como percepción subjetiva durante la interacción \cite{yang_exploring_2025}, se incorpora una validación previa de perfiles que verifica similitud conversacional, naturalidad e integridad de identidad antes de exponer participantes a las condiciones experimentales.
+La familiaridad es una señal social poderosa. Diversos trabajos han mostrado que puede orientar la atención, reducir la incertidumbre interpretativa y modular la disposición a confiar \cite{garciamarques_familiarity_2007, poletaykina_knowing_2025}. En la vida cotidiana, reconocemos el estilo conversacional de personas conocidas a partir de patrones sutiles de interacción: su ritmo, sus expresiones recurrentes, sus preferencias comunicativas o la forma en que desarrollan una conversación. Estas señales pueden resultar reconocibles incluso cuando no existe información visual o contextual suficiente para identificar explícitamente a la persona.
 
-Se desarrolló Suena Familiar, un sistema con arquitectura LangGraph que integra entrenamiento, refinamiento, validación e interacción A/B. El estudio piloto se organiza en dos fases: validación de perfiles por evaluadores familiarizados con la persona modelada, e interacción contrabalanceada de participantes con Condición A (perfil conductual) y Condición B (control genérico).
+Sin embargo, los agentes conversacionales actuales rara vez generan este tipo de percepción \cite{yang_exploring_2025}. La literatura describe con detalle qué ocurre cuando un agente parece familiar, pero dedica menos atención a comprender cómo puede inducirse dicha familiaridad de manera controlada mediante el comportamiento conversacional por sí solo.
 
-Las contribuciones son: (1) un procedimiento para construir, refinar y validar perfiles orientados a la detección implícita de familiaridad conversacional; (2) una plataforma experimental que aísla la manipulación conductual de señales explícitas de identidad; y (3) un diseño piloto con instrumentos Godspeed \cite{bartneck_measurement_2009}, SAM \cite{bradley_measures_1994} y Likert alineados a PI1--PI4.
+Este vacío resulta especialmente relevante porque gran parte de los enfoques existentes combinan familiaridad con otros mecanismos como apariencia visual, memoria persistente, voz sintética personalizada o representación explícita de identidad \cite{poletaykina_knowing_2025, yang_exploring_2025}. En consecuencia, resulta difícil determinar qué parte de la percepción observada corresponde realmente a la familiaridad y cuál responde a otros factores como reconocimiento facial, continuidad temporal o personalización declarada.
+
+La propuesta de este trabajo aborda este problema desde una perspectiva distinta. En lugar de intentar reproducir a una persona específica o personalizar la interacción mediante información explícita del usuario, se introduce el concepto de \emph{familiaridad conductual}: la utilización de señales conversacionales capaces de activar modelos mentales asociados a personas conocidas sin recurrir a la reproducción de identidad, apariencia o voz. Desde esta perspectiva, el interés no reside en que el agente sea percibido como una persona concreta, sino en estudiar si determinados patrones de comportamiento son suficientes para evocar sensaciones de reconocimiento y familiaridad durante la interacción.
+
+La contribución principal es metodológica. Se propone un procedimiento para construir, refinar y validar perfiles conductuales antes de su utilización dentro de un experimento controlado, permitiendo que la Condición A funcione como una manipulación creíble de familiaridad implícita frente a una condición de control con comportamiento genérico. Sobre esta base se desarrolla un estudio piloto orientado a explorar si dichas señales conductuales influyen sobre la percepción de familiaridad, presencia social, respuesta afectiva y conocimiento contextual percibido, utilizando instrumentos como Godspeed \cite{bartneck_measurement_2009}, SAM \cite{bradley_measures_1994} y escalas Likert.
+
+El agente propuesto no intenta ser la persona modelada. Su objetivo es generar suficientes señales conductuales para que un observador familiarizado pueda percibir reconocimiento, familiaridad o conocimiento previo como resultado de la interacción. Esta distinción permite estudiar la familiaridad como un fenómeno conductual y perceptivo, independiente de mecanismos explícitos de identidad o representación visual.
+
 
 \section{Trabajo Relacionado}
 
-\subsection{Familiaridad como Señal Cognitiva}
+\subsection{Familiaridad y Modelos Mentales de Personas Conocidas}
 
-En psicología cognitiva, la familiaridad es un componente central de los modelos de reconocimiento de memoria. Bajo el modelo de doble proceso, funciona como señal rápida y automática que, a diferencia del recuerdo, no implica recuperar información contextual específica \cite{mickes_recollection_2009}. Trabajos posteriores muestran que esa señal puede surgir por fluidez de procesamiento: estímulos más fáciles de interpretar tienden a percibirse como más familiares, incluso sin exposición previa reciente \cite{kelley_subjective_1998, mecklinger_fluency_2020, wagner_relationship_1998}. Esas señales reducen esfuerzo cognitivo y facilitan juicios sobre confianza, veracidad y naturalidad.
+La familiaridad constituye un mecanismo fundamental de la cognición humana. Dentro de las teorías de doble proceso de memoria, suele distinguirse de la evocación (\textit{recollection}), ya que permite experimentar una sensación de reconocimiento sin necesidad de recuperar conscientemente detalles contextuales asociados a experiencias previas \cite{mickes_recollection_2009}. Diversos trabajos han sugerido además que la familiaridad puede emerger a partir de procesos de fluidez cognitiva, donde estímulos previamente experimentados son procesados con mayor facilidad y, por tanto, percibidos como más familiares \cite{kelley_subjective_1998, mecklinger_fluency_2020}.
 
-En contextos sociales, la familiaridad modifica cómo se interpretan rasgos y conductas ajenas, incluso sin información adicional \cite{garciamarques_familiarity_2007}. Sin embargo, la mayor parte de esta evidencia proviene de estímulos aislados o tareas perceptuales, no de interacciones conversacionales prolongadas con sistemas artificiales.
+En contextos sociales, estas señales contribuyen a la construcción de modelos mentales sobre otras personas. Dichos modelos permiten anticipar comportamientos, interpretar intenciones y generar expectativas sobre futuras interacciones \cite{tamir_predicting_2024}. A medida que aumenta el conocimiento previo sobre un individuo, estos modelos se vuelven más ricos y detallados, incorporando patrones conversacionales, preferencias comunicativas y características conductuales recurrentes.
 
-\subsection{Modelos Mentales y Cognición Social}
-
-En la interacción social, la percepción de otras personas implica construir representaciones internas que permiten interpretar y predecir su comportamiento. Esos modelos mentales organizan información adquirida en múltiples experiencias y son más ricos para individuos conocidos \cite{tamir_predicting_2024}. Durante la conversación, las representaciones reducen incertidumbre y anticipan respuestas. Queda abierto si patrones parciales de comportamiento bastan para activar modelos similares en ausencia del individuo real.
-
-\subsection{Antropomorfismo en Agentes Virtuales}
-
-El antropomorfismo atribuye características humanas a sistemas artificiales para activar mecanismos sociales \cite{nowak_effect_2003, baylor_promoting_2009, louwerse_social_2005}, pero expectativas no satisfechas pueden producir valle extraño \cite{song_uncanny_2024}. La familiaridad visual de un avatar modula identificación y afinidad de forma distinta a la familiaridad conductual \cite{liu_i_2025}, lo que refuerza la necesidad de controlar apariencia al estudiar el comportamiento.
-
-\subsection{Comportamiento del Agente}
-
-Más allá de la apariencia, el diálogo relacional y la convergencia en estilo comunicacional influyen en confianza y naturalidad percibidas \cite{bickmore_relational_2001, thomas_expressions_2020}. Estos enfoques mejoran la interacción, pero rara vez diseñan conducta para activar modelos mentales sobre una persona concreta.
-
-\subsection{Alineación en la Interacción Humano-Agente}
-
-La alineación adapta comportamiento lingüístico y social durante la conversación \cite{branigan_linguistic_2010}. Puede surgir por activación reciente o por creencias sobre el interlocutor; la literatura distingue adaptación automática por contexto inmediato de ajustes guiados por representaciones del otro \cite{dubuisson_duplessis_towards_2021}. En interacción humano-agente, suele implementarse de forma reactiva y construye modelos locales durante la sesión, sin evocar representaciones previas sobre individuos específicos.
-
-\subsection{Mimetismo}
-
-El mimetismo reproduce aspectos del comportamiento del usuario para aumentar coherencia percibida \cite{caridakis_virtual_2007}, pero una imitación excesiva o detectable genera incomodidad \cite{wang_stop_2023}. Copia señales del usuario presente, no representaciones estructuradas de otra persona.
+La presente investigación parte de la hipótesis de que ciertas señales conductuales podrían ser suficientes para activar parcialmente estos modelos mentales durante la interacción con un agente artificial. Desde esta perspectiva, el interés no reside en reproducir la identidad de una persona, sino en estudiar si determinados patrones conversacionales pueden evocar sensaciones de familiaridad asociadas a individuos conocidos.
 
 \subsection{Familiaridad en Agentes Virtuales}
 
-Poletaykina et al.\ reportan mayor confianza hacia un agente virtual familiar, con efectos limitados en afinidad o experiencia de usuario \cite{poletaykina_knowing_2025}. Yang et al.\ muestran que familiaridad y conocimiento percibido modulan confianza y dinámica conversacional en agentes con modelos de lenguaje, pero combinan réplica visual, voz y persona \cite{yang_exploring_2025}. La Tabla~\ref{tab:related-compare} contrasta esos enfoques con el de este trabajo.
+La familiaridad ha sido estudiada previamente en el contexto de agentes virtuales inteligentes y agentes relacionales. Investigaciones tempranas mostraron que la continuidad de interacción, la consistencia conductual y la capacidad de mantener relaciones a largo plazo pueden influir sobre la percepción social de los usuarios \cite{bickmore_relational_2001}. Trabajos posteriores sugieren que estas características pueden favorecer confianza, cercanía percibida y compromiso durante la interacción \cite{bickmore_relational_2001}.
 
-\begin{table}[t]
-  \caption{Comparación de manipulaciones de familiaridad en agentes virtuales.}
-  \label{tab:related-compare}
-  \small
-  \begin{tabular}{@{}p{0.17\linewidth}p{0.25\linewidth}p{0.25\linewidth}p{0.25\linewidth}@{}}
-    \toprule
-    \textbf{Aspecto} & \textbf{Poletaykina et al.} & \textbf{Yang et al.} & \textbf{Suena Familiar} \\
-    \midrule
-    Señal principal & Clon visual familiar & Réplica + persona LLM & Perfil conductual YAML \\
-    Conducta aislada & No & No & Sí (avatar/voz fijos) \\
-    Validación previa & No & No & Sí (Fase 1) \\
-    Foco empírico & Confianza & Conocimiento percibido & PI1--PI4 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+Más recientemente, diversos autores han explorado mecanismos explícitos para generar familiaridad en agentes virtuales. Poletaykina et al.\ encontraron que agentes visualmente familiares pueden incrementar confianza y percepción positiva durante la interacción \cite{poletaykina_knowing_2025}. De manera similar, Yang et al.\ analizaron cómo familiaridad y conocimiento contextual percibido influyen sobre la percepción de agentes conversacionales, utilizando representaciones explícitas de personas conocidas y elementos visuales asociados a ellas \cite{yang_exploring_2025}.
+
+Estos resultados sugieren que la familiaridad puede influir significativamente sobre la forma en que los usuarios interpretan y evalúan agentes virtuales. Sin embargo, la mayoría de las aproximaciones existentes combinan simultáneamente múltiples señales de familiaridad, incluyendo apariencia visual, identidad explícita, voz, memoria o conocimiento contextual, dificultando aislar el efecto específico de la conducta conversacional.
+
+\subsection{Alineación Conversacional e Imitación Conductual}
+
+La comunicación humana presenta fenómenos de alineación lingüística y acomodación conversacional mediante los cuales los interlocutores ajustan progresivamente patrones de comunicación durante una interacción \cite{branigan_linguistic_2010}. Estos mecanismos pueden manifestarse en vocabulario, estructuras sintácticas, longitud de respuestas o estrategias discursivas compartidas.
+
+De manera similar, investigaciones sobre mimetismo e interacción social han mostrado que los individuos son sensibles a patrones sutiles de comportamiento durante la comunicación \cite{caridakis_virtual_2007}. Aunque estas estrategias pueden favorecer naturalidad y coherencia conversacional, también pueden generar respuestas negativas cuando el comportamiento percibido resulta excesivamente artificial o intrusivo \cite{wang_stop_2023}.
+
+No obstante, gran parte de esta literatura estudia procesos de adaptación producidos dentro de la interacción misma. En contraste, el presente trabajo explora si patrones conductuales previamente asociados a una persona conocida pueden ser utilizados para evocar familiaridad antes de que exista una historia compartida entre usuario y agente.
 
 \subsection{Posicionamiento de Este Trabajo}
 
-La revisión expone una brecha: existen vías para mejorar la interacción (apariencia, señales sociales, alineación reactiva, mimetismo), pero ninguna activa de forma explícita modelos mentales preexistentes sobre una persona conocida mientras aísla la conducta conversacional. Este trabajo propone familiaridad conductual con validación previa de perfiles y un protocolo A/B que mantiene constantes avatar, voz e interfaz. El objetivo no es equivalencia objetiva con una persona real, sino comprobar si el perfil genera señales reconocibles para funcionar como manipulación experimental.
+La presente propuesta busca aislar la conducta conversacional como mecanismo principal de familiaridad. En lugar de utilizar apariencia visual, voz personalizada o representación explícita de identidad, el estudio explora si patrones conversacionales asociados a una persona conocida pueden activar modelos mentales preexistentes durante la interacción con un agente virtual.
+
+La contribución central no consiste en desarrollar una réplica digital de una persona ni en maximizar semejanza con un individuo real. En su lugar, se propone una metodología para construir, refinar y validar perfiles conductuales antes de su utilización dentro de un experimento controlado. La validación previa de dichos perfiles funciona como un chequeo de manipulación experimental orientado a verificar que el perfil genera señales reconocibles de familiaridad antes de exponer participantes a la condición experimental.
+
+Esta aproximación permite estudiar la familiaridad como un fenómeno conductual independiente de mecanismos explícitos de identidad, abordando una pregunta aún poco explorada en la literatura: ¿pueden patrones conversacionales por sí solos activar modelos mentales asociados a personas conocidas durante la interacción con un agente virtual?
 
 \section{Diseño del Sistema}
 
-\subsection{Arquitectura General}
+El objetivo de la plataforma no consiste en reproducir digitalmente a una persona específica, sino en proporcionar un entorno controlado para estudiar familiaridad conductual como fenómeno experimental. Para ello, el sistema implementa mecanismos para construir, almacenar y utilizar perfiles conductuales capaces de influir sobre el comportamiento conversacional de un agente virtual, manteniendo constantes los demás elementos de interacción.
 
-El sistema sigue una arquitectura cliente-servidor (Figura~\ref{fig:architecture}). El cliente en Godot concentra la experiencia del participante: interfaz conversacional por texto y voz, avatar VRM, reproducción de audio y orquestación del protocolo. El backend en Python expone HTTP y WebSocket mediante FastAPI y coordina flujos con LangGraph. La generación de lenguaje utiliza Ollama; el reconocimiento de voz, Whisper; la síntesis, Edge-TTS, con voz y prosodia fijas entre condiciones.
+\subsection{Plataforma Experimental}
+
+La plataforma fue desarrollada sobre Godot e integra interacción conversacional mediante texto y voz. El cliente gestiona la experiencia del participante, incluyendo la interfaz conversacional, el avatar virtual y la reproducción de audio. Por su parte, el backend coordina la generación conversacional, la síntesis de voz y la administración de perfiles conductuales.
+
+La Figura~\ref{fig:architecture} presenta una visión general de la arquitectura utilizada. El sistema se diseñó de forma desacoplada para permitir la modificación de perfiles conductuales sin alterar los componentes de interacción percibidos por el usuario.
 
 \begin{figure*}[t]
   \centering
-  \resizebox{\textwidth}{!}{\ArchitectureFigure}
-  \caption{Arquitectura cliente-servidor de Suena Familiar. El cliente Godot orquesta la experiencia del participante; el backend expone cuatro flujos LangGraph y persiste sesiones y perfiles conductuales.}
-  \Description{Diagrama en capas: cliente Godot con interfaz, avatar, Whisper y Edge-TTS; FastAPI; LangGraph con entrenamiento, refinamiento, validación y chat; Ollama, SQLite y perfiles YAML.}
+  \includegraphics[width=\textwidth]{figures/architecture.png}
+  \caption{Visión general de la plataforma experimental. El cliente Godot gestiona la interacción del participante; el backend coordina la generación conversacional, la síntesis de voz y los perfiles conductuales. Avatar, voz e interfaz permanecen constantes entre condiciones; solo cambia el perfil conductual activo.}
+  \Description{Diagrama cliente-servidor: cliente Godot, backend conversacional, modelo de lenguaje, síntesis de voz y almacenamiento de perfiles.}
   \label{fig:architecture}
 \end{figure*}
 
-\subsection{Flujos Conversacionales}
-
-El backend implementa cuatro flujos expuestos en Godot como etapas del protocolo.
-
-\textbf{Entrenamiento.} Entrevista guiada que alterna preguntas exploratorias e imitación en primera persona; al finalizar, extracción del perfil YAML e índice de momentos conversacionales.
-
-\textbf{Refinamiento.} El usuario modelado califica coincidencias del agente en Condición A; un grafo ajusta tono, hábitos léxicos o modos situacionales sin modificar avatar ni voz.
-
-\textbf{Validación.} Evaluadores califican respuestas en Likert; agregación contra umbrales (Tabla~\ref{tab:validation-metrics}).
-
-\textbf{Chat experimental.} Cada turno atraviesa clasificación, recuperación, planificación y generación (Figura~\ref{fig:pipeline}).
-
-\begin{figure}[t]
-  \centering
-  \resizebox{\columnwidth}{!}{\PipelineFigure}
-  \caption{Pila conductual por turno en Condición A. Las etapas sombreadas se omiten o simplifican en Condición B.}
-  \Description{Flujo horizontal: entrada del usuario, clasificación, recuperación, planificación, generación y salida del agente, con perfiles YAML y momentos indexados alimentando las etapas centrales.}
-  \label{fig:pipeline}
-\end{figure}
+Aunque la arquitectura incorpora diversos componentes tecnológicos, el foco de la investigación no se encuentra en la evaluación técnica de la plataforma, sino en el estudio de los efectos perceptuales asociados a los perfiles conductuales utilizados por el agente.
 
 \subsection{Perfiles Conductuales}
 
-Un perfil codifica tono, formalidad, patrones léxicos, modos situacionales, ejemplos de voz y restricciones de identidad (Tabla~\ref{tab:profile-fields}). Las plantillas Jinja2 inyectan el YAML en el prompt solo en Condición A. La Condición B carga el perfil de control (\path{generic_control_agent.yaml}).
+Los perfiles conductuales constituyen el mecanismo principal mediante el cual se implementa la familiaridad conductual dentro del sistema.
+
+Cada perfil almacena patrones conversacionales, preferencias comunicativas, tendencias de estilo, restricciones de comportamiento y material contextual asociado a la persona modelada. Estos elementos son utilizados durante la generación de respuestas para modificar el comportamiento observable del agente sin alterar su representación visual o identidad explícita.
+
+La construcción de los perfiles se basa en entrevistas conversacionales con la persona modelada, a partir de las cuales se identifican patrones recurrentes de comunicación, preferencias discursivas y características de estilo relevantes para la interacción.
+
+Una vez generado un perfil inicial, este puede ser refinado iterativamente mediante retroalimentación de la persona modelada y posteriormente sometido a procesos de validación antes de su utilización dentro de evaluaciones experimentales.
+
+\subsection{Validación de Perfiles}
+
+Antes de ser utilizados dentro de sesiones experimentales, los perfiles conductuales son sometidos a un proceso de validación destinado a verificar que generan señales suficientemente consistentes de familiaridad.
+
+La validación considera tres dimensiones principales: similitud conversacional, naturalidad e integridad de identidad. La Tabla~\ref{tab:validation-metrics} resume los indicadores utilizados durante esta etapa.
+
+El propósito de esta validación no consiste en determinar si el agente reproduce fielmente a una persona real, sino verificar que el perfil genera señales reconocibles de familiaridad sin recurrir a mecanismos explícitos de identidad. Los perfiles que no alcanzan los criterios establecidos son refinados nuevamente antes de su utilización dentro de estudios posteriores.
+
+Esta etapa funciona como un mecanismo de control de calidad del perfil conductual y constituye un requisito previo para su utilización dentro de evaluaciones experimentales posteriores.
 
 \begin{table}[t]
-  \caption{Bloques principales de un perfil conductual.}
-  \label{tab:profile-fields}
-  \small
-  \begin{tabular}{p{0.28\linewidth} p{0.64\linewidth}}
-    \toprule
-    \textbf{Bloque} & \textbf{Contenido} \\
-    \midrule
-    \texttt{style} & Tono, formalidad, expresividad, longitud, ritmo \\
-    \texttt{lexical\_patterns} & Frases habituales, muletillas, frases evitadas \\
-    \texttt{voice\_exemplars} & Pares contexto/línea para recuperación \\
-    \texttt{situation\_modes} & Estrategias por situación conversacional \\
-    \texttt{constraints} & Prohibición de filtración o simulación explícita de identidad \\
-    \bottomrule
-  \end{tabular}
+\caption{Indicadores utilizados durante la validación de perfiles conductuales.}
+\label{tab:validation-metrics}
+\small
+\begin{tabular}{p{0.34\linewidth} p{0.44\linewidth} p{0.14\linewidth}}
+\toprule
+\textbf{Indicador} & \textbf{Objetivo} & \textbf{Umbral} \\
+\midrule
+Similitud conversacional & Reconocimiento de patrones asociados a la persona modelada & 4.5 \\
+Naturalidad & Coherencia y plausibilidad conversacional & 4.0 \\
+Integridad de identidad & Ausencia de declaraciones explícitas de identidad & 5.5 \\
+\bottomrule
+\end{tabular}
 \end{table}
-
-\begin{table}[t]
-  \caption{Métricas de validación de perfiles (Fase 1).}
-  \label{tab:validation-metrics}
-  \small
-  \begin{tabular}{p{0.34\linewidth} p{0.44\linewidth} p{0.14\linewidth}}
-    \toprule
-    \textbf{Indicador} & \textbf{Agregación} & \textbf{Mín.} \\
-    \midrule
-    Similitud conversacional & Tono, expresiones, longitud, consistencia, familiaridad & 4,5 \\
-    Naturalidad & Naturalidad y coherencia conversacional & 4,0 \\
-    Integridad de identidad & Ausencia de filtración o impersonación explícita & 5,5 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\subsection{Manipulación Experimental}
-
-La Tabla~\ref{tab:conditions-tech} y la Figura~\ref{fig:manipulation} resumen las diferencias entre condiciones. Avatar, voz, interfaz, duración (cinco minutos) y escenario se mantienen constantes.
-
-\begin{figure}[t]
-  \centering
-  \resizebox{\columnwidth}{!}{\ManipulationFigure}
-  \caption{Esquema de la manipulación experimental A/B.}
-  \Description{Constantes compartidas en la parte superior; Condición A con perfil conductual a la izquierda y Condición B con control genérico a la derecha.}
-  \label{fig:manipulation}
-\end{figure}
-
-\begin{table}[t]
-  \caption{Diferencias entre Condición A y Condición B.}
-  \label{tab:conditions-tech}
-  \small
-  \begin{tabular}{p{0.22\linewidth} p{0.34\linewidth} p{0.36\linewidth}}
-    \toprule
-    \textbf{Aspecto} & \textbf{Condición A} & \textbf{Condición B} \\
-    \midrule
-    Perfil YAML & Entrenado y validado & Control genérico \\
-    Clasificador de situación & Activo & Omitido \\
-    Recuperación contextual & Activa & Desactivada \\
-    Planificador conductual & Activo & Vacío \\
-    Plantilla de prompt & Perfil personalizado & Línea base neutra \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\subsection{Ejemplo Ilustrativo de la Manipulación}
-
-La Figura~\ref{fig:illustrative} muestra un intercambio representativo con el mismo mensaje del usuario, avatar y voz idénticos, y perfiles distintos. Es una ilustración del sistema con un perfil de evaluación interno; no constituye dato experimental.
-
-\begin{figure}[t]
-  \centering
-  \resizebox{\columnwidth}{!}{\DialogueFigure}
-  \caption{Ejemplo ilustrativo: misma entrada, distinto perfil conductual.}
-  \Description{Tres burbujas: mensaje del usuario, respuesta informal en Condición A y respuesta neutra en Condición B.}
-  \label{fig:illustrative}
-\end{figure}
-
-En Condición A aparecen muletillas y tono informal del perfil (\texttt{lexical\_patterns}); en Condición B la respuesta es socialmente competente pero sin patrones distintivos ni marcadores de familiaridad explícita.
 
 \section{Metodología}
 
-\subsection{Preguntas de Investigación}
+\subsection{Diseño Experimental}
 
-\begin{description}
-  \item[PI1] ¿En qué medida los usuarios infieren patrones de familiaridad conductual sin indicaciones explícitas sobre la identidad representada?
-  \item[PI2] ¿En qué medida los patrones de familiaridad conductual influyen en naturalidad percibida y presencia social?
-  \item[PI3] ¿Qué respuesta afectiva generan los agentes con familiaridad conductual, en valencia emocional y cercanía percibida, frente al control?
-  \item[PI4] ¿En qué medida un agente con familiaridad conductual es percibido como poseedor de conocimiento contextual previo sobre el usuario?
-\end{description}
+El estudio emplea un diseño intra-sujetos con contrabalanceo parcial para explorar el efecto de la familiaridad conductual sobre la percepción de agentes conversacionales. Cada participante interactúa con dos condiciones experimentales:
+
+\begin{itemize}
+\item \textbf{Condición A}: agente configurado mediante un perfil conductual previamente validado y asociado a una persona conocida por los participantes.
+\item \textbf{Condición B}: agente configurado mediante un perfil conversacional genérico sin rasgos distintivos asociados a una persona específica.
+\end{itemize}
+
+La manipulación experimental se centra exclusivamente en el comportamiento conversacional del agente. Avatar, voz, interfaz, modelo generativo, duración de la interacción e instrucciones proporcionadas a los participantes permanecen constantes entre condiciones. De esta manera, las diferencias observadas pueden atribuirse principalmente a las señales conductuales incorporadas mediante el perfil utilizado.
+
+El orden de presentación de las condiciones fue alternado entre participantes con el objetivo de reducir posibles efectos de secuencia.
 
 \subsection{Procedimiento}
 
-El estudio piloto consta de dos fases (Figura~\ref{fig:protocol}). En la Fase 1, el usuario modelado entrena un perfil; evaluadores independientes lo validan en siete dimensiones Likert (tono, expresiones, longitud, consistencia, familiaridad, naturalidad, integridad de identidad) y, si es necesario, el perfil pasa por refinamiento hasta cumplir umbrales. En la Fase 2, participantes distintos interactúan con Condición A y B en orden contrabalanceado, completan cuestionarios tras cada sesión de cinco minutos y, al final, una entrevista breve.
+El protocolo experimental se desarrolló en dos fases.
 
-\begin{figure*}[t]
-  \centering
-  \resizebox{\textwidth}{!}{\ProtocolFigure}
-  \caption{Flujo del estudio piloto en dos fases. La Fase 1 itera entrenamiento y refinamiento hasta cumplir umbrales de validación; la Fase 2 contrabalancea el orden A/B entre participantes.}
-  \Description{Fase 1: entrenamiento, refinamiento con retroalimentación si falla, validación. Fase 2: interacción A, cuestionario, interacción B, cuestionario, entrevista, con órdenes A-B o B-A.}
-  \label{fig:protocol}
-\end{figure*}
+La primera fase corresponde a la construcción, refinamiento y validación del perfil conductual utilizado posteriormente en la condición experimental. El perfil se genera mediante entrevistas conversacionales con la persona modelada y se ajusta iterativamente a partir de retroalimentación directa. Posteriormente, personas familiarizadas con dicha persona evalúan la capacidad del perfil para generar señales reconocibles de familiaridad.
 
-Antes de cada interacción, el participante recibe instrucciones neutrales: conversar de forma natural con un asistente virtual durante unos minutos, sin indicación sobre perfiles, identidad modelada ni hipótesis del estudio.
+La segunda fase corresponde a la evaluación piloto. Cada participante interactúa individualmente con ambas condiciones experimentales durante sesiones de aproximadamente cinco minutos. Después de cada interacción se aplican instrumentos de evaluación cuantitativos y, al finalizar ambas sesiones, se realiza una entrevista semi-estructurada orientada a explorar diferencias percibidas entre agentes, señales de familiaridad y atribuciones de conocimiento previo.
 
-\subsection{Diseño y Participantes}
+Las instrucciones proporcionadas a los participantes fueron deliberadamente neutrales. No se informó la existencia de perfiles conductuales, la identidad de la persona modelada ni la naturaleza específica de la manipulación experimental. Este procedimiento busca preservar la familiaridad como fenómeno inferido durante la interacción y no como resultado de información explícitamente proporcionada por el investigador.
 
-Diseño intra-sujetos con contrabalanceo parcial (A$\rightarrow$B / B$\rightarrow$A). Muestra por conveniencia de 6 a 12 participantes familiarizados con la persona modelada. Los evaluadores de la Fase 1 no participan en la Fase 2. Se excluye a quienes conocen el sistema, los objetivos del estudio o hayan validado perfiles.
+\subsection{Participantes}
 
-Escenarios semi-estructurados: \emph{conversación cotidiana} (día, actividades, seguimiento de tema) o \emph{soporte casual} (experiencia moderada con apoyo conversacional ligero). El agente evita mencionar a la persona modelada o referirse a condiciones experimentales.
+La evaluación piloto se orientó a participantes con conocimiento previo de la persona utilizada para construir el perfil conductual. Este criterio resulta necesario debido a que el fenómeno estudiado depende de la existencia de modelos mentales previos sobre la persona modelada, condición indispensable para la posible aparición de señales de familiaridad durante la interacción.
 
-\subsection{Instrumentos}
+Los participantes fueron reclutados mediante muestreo por conveniencia entre personas pertenecientes al entorno social de la persona modelada. Se excluyeron individuos involucrados en las etapas de construcción o validación del perfil conductual, así como personas que conocieran los objetivos específicos de la manipulación experimental.
 
-La Tabla~\ref{tab:rq-instruments} resume constructos e instrumentos. Godspeed mide antropomorfismo, animacidad, simpatía, inteligencia percibida y seguridad emocional \cite{bartneck_measurement_2009}; para PI2 se enfatizan animacidad y naturalidad. SAM captura valencia, activación y control percibido \cite{bradley_measures_1994}, complementado con tres ítems de cercanía. Los ítems de PI1 y PI4 se adaptan del protocolo implementado en Godot; PI4 se inspira en la literatura de conocimiento percibido en agentes \cite{yang_exploring_2025, poletaykina_knowing_2025}.
+La muestra utilizada en esta etapa piloto estuvo compuesta por tres participantes. Si bien su tamaño no permite realizar inferencias estadísticas robustas, resulta adecuado para los objetivos exploratorios del estudio, orientados principalmente a evaluar la viabilidad metodológica del protocolo, identificar posibles problemas de diseño experimental y obtener evidencia preliminar sobre el comportamiento de las variables de interés.
+
+Dado que la percepción de familiaridad constituye el fenómeno central de la investigación, la selección de participantes familiarizados con la persona modelada responde a una decisión metodológica deliberada y no a un criterio de conveniencia exclusivamente práctico. Esta estrategia busca maximizar la probabilidad de observar el fenómeno estudiado bajo condiciones controladas antes de realizar evaluaciones con muestras de mayor escala.
+
+
+\subsection{Validación de Perfiles Conductuales}
+
+Antes de ser utilizado en la evaluación principal, el perfil conductual fue sometido a la etapa de validación descrita en la Sección~3 (Tabla~\ref{tab:validation-metrics}). Esta fase funciona como chequeo de manipulación experimental: verificar que el perfil produce señales reconocibles de familiaridad antes de exponer participantes a la Condición A.
+
+\subsection{Instrumentos de Recolección de Datos}
+
+La evaluación considera cuatro dimensiones principales: familiaridad conductual percibida, presencia social, respuesta afectiva y conocimiento contextual percibido.
+
+La familiaridad conductual se evalúa mediante una escala Likert diseñada para capturar reconocimiento de patrones conversacionales sin referencia explícita a identidad. La presencia social y características asociadas al agente se evalúan mediante dimensiones seleccionadas del cuestionario Godspeed \cite{bartneck_measurement_2009}. La respuesta afectiva se registra utilizando el instrumento SAM (\textit{Self-Assessment Manikin}) \cite{bradley_measures_1994}, complementado con ítems relacionados con cercanía interpersonal. Finalmente, el conocimiento contextual percibido se evalúa mediante escalas inspiradas en trabajos recientes sobre familiaridad y conocimiento percibido en agentes virtuales \cite{poletaykina_knowing_2025, yang_exploring_2025}.
+
+Además de las medidas cuantitativas, se realizaron entrevistas semi-estructuradas posteriores a la interacción para explorar señales percibidas de familiaridad, atribuciones de conocimiento previo y diferencias observadas entre condiciones.
+
+\subsection{Estrategia de Análisis}
+
+Debido al tamaño reducido de la muestra piloto, el análisis se considera exploratorio.
+
+Se reportan estadísticas descriptivas por condición, diferencias observadas entre condiciones y visualizaciones orientadas a identificar tendencias generales e individuos atípicos. Los resultados cuantitativos se complementan mediante análisis cualitativo de las entrevistas posteriores a la interacción.
+
+La interpretación de resultados prioriza la dirección de los efectos observados, la consistencia entre participantes y la convergencia entre evidencia cuantitativa y cualitativa. Este enfoque resulta coherente con el objetivo principal del estudio piloto: evaluar la viabilidad metodológica de la propuesta y generar evidencia preliminar para futuras evaluaciones con muestras más amplias.
+
+\section{Resultados del Piloto}
+
+\subsection{Contexto del Piloto}
+
+La evaluación piloto incluyó tres participantes con pares completos de observaciones para ambas condiciones experimentales. Debido al carácter exploratorio del estudio y al tamaño reducido de la muestra, los resultados se interpretan como evidencia preliminar orientada a evaluar la viabilidad metodológica de la propuesta y la efectividad de la manipulación conductual.
+
+El objetivo principal de esta etapa no consiste en establecer evidencia confirmatoria, sino identificar tendencias iniciales, evaluar la capacidad de la manipulación para generar diferencias perceptibles entre condiciones y obtener información que permita refinar futuros estudios de mayor escala.
+
+\subsection{Diferencias Observadas Entre Condiciones}
+
+La Tabla~\ref{tab:pilot-primary} resume los resultados obtenidos durante la evaluación piloto. En términos generales, la Condición A presentó valores superiores a la Condición B en familiaridad percibida, animacidad, antropomorfismo, cercanía interpersonal y conocimiento contextual percibido. La única dimensión sin diferencias agregadas observables fue la valencia emocional medida mediante SAM.
+
+Aunque estas diferencias no pueden interpretarse como evidencia confirmatoria debido al tamaño de muestra, los resultados sugieren que la manipulación basada en perfiles conductuales produjo cambios perceptibles en múltiples dimensiones de la interacción.
+
+Sin embargo, el análisis individual revela una considerable variabilidad entre participantes. Mientras algunos mostraron incrementos claros en familiaridad y conocimiento contextual percibido, otros respondieron de manera más neutra o interpretaron la interacción desde perspectivas distintas.
 
 \begin{table}[t]
-  \caption{Preguntas de investigación, constructos e instrumentos.}
-  \label{tab:rq-instruments}
+  \caption{Medias pareadas del piloto ($n=3$).}
+  \label{tab:pilot-primary}
   \small
-  \begin{tabular}{p{0.06\linewidth} p{0.30\linewidth} p{0.28\linewidth} p{0.28\linewidth}}
+  \begin{tabular}{@{}lrrr@{}}
     \toprule
-    \textbf{PI} & \textbf{Constructo} & \textbf{Instrumento} & \textbf{Hipótesis} \\
+    \textbf{Constructo} & \textbf{A} & \textbf{B} & \textbf{A $-$ B} \\
     \midrule
-    PI1 & Familiaridad implícita & Likert 1--7 (5 ítems) & Mayor familiaridad en A \\
-    PI2 & Naturalidad y presencia & Godspeed & Mayor animacidad en A \\
-    PI3 & Valencia y cercanía & SAM + Likert (3 ítems) & Respuesta más positiva en A \\
-    PI4 & Conocimiento contextual & Likert 1--7 (4 ítems) & Mayor atribución en A \\
+    Familiaridad & 3,47 & 2,27 & +1,20 \\
+    Animacidad (Godspeed) & 3,72 & 2,89 & +0,83 \\
+    Antropomorfismo (Godspeed) & 3,20 & 2,47 & +0,73 \\
+    Cercanía & 4,22 & 3,33 & +0,89 \\
+    Valencia (SAM) & 6,33 & 6,33 & 0,00 \\
+    Conocimiento contextual & 5,42 & 4,50 & +0,92 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\textbf{PI1 (familiaridad implícita, Likert 1--7):} (1) La forma de hablar del agente me resultó reconocible; (2) El agente se sintió familiar (sin que me dijera quién imita); (3) El agente me recordó a alguien que conozco; (4) El estilo conversacional del agente parecía propio de una persona concreta; (5) Percibí señales de familiaridad aunque nadie me lo explicara.
+\subsection{Perfiles de Respuesta Observados}
 
-\textbf{PI4 (conocimiento contextual, Likert 1--7):} (1) El agente pareció entender mi situación y contexto; (2) El agente dio la impresión de conocerme de antes; (3) Confiaría en lo que el agente dijo en esta conversación; (4) El agente se sintió predecible y coherente en cómo respondió.
+La Tabla~\ref{tab:pilot-cases} resume los principales patrones observados durante el piloto.
 
-\textbf{PI3 (cercanía, Likert 1--7):} (1) La interacción se sintió cercana y personal; (2) Me sentí conectado/a con el agente durante la charla; (3) Me sentí cómodo/a hablando con el agente. SAM añade escalas visuales de valencia, activación y control (1--9).
+\begin{table*}[t]
+  \caption{Resultados exploratorios por participante ($n=3$).}
+  \label{tab:pilot-cases}
+  \small
+  \begin{tabular}{@{}p{0.08\linewidth} p{0.24\linewidth} p{0.30\linewidth} p{0.30\linewidth}@{}}
+    \toprule
+    \textbf{Participante} & \textbf{Patrón cuantitativo} & \textbf{Evidencia cualitativa} & \textbf{Interpretación} \\
+    \midrule
+    pf002 &
+    Familiaridad A $>$ B; valencia A $<$ B &
+    ``Me dio miedo''; reconoció señales e ``información mía'' sin identificación explícita &
+    Familiaridad conductual con incomodidad afectiva \\
+    pf004 &
+    Escalas planas entre condiciones &
+    Percibió estilos distintos (directo vs.\ amistoso); sin reconocimiento de familiaridad &
+    Manipulación de estilo perceptible sin activación de familiaridad \\
+    pf005 &
+    Cercanía y contexto A $>$ B &
+    Negó familiaridad en entrevista pese a puntuaciones altas en escalas &
+    Atribución contextual sin reconocimiento explícito de familiaridad \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
 
-\subsection{Entrevista Semi-estructurada}
+El participante \texttt{pf002} mostró el contraste más pronunciado entre condiciones. Reportó señales claras de familiaridad e identificó la presencia de información que percibía como relacionada consigo mismo. Sin embargo, esta percepción estuvo acompañada por incomodidad y una disminución de la valencia emocional asociada a la experiencia.
 
-Tras ambas interacciones, la entrevista explora: diferencias percibidas entre conversaciones; aspectos naturales o extraños; posibles señales de familiaridad detectadas; y si el participante atribuyó conocimiento previo al agente. Las preguntas evitan revelar la manipulación durante las sesiones principales.
+El participante \texttt{pf004} percibió diferencias de estilo entre agentes, describiendo una condición como más directa y otra como más amistosa. No obstante, dichas diferencias no se tradujeron en atribuciones de familiaridad o conocimiento previo.
 
-\subsection{Análisis y Consideraciones Éticas}
+Finalmente, \texttt{pf005} presentó puntuaciones elevadas en cercanía interpersonal y conocimiento contextual percibido para la Condición A, aunque posteriormente negó experimentar familiaridad durante la entrevista. Este caso evidencia una posible separación entre reconocimiento explícito y otras dimensiones sociales de la interacción.
 
-En la Fase 1 se reportan medias y desviaciones de las dimensiones Likert y de los indicadores agregados. En la Fase 2 se comparan condiciones con prueba \emph{t} de muestras relacionadas o equivalente no paramétrico; dado el tamaño piloto, los resultados se interpretan de forma exploratoria con tamaños del efecto y triangulación con entrevistas. El estudio requiere consentimiento informado, identificador anonimizado y posibilidad de retiro; no se revela al participante qué persona modela el perfil conductual.
+En conjunto, estos resultados sugieren que la familiaridad conductual puede manifestarse de formas distintas entre individuos y no necesariamente genera respuestas homogéneas.
 
-\section{Discusión y Conclusiones}
+\subsection{Triangulación Cuantitativa y Cualitativa}
 
-Suena Familiar plantea la familiaridad conductual como manipulación experimental independiente de identidad visual explícita. Al mantener avatar y voz constantes, el diseño aísla el efecto de patrones conversacionales previamente modelados sobre familiaridad, naturalidad, afecto y conocimiento contextual percibido. El sistema integra entrenamiento, refinamiento, validación e interacción A/B, ofreciendo un marco reproducible para inducir y medir familiaridad conductual.
+La combinación de escalas cuantitativas e entrevistas permitió observar distintos grados de convergencia entre instrumentos.
 
-Limitaciones del diseño piloto incluyen muestra pequeña, reclutamiento por conveniencia y familiaridad previa necesaria con la persona modelada. Amenazas a la validez: efectos de orden y fatiga (mitigados con contrabalanceo), medición por autorreporte, sesgo de evaluadores en la Fase 1 e interacciones breves frente a conversaciones reales.
+En algunos casos, los resultados cuantitativos coincidieron con las interpretaciones expresadas durante las entrevistas. En otros, ambas fuentes parecieron capturar dimensiones diferentes de la experiencia. Particularmente, el caso de \texttt{pf005} sugiere que la atribución de conocimiento contextual o cercanía interpersonal puede ocurrir incluso cuando el participante no reporta explícitamente familiaridad.
 
-Trabajo futuro incluye ampliar la muestra con autorización ética formal, enriquecer recuperación contextual con embeddings y evaluar transferencia de perfiles entre dominios. El aporte central es mostrar que es posible diseñar, validar y evaluar familiaridad conductual como variable experimental, separada de la réplica visual o declarativa de identidad.
+Esta observación refuerza la utilidad de emplear metodologías mixtas para estudiar fenómenos relacionados con percepción social y familiaridad, ya que distintos instrumentos pueden revelar aspectos complementarios del mismo proceso.
 
+\subsection{Verificación de la Manipulación Experimental}
+
+La manipulación conductual operó de acuerdo con lo esperado durante las sesiones piloto. Únicamente la Condición A incorporó material contextual asociado al perfil conductual validado, mientras que la Condición B mantuvo un comportamiento conversacional genérico.
+
+Ningún participante recibió información explícita sobre la naturaleza de las condiciones experimentales ni sobre la existencia de perfiles conductuales diferenciados. En consecuencia, las diferencias observadas pueden atribuirse principalmente al contraste conductual introducido por la manipulación y no a variaciones en avatar, voz, interfaz o modelo generativo.
+
+\section{Discusión}
+
+\subsection{Familiaridad Conductual como Fenómeno Perceptivo}
+
+Los resultados obtenidos respaldan la idea de que la familiaridad puede emerger a partir de señales conductuales sin necesidad de representación explícita de identidad. Aunque el agente nunca declaró ser una persona específica ni utilizó mecanismos de personalización visibles para el participante, varios de los comentarios obtenidos sugieren la aparición de inferencias relacionadas con reconocimiento, cercanía o conocimiento previo.
+
+Este hallazgo resulta consistente con la propuesta teórica del trabajo, según la cual la familiaridad puede entenderse como un fenómeno perceptivo asociado a la activación de modelos mentales previamente existentes y no necesariamente como consecuencia de la identificación explícita de una persona.
+
+\subsection{Familiaridad sin Identificación Explícita}
+
+Un aspecto particularmente relevante consiste en que algunos participantes reportaron sensaciones de reconocimiento sin poder identificar claramente el origen de dichas percepciones. Comentarios como “me recordó a alguien” o referencias a la presencia de información aparentemente personal sugieren que patrones conversacionales pueden activar inferencias sociales aun cuando la identidad permanezca implícita.
+
+Este resultado coincide con la hipótesis de que señales de estilo, estructura conversacional y comportamiento discursivo pueden funcionar como indicadores suficientes para evocar familiaridad sin necesidad de recurrir a apariencia visual, voz personalizada o declaraciones explícitas de identidad.
+
+\subsection{Familiaridad y Respuesta Afectiva}
+
+Uno de los hallazgos más interesantes del piloto corresponde a la ausencia de una relación directa entre familiaridad percibida y afecto positivo.
+
+El caso de \texttt{pf002} resulta particularmente ilustrativo. Aunque este participante reportó los mayores indicios de familiaridad durante la interacción, también describió incomodidad, miedo y una reducción en la valencia emocional asociada a la experiencia.
+
+Este resultado sugiere que la familiaridad conductual puede generar reconocimiento sin necesariamente producir agrado, confianza o confort. Desde esta perspectiva, la familiaridad no debería interpretarse como un indicador unidimensional de éxito conversacional, sino como un fenómeno capaz de producir respuestas emocionales diversas.
+
+Una posible explicación se relaciona con fenómenos próximos al valle inquietante, donde señales parcialmente familiares generan tensiones entre reconocimiento e interpretación social. Aunque esta interpretación requiere validación adicional, los resultados preliminares sugieren que la relación entre familiaridad, afecto y confianza es más compleja de lo que habitualmente se asume en la literatura sobre agentes conversacionales.
+
+\subsection{Conocimiento Contextual Percibido}
+
+Los resultados también sugieren una relación consistente entre familiaridad conductual y atribución de conocimiento contextual. En términos generales, los participantes tendieron a percibir que la Condición A poseía mayor información contextual o comprensión de aspectos relacionados con ellos mismos.
+
+Sin embargo, esta percepción no siempre estuvo acompañada por mayores niveles de confianza o afecto positivo. Esto sugiere que conocimiento contextual percibido, confianza y familiaridad constituyen constructos relacionados, pero potencialmente independientes.
+
+\subsection{Limitaciones y Trabajo Futuro}
+
+La principal limitación del estudio corresponde al reducido tamaño de muestra, propio de una evaluación piloto orientada a validar el protocolo experimental. Otras limitaciones incluyen el uso de una muestra por conveniencia, la duración relativamente breve de las interacciones y la dependencia de instrumentos basados en autorreporte.
+
+Adicionalmente, la discrepancia observada entre algunas medidas cuantitativas y cualitativas indica la necesidad de refinar ciertos instrumentos para futuras iteraciones del estudio.
+
+Como trabajo futuro se plantea ampliar la muestra, incorporar medidas específicas relacionadas con incomodidad y valle inquietante, explorar perfiles conductuales más complejos y profundizar en la relación entre familiaridad, afecto, confianza y conocimiento contextual percibido.
+
+
+\newpage
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{references}
 

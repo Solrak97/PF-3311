@@ -22,47 +22,62 @@
 }
 
 \newcommand{\ArchitectureFigure}{%
-  \begin{tikzpicture}[sf, node distance=0.5cm and 0.65cm]
-    % Cliente (izquierda)
-    \node[sfbox={teal!70}{sfclient}, minimum width=2.7cm] (ui) {Interfaz\\texto / voz};
-    \node[sfbox={teal!70}{sfclient}, minimum width=2.7cm, below=of ui] (avatar) {Avatar VRM};
-    \node[sfbox={teal!70}{sfclient}, minimum width=1.25cm, below left=0.4cm and 0cm of avatar] (stt) {Whisper};
-    \node[sfbox={teal!70}{sfclient}, minimum width=1.25cm, below right=0.4cm and 0cm of avatar] (tts) {Edge-TTS};
+  \begin{tikzpicture}[
+    node distance=1.2cm,
+    sf/.style={font=\sffamily\footnotesize, text=sfaccent},
+    box/.style={
+      sf, draw=black!45, rounded corners=2pt,
+      minimum width=2.9cm, minimum height=0.85cm,
+      align=center, fill=gray!10, line width=0.6pt
+    },
+    group/.style={
+      draw=black!25, dashed, rounded corners=4pt,
+      inner sep=12pt, line width=0.5pt
+    },
+    arr/.style={
+      -{Stealth[length=2.2mm,width=1.6mm]}, line width=0.65pt, draw=black!55
+    },
+    edgelbl/.style={
+      sf, font=\scriptsize, fill=white, inner sep=1pt, text=black!65
+    }
+  ]
+    % Grupos
+    \node[group, minimum width=6cm, minimum height=4.8cm] (client) at (-4,0) {};
+    \node[sf, font=\scriptsize\bfseries] at ([yshift=8pt]client.north) {Cliente Godot};
 
-    % API (centro)
-    \node[sfbox={orange!75}{sfserver}, minimum width=2.0cm, right=1.4cm of avatar] (api) {FastAPI};
-    \node[sf, font=\scriptsize, below=0.04cm of api] {REST + WebSocket};
+    \node[group, minimum width=8cm, minimum height=5.8cm] (backend) at (4,0) {};
+    \node[sf, font=\scriptsize\bfseries] at ([yshift=8pt]backend.north) {Backend Python};
 
-    % LangGraph (derecha)
-    \node[sfbox={violet!65}{sfgraph}, minimum width=2.6cm, right=1.2cm of api] (lg) {LangGraph};
-    \node[sfbox={violet!65}{sfgraph}, minimum width=1.2cm, above left=0.3cm and -0.5cm of lg] (train) {Entren.};
-    \node[sfbox={violet!65}{sfgraph}, minimum width=1.2cm, above=0.3cm of lg] (refine) {Refin.};
-    \node[sfbox={violet!65}{sfgraph}, minimum width=1.2cm, above right=0.3cm and -0.5cm of lg] (valid) {Valid.};
-    \node[sfbox={violet!65}{sfgraph}, minimum width=1.2cm, below=0.3cm of lg] (chat) {Chat A/B};
+    % Cliente
+    \node[box, fill=teal!8] (ui) at (-4,0.9) {Interfaz\\texto / voz};
+    \node[box, fill=teal!8] (avatar) at (-4,-0.9) {Avatar VRM};
 
-    % Infraestructura
-    \node[sfbox={black!45}{sfstore}, minimum width=1.5cm, below left=0.55cm and 0.2cm of chat] (ollama) {Ollama};
-    \node[sfbox={black!45}{sfstore}, minimum width=1.5cm, below=0.55cm of chat] (db) {SQLite};
-    \node[sfbox={black!45}{sfstore}, minimum width=1.5cm, below right=0.55cm and 0.2cm of chat] (yaml) {Perfiles\\YAML};
+    % Backend
+    \node[box, fill=orange!15] (api) at (0,0) {FastAPI};
+    \node[box, fill=purple!10, minimum width=3.8cm] (langgraph) at (4,1.2) {LangGraph};
+    \node[box, fill=purple!10] (chat) at (4,0) {Chat A/B};
+    \node[box] (llm) at (1.7,-1.8) {OpenRouter\\GPT-4o mini};
+    \node[box] (tts) at (4,-1.8) {Edge-TTS};
+    \node[box] (storage) at (6.7,-1.8) {SQLite\\Perfiles YAML};
 
-    % Marcos de capa
-    \node[sfphase, fit=(ui)(avatar)(stt)(tts),
-      label={[sfphaselabel]above:Cliente Godot}] {};
-    \node[sfphase, fit=(train)(refine)(valid)(chat)(lg)(ollama)(db)(yaml),
-      label={[sfphaselabel]above:Backend Python}] {};
+    % Cliente → API
+    \draw[arr] (ui.east) -- node[edgelbl, above, pos=0.55] {REST / WS} (api.west);
+    \draw[arr] (avatar.east) -- node[edgelbl, below, pos=0.55] {estado} (api.west);
 
-    % Conexiones
-    \draw[sfarr] (ui.east) -- node[sflbl, above, pos=0.55] {WS} (api.west);
-    \draw[sfarr] (avatar.east) -- (api.west);
-    \draw[sfarr] (stt.east) -| ([yshift=0.15cm]api.south west);
-    \draw[sfarr] (tts.east) -| ([yshift=0.15cm]api.south east);
-    \draw[sfarr] (api.east) -- (lg.west);
-    \draw[sfarr] (chat.south) -- (ollama.north);
-    \draw[sfarr] (chat.south) -- (db.north);
-    \draw[sfarr] (chat.south) -- (yaml.north);
-    \draw[sfdarr] (train.south) -- (lg.north);
-    \draw[sfdarr] (refine.south) -- (lg.north);
-    \draw[sfdarr] (valid.south) -- (lg.north);
+    % API → LangGraph → Chat
+    \draw[arr] (api.east) -- (langgraph.west);
+    \draw[arr] (langgraph.south) -- (chat.north);
+
+    % Chat → servicios (bus ortogonal)
+    \coordinate (chatbus) at ($(chat.south) + (0,-0.5)$);
+    \draw[arr] (chat.south) -- (chatbus);
+    \draw[arr] (chatbus) -| (llm.north);
+    \draw[arr] (chatbus) -- (tts.north);
+    \draw[arr] (chatbus) -| (storage.north);
+
+    % Audio de vuelta al cliente vía API
+    \draw[arr] (tts.west) to[bend right=14]
+      node[edgelbl, below, pos=0.45] {audio} (api.south);
   \end{tikzpicture}%
 }
 
@@ -152,6 +167,77 @@
 
     \draw[sfarr] (const.south west) -- (a.north);
     \draw[sfarr] (const.south east) -- (b.north);
+  \end{tikzpicture}%
+}
+
+\newcommand{\ConceptualModelFigure}{%
+  \begin{tikzpicture}[sf, node distance=0.38cm and 0.32cm]
+    \node[sfbox={teal!70}{sfclient}, minimum width=1.55cm] (person)
+      {Persona\\conocida};
+    \node[sfbox={violet!65}{sfgraph}, minimum width=1.55cm, right=of person] (mental)
+      {Modelo\\mental};
+    \node[sfbox={orange!75}{sfserver}, minimum width=1.55cm, right=of mental] (profile)
+      {Perfil\\conductual};
+    \node[sfbox={blue!65}{blue!6}, minimum width=1.55cm, right=of profile] (agent)
+      {Agente\\conversacional};
+    \node[sfbox={teal!70}{sfclient}, minimum width=1.55cm, right=of agent] (familiar)
+      {Familiaridad\\percibida};
+
+    \foreach \a/\b in {person/mental, mental/profile, profile/agent, agent/familiar}
+      \draw[sfarr] (\a) -- (\b);
+
+    \node[sf, font=\scriptsize\itshape, text=black!55, below=0.55cm of profile]
+      {construcción y validación};
+    \node[sf, font=\scriptsize\itshape, text=black!55, below=0.55cm of agent]
+      {manipulación experimental};
+  \end{tikzpicture}%
+}
+
+\newcommand{\ProfileLifecycleFigure}{%
+  \begin{tikzpicture}[sf, node distance=0.34cm and 0.28cm]
+    \node[sfbox={orange!75}{sfserver}, minimum width=1.35cm] (interview)
+      {Entrevista};
+    \node[sfbox={orange!75}{sfserver}, minimum width=1.35cm, right=of interview] (initial)
+      {Perfil\\inicial};
+    \node[sfbox={orange!75}{sfserver}, minimum width=1.35cm, right=of initial] (refine)
+      {Refina-\\miento};
+    \node[sfbox={violet!65}{sfgraph}, minimum width=1.35cm, right=of refine] (validate)
+      {Validación};
+    \node[sfbox={teal!70}{sfclient}, minimum width=1.45cm, right=1.1cm of validate] (deploy)
+      {Despliegue\\experimental};
+
+    \draw[sfarr] (interview) -- (initial);
+    \draw[sfarr] (initial) -- (refine);
+    \draw[sfarr] (refine) -- (validate);
+    \draw[sfarr] (validate) -- node[sflbl, above, pos=0.55] {aprobado} (deploy);
+
+    \draw[sfarr] (validate.south) -- ++(0,-0.42) -|
+      node[sflbl, below, pos=0.25] {no cumple umbrales} (refine.south);
+
+    \node[sfphase, fill=violet!4, fit=(validate)(deploy),
+      label={[sfphaselabel]above right:compuerta de despliegue}] {};
+  \end{tikzpicture}%
+}
+
+\newcommand{\PilotDeltaFamiliarityFigure}{%
+  \begin{tikzpicture}[sf, x=0.95cm, y=0.55cm]
+    \draw[black!35, line width=0.4pt] (-0.2,0) -- (4.2,0);
+    \foreach \x in {0,1,2,3,4}
+      \draw[black!25, line width=0.3pt] (\x,-0.15) -- (\x,0.15)
+        node[below, font=\scriptsize, text=black!55] {\x};
+
+    \node[anchor=east, font=\scriptsize] at (-0.35,3) {pf002};
+    \node[anchor=east, font=\scriptsize] at (-0.35,2) {pf004};
+    \node[anchor=east, font=\scriptsize] at (-0.35,1) {pf005};
+
+    \fill[teal!55] (0,2.75) rectangle (3.6,3.25);
+    \node[font=\scriptsize, text=white] at (1.8,3) {+3,6};
+
+    \draw[black!20, line width=2.2pt] (0,1.85) -- (0,2.15);
+    \draw[black!20, line width=2.2pt] (0,0.85) -- (0,1.15);
+
+    \node[sf, font=\scriptsize, text=black!60, below=0.35cm] at (2,0)
+      {$\Delta$ familiaridad percibida (A $-$ B)};
   \end{tikzpicture}%
 }
 
