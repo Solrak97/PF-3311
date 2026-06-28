@@ -28,7 +28,7 @@ docs/*.synctex.gz
 docs/*.toc
 docs/*.lof
 docs/*.lot
-docs/paper.pdf
+# docs/paper.pdf is committed intentionally (compiled snapshot; see docs/paper-build.md)
 docs/paper template/*.aux
 docs/paper template/*.bbl
 docs/paper template/*.blg
