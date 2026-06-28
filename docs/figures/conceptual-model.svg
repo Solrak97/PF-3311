@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 88" role="img" aria-label="Modelo conceptual de familiaridad conductual">
+  <defs>
+    <style>
+      .box { fill: #fff; stroke: #ccc8be; stroke-width: 1.2; }
+      .last { fill: #e4ecea; stroke: #1f4f48; }
+      .txt { font-family: Segoe UI, system-ui, sans-serif; font-size: 11px; fill: #1a1917; }
+      .arr { stroke: #6b6860; stroke-width: 1.2; fill: none; marker-end: url(#m); }
+    </style>
+    <marker id="m" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#6b6860"/>
+    </marker>
+  </defs>
+  <rect class="box" x="4" y="20" width="108" height="48" rx="2"/>
+  <text class="txt" x="58" y="42" text-anchor="middle">Persona</text>
+  <text class="txt" x="58" y="56" text-anchor="middle">conocida</text>
+  <line class="arr" x1="112" y1="44" x2="132" y2="44"/>
+  <rect class="box" x="132" y="20" width="108" height="48" rx="2"/>
+  <text class="txt" x="186" y="42" text-anchor="middle">Modelo</text>
+  <text class="txt" x="186" y="56" text-anchor="middle">mental</text>
+  <line class="arr" x1="240" y1="44" x2="260" y2="44"/>
+  <rect class="box" x="260" y="20" width="108" height="48" rx="2"/>
+  <text class="txt" x="314" y="42" text-anchor="middle">Perfil</text>
+  <text class="txt" x="314" y="56" text-anchor="middle">conductual</text>
+  <line class="arr" x1="368" y1="44" x2="388" y2="44"/>
+  <rect class="box" x="388" y="20" width="108" height="48" rx="2"/>
+  <text class="txt" x="442" y="42" text-anchor="middle">Agente</text>
+  <text class="txt" x="442" y="56" text-anchor="middle">conversacional</text>
+  <line class="arr" x1="496" y1="44" x2="516" y2="44"/>
+  <rect class="box last" x="516" y="20" width="120" height="48" rx="2"/>
+  <text class="txt" x="576" y="42" text-anchor="middle">Familiaridad</text>
+  <text class="txt" x="576" y="56" text-anchor="middle">percibida</text>
+</svg>

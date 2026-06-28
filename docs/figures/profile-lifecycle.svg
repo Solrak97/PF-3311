@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 100" role="img" aria-label="Ciclo de vida del perfil conductual">
+  <defs>
+    <style>
+      .box { fill: #fff; stroke: #ccc8be; stroke-width: 1.2; }
+      .gate { fill: #e4ecea; stroke: #1f4f48; stroke-width: 1.2; }
+      .last { fill: #1f4f48; }
+      .txt { font-family: Segoe UI, system-ui, sans-serif; font-size: 10px; fill: #1a1917; }
+      .txtw { fill: #f2f0ea; }
+      .arr { stroke: #6b6860; stroke-width: 1.2; fill: none; marker-end: url(#m); }
+      .note { font-family: Segoe UI, system-ui, sans-serif; font-size: 9px; fill: #6b6860; }
+    </style>
+    <marker id="m" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#6b6860"/>
+    </marker>
+  </defs>
+  <rect class="box" x="4" y="28" width="96" height="44" rx="2"/>
+  <text class="txt" x="52" y="54" text-anchor="middle">Entrevista</text>
+  <line class="arr" x1="100" y1="50" x2="118" y2="50"/>
+  <rect class="box" x="118" y="28" width="96" height="44" rx="2"/>
+  <text class="txt" x="166" y="48" text-anchor="middle">Perfil</text>
+  <text class="txt" x="166" y="62" text-anchor="middle">inicial</text>
+  <line class="arr" x1="214" y1="50" x2="232" y2="50"/>
+  <rect class="box" x="232" y="28" width="96" height="44" rx="2"/>
+  <text class="txt" x="280" y="54" text-anchor="middle">Refinamiento</text>
+  <line class="arr" x1="328" y1="50" x2="346" y2="50"/>
+  <rect class="box gate" x="346" y="28" width="96" height="44" rx="2"/>
+  <text class="txt" x="394" y="48" text-anchor="middle">Validaci�n</text>
+  <text class="txt" x="394" y="62" text-anchor="middle">(compuerta)</text>
+  <line class="arr" x1="442" y1="50" x2="460" y2="50"/>
+  <rect class="box last" x="460" y="28" width="120" height="44" rx="2"/>
+  <text class="txt txtw" x="520" y="48" text-anchor="middle">Despliegue</text>
+  <text class="txt txtw" x="520" y="62" text-anchor="middle">experimental</text>
+  <path d="M394 72 Q394 86 280 86 Q280 72 280 72" class="arr" marker-end="url(#m)"/>
+  <text class="note" x="337" y="94" text-anchor="middle">si no cumple umbrales</text>
+</svg>

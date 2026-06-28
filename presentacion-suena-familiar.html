@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suena Familiar | Presentación</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: #ddd9d0;
+      color: #1a1917;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      overflow: hidden;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .deck {
+      height: 100%;
+      display: grid;
+      place-items: center;
+      padding-bottom: 3rem;
+    }
+
+    .slide-wrap {
+      width: min(1080px, 94vw);
+      height: min(608px, 76vh);
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      background: #f8f7f4;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      overflow: hidden;
+      padding: clamp(2rem, 4vw, 3rem);
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .slide h1,
+    .slide h2,
+    .slide blockquote,
+    .slide q {
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 400;
+    }
+
+  /* Portada */
+    .slide.hero {
+      justify-content: flex-end;
+      border-top: 3px solid #1f4f48;
+    }
+
+    .slide.hero .hero-layout {
+      display: grid;
+      grid-template-columns: 1fr 0.95fr;
+      gap: 1.5rem;
+      align-items: end;
+      width: 100%;
+    }
+
+    .slide.hero .hero-figure {
+      margin: 0;
+      align-self: stretch;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    .slide.hero .eyebrow {
+      position: absolute;
+      top: clamp(2rem, 4vw, 3rem);
+      left: clamp(2rem, 4vw, 3rem);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #6b6860;
+    }
+
+    .slide.hero h1 {
+      font-size: clamp(2.5rem, 5.5vw, 3.75rem);
+      line-height: 1.05;
+      letter-spacing: -0.015em;
+      color: #1a1917;
+    }
+
+    .slide.hero .subtitle {
+      margin-top: 0.875rem;
+      font-size: clamp(1rem, 1.7vw, 1.125rem);
+      color: #5c5952;
+      max-width: 34ch;
+    }
+
+    .slide.hero .byline {
+      margin-top: 2.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid #ccc8be;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      font-size: 0.8125rem;
+      color: #6b6860;
+    }
+
+  /* Separadores de sección */
+    .slide.section {
+      background: #1a1917;
+      color: #f2f0ea;
+      justify-content: center;
+    }
+
+    .slide.section .index {
+      font-family: Georgia, serif;
+      font-size: clamp(3.5rem, 10vw, 6rem);
+      line-height: 1;
+      color: #3d6b63;
+      margin-bottom: 0.375rem;
+    }
+
+    .slide.section h2 {
+      font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+      line-height: 1.15;
+      max-width: 14ch;
+    }
+
+    .slide.section .lead {
+      margin-top: 0.875rem;
+      color: #a8a49a;
+      font-size: 1rem;
+      max-width: 38ch;
+    }
+
+  /* Contenido estándar */
+    .slide.content .top {
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid #1a1917;
+    }
+
+    .slide.content .tag {
+      display: block;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #1f4f48;
+      margin-bottom: 0.375rem;
+    }
+
+    .slide.content h2 {
+      font-size: clamp(1.3rem, 2.4vw, 1.75rem);
+      line-height: 1.2;
+    }
+
+    .slide.content .prose {
+      font-size: 0.9375rem;
+      line-height: 1.55;
+      color: #1a1917;
+      max-width: 52ch;
+    }
+
+    .slide.content .prose.muted { color: #5c5952; }
+    .slide.content .prose.warn { color: #7a2e22; font-size: 0.875rem; }
+
+  /* Pregunta / tesis */
+    .slide.statement {
+      justify-content: center;
+    }
+
+    .slide.statement .tag {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #1f4f48;
+      margin-bottom: 1.25rem;
+    }
+
+    .slide.statement blockquote {
+      font-size: clamp(1.4rem, 2.8vw, 2.125rem);
+      line-height: 1.3;
+      max-width: 24ch;
+    }
+
+    .slide.statement .aside {
+      margin-top: 1.75rem;
+      padding-left: 1rem;
+      border-left: 2px solid #1f4f48;
+      font-size: 0.9375rem;
+      color: #5c5952;
+      max-width: 46ch;
+      line-height: 1.55;
+    }
+
+  /* Cita */
+    .slide.pullquote {
+      background: #e4ecea;
+      justify-content: center;
+    }
+
+    .slide.pullquote .tag {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #1f4f48;
+      margin-bottom: 0.875rem;
+    }
+
+    .slide.pullquote q {
+      display: block;
+      font-size: clamp(1.6rem, 3.2vw, 2.25rem);
+      font-style: italic;
+      line-height: 1.25;
+      max-width: 18ch;
+    }
+
+    .slide.pullquote .prose {
+      margin-top: 1.25rem;
+      font-size: 0.9rem;
+      color: #5c5952;
+      max-width: 44ch;
+      line-height: 1.5;
+    }
+
+    .slide.pullquote .stat {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid #b8c9c5;
+    }
+
+    .slide.pullquote .stat .num {
+      font-family: Georgia, serif;
+      font-size: 2.25rem;
+      color: #7a2e22;
+      line-height: 1;
+    }
+
+    .slide.pullquote .stat p {
+      font-size: 0.875rem;
+      color: #5c5952;
+      max-width: 30ch;
+      line-height: 1.45;
+    }
+
+  /* Componentes */
+    .cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid #ccc8be;
+      flex: 1;
+    }
+
+    .cols > div {
+      padding: 1.125rem 1.25rem;
+      background: #fff;
+    }
+
+    .cols > div + div { border-left: 1px solid #ccc8be; }
+    .cols > div.focus { background: #f8f7f4; }
+
+    .cols h3 {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #1f4f48;
+      margin-bottom: 0.625rem;
+    }
+
+    .cols p, .cols li {
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    .cols ul { padding-left: 1.125rem; }
+    .cols li { margin-bottom: 0.3rem; }
+
+    .chain {
+      display: flex;
+      border: 1px solid #ccc8be;
+      background: #fff;
+    }
+
+    .chain span {
+      flex: 1;
+      padding: 0.75rem 0.5rem;
+      font-size: 0.75rem;
+      text-align: center;
+      line-height: 1.35;
+      border-right: 1px solid #ccc8be;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chain span:last-child {
+      border-right: none;
+      background: #e4ecea;
+      color: #1f4f48;
+      font-weight: 600;
+    }
+
+    .prose + .chain,
+    .prose + .cols { margin-top: 1.125rem; }
+    .chain + table { margin-top: 1.125rem; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 0.45rem 0.6rem;
+      border-bottom: 1px solid #ccc8be;
+    }
+
+    th {
+      font-size: 0.625rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #6b6860;
+      border-bottom: 2px solid #1a1917;
+    }
+
+    td.up { font-weight: 600; color: #1f4f48; }
+    td.neutral { color: #6b6860; }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 1.375rem;
+      flex: 1;
+      align-items: start;
+    }
+
+    .frame {
+      border: 1px solid #ccc8be;
+      background: #fff;
+      padding: 0.5rem;
+    }
+
+    .frame img { display: block; width: 100%; height: auto; }
+
+    .figure {
+      border: 1px solid #ccc8be;
+      background: #fff;
+      padding: 0.5rem;
+      margin: 0;
+    }
+
+    .figure img { display: block; width: 100%; height: auto; }
+
+    .caption {
+      font-size: 0.6875rem;
+      color: #6b6860;
+      margin-top: 0.35rem;
+      line-height: 1.35;
+    }
+
+    .split-data {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.125rem;
+      flex: 1;
+      align-items: start;
+    }
+
+    .slide.pullquote.has-chart {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: center;
+    }
+
+    .slide.pullquote.has-chart .pull-main { min-width: 0; }
+
+    .slide.content .figure img,
+    .slide.pullquote .figure img {
+      max-height: min(240px, 32vh);
+      object-fit: contain;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 800px) {
+      .slide.hero .hero-layout,
+      .split-data,
+      .slide.pullquote.has-chart {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .participants {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid #ccc8be;
+      flex: 1;
+    }
+
+    .participants article {
+      padding: 0.875rem;
+      border-right: 1px solid #ccc8be;
+      background: #fff;
+    }
+
+    .participants article:last-child { border-right: none; }
+    .participants article.key { background: #e4ecea; }
+
+    .participants .pid {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: #1f4f48;
+      margin-bottom: 0.5rem;
+    }
+
+    .participants p {
+      font-size: 0.75rem;
+      line-height: 1.45;
+      color: #5c5952;
+      margin-bottom: 0.4rem;
+    }
+
+    .participants strong { color: #1a1917; }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.25rem;
+      margin-top: 1rem;
+      font-size: 0.8125rem;
+      color: #6b6860;
+    }
+
+    .meta-row span::before {
+      content: "·";
+      margin-right: 0.5rem;
+      color: #1f4f48;
+    }
+
+    .meta-row span:first-child::before { content: none; margin: 0; }
+
+    .two-lists {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      flex: 1;
+    }
+
+    .two-lists h3 {
+      font-size: 0.625rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #6b6860;
+      margin-bottom: 0.5rem;
+    }
+
+    .two-lists li {
+      font-size: 0.875rem;
+      line-height: 1.45;
+      margin-bottom: 0.35rem;
+      margin-left: 1.125rem;
+    }
+
+    .contact {
+      margin-top: auto;
+      padding-top: 0.875rem;
+      font-size: 0.8125rem;
+      color: #6b6860;
+    }
+
+    .chrome {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 1.25rem;
+      background: #f8f7f4;
+      border-top: 1px solid #ccc8be;
+      font-size: 0.8125rem;
+      color: #6b6860;
+      z-index: 10;
+    }
+
+    .chrome button {
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: #fff;
+      border: 1px solid #ccc8be;
+      padding: 0.35rem 0.7rem;
+      cursor: pointer;
+      color: #1a1917;
+    }
+
+    .chrome button:hover { border-color: #1a1917; }
+
+    .bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: #ccc8be;
+      z-index: 10;
+    }
+
+  .bar #progress {
+      height: 100%;
+      width: 0%;
+      background: #1f4f48;
+      transition: width 0.2s ease;
+    }
+
+    .hint {
+      position: fixed;
+      top: 0.55rem;
+      right: 1rem;
+      font-size: 0.625rem;
+      color: #6b6860;
+      z-index: 10;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .slide, #progress { transition: none; }
+    }
+
+    @media print {
+      html, body { overflow: visible; background: #fff; }
+      .slide {
+        position: relative;
+        opacity: 1 !important;
+        visibility: visible !important;
+        page-break-after: always;
+        min-height: 100vh;
+      }
+      .chrome, .hint, .bar { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bar"><div id="progress"></div></div>
+  <p class="hint">flechas o espacio · F pantalla completa</p>
+
+  <main class="deck">
+    <div class="slide-wrap">
+
+      <section class="slide hero active">
+        <p class="eyebrow">PF-3311 · Agentes Virtuales Inteligentes</p>
+        <div class="hero-layout">
+          <div class="hero-main">
+            <h1>Suena Familiar</h1>
+            <p class="subtitle">Percepción de familiaridad en agentes virtuales mediante familiaridad conductual</p>
+            <div class="byline">
+              <span>Luis Carlos Quesada Rodríguez</span>
+              <span>Universidad de Costa Rica</span>
+              <span>Piloto exploratorio</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section class="slide section">
+        <p class="index">01</p>
+        <h2>El problema</h2>
+        <p class="lead">Los agentes conversacionales suenan naturales, pero rara vez evocan a alguien conocido.</p>
+      </section>
+
+      <section class="slide statement">
+        <p class="tag">Pregunta</p>
+        <blockquote>¿Pueden patrones conversacionales activar modelos mentales de personas conocidas, sin apariencia, voz ni identidad declarada?</blockquote>
+        <p class="aside">La literatura estudia familiaridad con señales visuales, memoria y personalización explícita. Este trabajo aísla la conducta conversacional.</p>
+      </section>
+
+      <section class="slide content">
+        <div class="top">
+          <span class="tag">Concepto</span>
+          <h2>Familiaridad conductual</h2>
+        </div>
+        <p class="prose">Señales de estilo que activan modelos mentales preexistentes. El agente no declara quién es ni pretende ser una réplica.</p>
+        <figure class="figure" style="margin-top:1.125rem">
+          <img src="docs/figures/conceptual-model.svg" alt="Modelo conceptual: persona conocida, modelo mental, perfil conductual, agente y familiaridad percibida">
+          <figcaption class="caption">Cadena causal aislada: sin apariencia, voz ni identidad declarada.</figcaption>
+        </figure>
+      </section>
+
+      <section class="slide section">
+        <p class="index">02</p>
+        <h2>Enfoque experimental</h2>
+        <p class="lead">Una manipulación. Todo lo demás permanece constante.</p>
+      </section>
+
+      <section class="slide content">
+        <div class="top">
+          <span class="tag">Contraste</span>
+          <h2>Lo que cambia y lo que no</h2>
+        </div>
+        <div class="cols">
+          <div>
+            <h3>Trabajo previo combina</h3>
+            <ul>
+              <li>Apariencia visual</li>
+              <li>Identidad explícita</li>
+              <li>Voz personalizada</li>
+              <li>Memoria y contexto declarado</li>
+            </ul>
+          </div>
+          <div class="focus">
+            <h3>Esta propuesta</h3>
+            <ul>
+              <li>Avatar, voz, interfaz y modelo fijos</li>
+              <li>Instrucciones neutras</li>
+              <li><strong>Solo cambia el perfil conductual</strong></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide content">
+        <div class="top">
+          <span class="tag">Método</span>
+          <h2>Construcción y validación del perfil</h2>
+        </div>
+        <figure class="figure">
+          <img src="docs/figures/profile-lifecycle.svg" alt="Ciclo de vida del perfil: entrevista, refinamiento, validación y despliegue">
+        </figure>
+        <table>
+          <thead><tr><th>Indicador de validación</th><th>Umbral</th></tr></thead>
+          <tbody>
+            <tr><td>Similitud conversacional</td><td>4,5</td></tr>
+            <tr><td>Naturalidad</td><td>4,0</td></tr>
+            <tr><td>Integridad de identidad</td><td>5,5</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="slide content">
+        <div class="top">
+          <span class="tag">Sistema</span>
+          <h2>Plataforma experimental</h2>
+        </div>
+        <div class="split">
+          <div class="frame">
+            <img src="docs/figures/architecture.png" alt="Arquitectura de la plataforma">
+          </div>
+          <div>
+            <p class="prose">Cliente Godot (interfaz, avatar, voz) y backend conversacional. Los perfiles se modifican sin alterar lo que el participante percibe.</p>
+            <p class="prose muted" style="margin-top:0.75rem">El interés no es evaluar la plataforma, sino los efectos perceptuales del perfil conductual.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide content">
+        <div class="top">
+          <span class="tag">Diseño</span>
+          <h2>Condiciones A y B</h2>
+        </div>
+        <div class="cols">
+          <div class="focus">
+            <h3>Condición A</h3>
+            <p>Perfil conductual validado, asociado a persona conocida. Material contextual presente en la conversación.</p>
+          </div>
+          <div>
+            <h3>Condición B</h3>
+            <p>Perfil genérico, estilo neutro, sin material contextual del perfil.</p>
+          </div>
+        </div>
+        <figure class="figure" style="margin-top:1rem">
+          <img src="docs/figures/ab-conditions.svg" alt="Contraste entre condición A con perfil validado y condición B genérica">
+        </figure>
+        <div class="meta-row">
+          <span>Intra-sujetos</span>
+          <span>Contrabalanceo</span>
+          <span>5 min por sesión</span>
+          <span>Likert, Godspeed, SAM</span>
+          <span>Entrevista semi-estructurada</span>
+        </div>
+      </section>
+
+      <section class="slide section">
+        <p class="index">03</p>
+        <h2>Resultados del piloto</h2>
+        <p class="lead">Evidencia exploratoria con métodos mixtos</p>
+      </section>
+
+      <section class="slide content">
+        <div class="top">
+          <span class="tag">Agregados</span>
+          <h2>Medias pareadas entre condiciones</h2>
+        </div>
+        <div class="split-data">
+          <div>
+            <table>
+              <thead>
+                <tr><th>Constructo</th><th>A</th><th>B</th><th>Diferencia</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Familiaridad</td><td>3,47</td><td>2,27</td><td class="up">+1,20</td></tr>
+                <tr><td>Animacidad</td><td>3,72</td><td>2,89</td><td class="up">+0,83</td></tr>
+                <tr><td>Antropomorfismo</td><td>3,20</td><td>2,47</td><td class="up">+0,73</td></tr>
+                <tr><td>Cercanía</td><td>4,22</td><td>3,33</td><td class="up">+0,89</td></tr>
+                <tr><td>Valencia (SAM)</td><td>6,33</td><td>6,33</td><td class="neutral">0,00</td></tr>
+                <tr><td>Conocimiento contextual</td><td>5,42</td><td>4,50</td><td class="up">+0,92</td></tr>
+              </tbody>
+            </table>
+            
+          </div>
+          <figure class="figure">
+            <img src="docs/figures/pilot/fig01_primary_paired_bars.png" alt="Medias pareadas por constructo entre condiciones A y B">
+            <figcaption class="caption">Medias agregadas del piloto por constructo primario.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="slide content">
+        <div class="top">
+          <span class="tag">Por participante</span>
+          <h2>Tres patrones distintos</h2>
+        </div>
+        <div class="participants">
+          <article class="key">
+            <p class="pid">pf002</p>
+            <p><strong>Cuant.</strong> Familiaridad A &gt; B; valencia A &lt; B</p>
+            <p><strong>Cual.</strong> «Me dio miedo»; reconoció señales sin identificación explícita</p>
+            <p><strong>Lectura</strong> Familiaridad con incomodidad afectiva</p>
+          </article>
+          <article>
+            <p class="pid">pf004</p>
+            <p><strong>Cuant.</strong> Escalas planas</p>
+            <p><strong>Cual.</strong> Estilos distintos; sin familiaridad</p>
+            <p><strong>Lectura</strong> Estilo perceptible, sin activación de familiaridad</p>
+          </article>
+          <article>
+            <p class="pid">pf005</p>
+            <p><strong>Cuant.</strong> Cercanía y contexto A &gt; B</p>
+            <p><strong>Cual.</strong> Negó familiaridad en entrevista</p>
+            <p><strong>Lectura</strong> Atribución contextual sin reconocimiento explícito</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="slide pullquote has-chart">
+        <div class="pull-main">
+          <p class="tag">Hallazgo central · pf002</p>
+          <q>Me dio miedo</q>
+          <p class="prose">Reconoció familiaridad conductual e «información mía» sin que el agente declarara identidad, con valencia emocional reducida y no mayor agrado.</p>
+          <div class="stat">
+            <span class="num">+3,6</span>
+            <p>Único contraste marcado en familiaridad percibida. pf004 y pf005 permanecen en cero.</p>
+          </div>
+        </div>
+        <figure class="figure">
+          <img src="docs/figures/pilot/fig03_delta_familiarity.png" alt="Contraste de familiaridad por participante, destacando pf002">
+        </figure>
+      </section>
+
+      <section class="slide statement">
+        <p class="tag">Discusión</p>
+        <blockquote>Familiaridad reconocible no implica afecto positivo.</blockquote>
+        <p class="aside">Conocimiento contextual percibido, confianza y valencia pueden desacoplarse. La familiaridad conductual no debe leerse como indicador unidimensional de éxito del agente.</p>
+      </section>
+
+      <section class="slide content">
+        <div class="top">
+          <span class="tag">Cierre</span>
+          <h2>Conclusiones y trabajo futuro</h2>
+        </div>
+        <div class="two-lists">
+          <div>
+            <h3>Conclusiones</h3>
+            <ul>
+              <li>La familiaridad conductual es un constructo experimental viable</li>
+              <li>El protocolo mixto revela lo que las escalas solas no capturan</li>
+              <li>Evidencia preliminar orientada al diseño, no confirmatoria</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Próximos pasos</h3>
+            <ul>
+              <li>Ampliar muestra y duración</li>
+              <li>Medidas de incomodidad y valle inquietante</li>
+              <li>Convergencia entre Likert y entrevista</li>
+              <li>Perfiles conductuales más proactivos</li>
+            </ul>
+          </div>
+        </div>
+        <p class="contact">luiscarlos.quesada@ucr.ac.cr · Universidad de Costa Rica</p>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="chrome">
+    <button type="button" id="prev">Anterior</button>
+    <span id="counter">1 / 16</span>
+    <button type="button" id="next">Siguiente</button>
+  </footer>
+
+  <script>
+    const slides = [...document.querySelectorAll(".slide")];
+    const progress = document.getElementById("progress");
+    const counter = document.getElementById("counter");
+    let i = 0;
+
+    function show(n) {
+      const next = Math.max(0, Math.min(n, slides.length - 1));
+      slides[i].classList.remove("active");
+      i = next;
+      slides[i].classList.add("active");
+      counter.textContent = (i + 1) + " / " + slides.length;
+      progress.style.width = (((i + 1) / slides.length) * 100) + "%";
+    }
+
+    document.getElementById("prev").onclick = function () { show(i - 1); };
+    document.getElementById("next").onclick = function () { show(i + 1); };
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") {
+        e.preventDefault();
+        show(i + 1);
+      }
+      if (e.key === "ArrowLeft" || e.key === "PageUp") {
+        e.preventDefault();
+        show(i - 1);
+      }
+      if (e.key === "Home") show(0);
+      if (e.key === "End") show(slides.length - 1);
+      if (e.key === "f" || e.key === "F") {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+      }
+    });
+
+    var touchX = null;
+    document.addEventListener("touchstart", function (e) {
+      touchX = e.changedTouches[0].clientX;
+    }, { passive: true });
+    document.addEventListener("touchend", function (e) {
+      if (touchX === null) return;
+      var dx = e.changedTouches[0].clientX - touchX;
+      if (Math.abs(dx) > 48) show(dx < 0 ? i + 1 : i - 1);
+      touchX = null;
+    }, { passive: true });
+
+    show(0);
+  </script>
+</body>
+</html>

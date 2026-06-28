@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 140" role="img" aria-label="Condiciones experimentales A y B">
+  <defs>
+    <style>
+      .panel { fill: #fff; stroke: #ccc8be; stroke-width: 1.2; }
+      .a { fill: #e4ecea; stroke: #1f4f48; }
+      .b { fill: #f8f7f4; }
+      .lbl { font-family: Segoe UI, system-ui, sans-serif; font-size: 11px; font-weight: 600; fill: #1f4f48; }
+      .txt { font-family: Segoe UI, system-ui, sans-serif; font-size: 10px; fill: #1a1917; }
+      .muted { fill: #6b6860; }
+      .fix { fill: #f2f0ea; stroke: #ccc8be; stroke-width: 1; }
+    </style>
+  </defs>
+  <rect class="panel a" x="8" y="8" width="232" height="124" rx="2"/>
+  <text class="lbl" x="24" y="30">Condici�n A</text>
+  <rect class="fix" x="24" y="40" width="88" height="22" rx="1"/>
+  <text class="txt" x="68" y="55" text-anchor="middle">Perfil validado</text>
+  <rect class="fix" x="24" y="68" width="88" height="22" rx="1"/>
+  <text class="txt" x="68" y="83" text-anchor="middle">Material contextual</text>
+  <text class="muted" x="24" y="112">Manipulaci�n activa</text>
+  <rect class="panel b" x="280" y="8" width="232" height="124" rx="2"/>
+  <text class="lbl" x="296" y="30">Condici�n B</text>
+  <rect class="fix" x="296" y="40" width="88" height="22" rx="1"/>
+  <text class="txt" x="340" y="55" text-anchor="middle">Perfil gen�rico</text>
+  <rect class="fix" x="296" y="68" width="88" height="22" rx="1"/>
+  <text class="txt" x="340" y="83" text-anchor="middle">Sin contexto</text>
+  <text class="muted" x="296" y="112">Control conductual</text>
+  <text class="muted" x="260" y="74" text-anchor="middle">vs</text>
+  <rect class="fix" x="132" y="96" width="256" height="22" rx="1"/>
+  <text class="txt muted" x="260" y="111" text-anchor="middle">Avatar � voz � interfaz � modelo � instrucciones (constantes)</text>
+</svg>
